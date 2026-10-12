@@ -28,7 +28,7 @@
     <div id="view">
       <div id="inner">
         <img id="imgA" src="demo/1-upload.png" />
-        <img id="imgB" src="demo/2-confirm.png" />
+        <img id="imgB" src="demo/1-upload.png" />
         <svg id="marks" width="1600" height="900" viewBox="0 0 1600 900"></svg>
       </div>
     </div>
@@ -37,17 +37,10 @@
     <div class="abs" id="clickRing" style="left:0;top:0;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:3px solid rgba(13,43,87,.6)"></div>
   </div>
 
-  <!-- 시작 -->
-  <div class="layer" id="intro" style="background:#fff">
-    <div class="abs center" id="i1" style="top:400px;font-size:72px;font-weight:700;color:var(--ink)">평가계획서와 채점기준표,</div>
-    <div class="abs center" id="i2" style="top:520px;font-size:88px;font-weight:800;color:var(--navy)">서로 <span style="color:var(--green)">맞물리나요?</span></div>
-  </div>
-
   <!-- 끝 -->
   <div class="layer" id="end" style="background:#fff">
     <img class="abs" id="eLogo" src="logo.png" style="left:840px;top:260px;width:240px;height:240px" />
     <div class="abs center" id="eName" style="top:540px;font-size:120px;font-weight:800;color:var(--navy);letter-spacing:-0.04em">맞물림</div>
-    <div class="abs center" id="eLine" style="top:740px;font-size:44px;font-weight:600;color:#3a4350">평가계획서와 채점기준표가 서로 맞물리는지 확인합니다</div>
   </div>
 
 <script>
@@ -67,7 +60,7 @@ const fadeUp = (el, t, a, d = 0.7, dy = 24) => {
 // 좌표는 모두 1600×900 앱 화면 기준
 const FULL = { fx: 800, fy: 450, z: 1 };
 const SCENES = [
-  { a: 3.4, b: 7.9, img: '1-upload', n: 1, cap: '평가계획서와 채점기준표를 올립니다',
+  { a: 3.0, b: 7.9, img: '1-upload', n: 1, cap: '점검할 문서를 올립니다',
     marks: [{ k: 'hl', at: 4.6, x: 256, y: 488, w: 170, h: 30 }],
     cursor: { from: [1500, 880], to: [1348, 516], a: 5.4, b: 6.5, click: 6.9 } },
   { a: 7.5, b: 14.7, img: '2-confirm', n: 2, cap: '읽어 낸 값을 원문과 나란히 확인합니다',
@@ -78,7 +71,7 @@ const SCENES = [
       { k: 'ring', at: 11.3, x: 1274, y: 368, w: 132, h: 46, col: '#d7263d' },
     ],
     cursor: { from: [1560, 880], to: [1354, 860], a: 13.0, b: 13.8, click: 14.1 } },
-  { a: 14.3, b: 21.1, img: '3-results', n: 3, cap: '두 문서가 어긋난 곳을 근거와 함께 보여 줍니다',
+  { a: 14.3, b: 21.1, img: '3-results', n: 3, cap: '문서끼리 어긋난 곳을 근거와 함께 보여 줍니다',
     zoom: { at: 15.4, out: 19.6, cam: { fx: 982, fy: 430, z: 1.35 } },
     marks: [
       { k: 'ring', at: 16.6, x: 866, y: 323, w: 84, h: 32, col: '#d7263d' },
@@ -142,19 +135,19 @@ function markSvg(m, t, o) {
 const setImg = (img, name) => { if (!img.src.endsWith(`/${name}.png`)) img.src = `demo/${name}.png`; };
 const imgOf = (s, t) => (s.swap && t >= s.swap.at ? s.swap.img : s.img);
 
-window.render = (t) => {
-  const introO = 1 - prog(t, 3.0, 3.5);
-  $('intro').style.opacity = introO;
-  $('intro').style.display = introO > 0 ? 'block' : 'none';
-  fadeUp($('i1'), t, 0.3, 0.8);
-  fadeUp($('i2'), t, 1.2, 0.8);
+window.render = (t0) => {
+  // 장면 시각표는 3초부터 시작하도록 짜여 있어 그만큼 당겨 쓴다 (영상 0초 = 시각표 3초)
+  const t = t0 + 3.0;
+  const appIn = outCubic(prog(t, 3.0, 3.8));
+  $('view').style.opacity = appIn;
+  $('view').style.transform = `translateY(${lerp(30, 0, appIn)}px)`;
 
-  const endO = prog(t, 31.0, 31.6) * (1 - prog(t, 35.3, 36));
+  // 엔딩: 로고와 이름이 나타난 뒤 그대로 멈춤
+  const endO = prog(t, 31.0, 31.6);
   $('end').style.opacity = endO;
   $('end').style.display = endO > 0 ? 'block' : 'none';
   fadeUp($('eLogo'), t, 31.6, 0.9, 30);
   fadeUp($('eName'), t, 32.3, 0.9, 30);
-  fadeUp($('eLine'), t, 33.1, 0.9, 20);
 
   const live = SCENES.filter((s) => t >= s.a && t < s.b);
   if (!live.length) return;
@@ -171,9 +164,6 @@ window.render = (t) => {
   } else {
     setImg($('imgB'), s.img); $('imgB').style.opacity = 1;
   }
-  const appIn = outCubic(prog(t, 3.3, 4.1));
-  $('view').style.opacity = appIn;
-  $('view').style.transform = `translateY(${lerp(30, 0, appIn)}px)`;
 
   const c = camOf(prev ? prev : s, t);
   $('inner').style.transform = `translate(${800 - c.fx * c.z}px, ${450 - c.fy * c.z}px) scale(${c.z})`;
