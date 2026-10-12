@@ -70,7 +70,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         title: `반영비율 합계가 ${total}%예요 (100%가 아님)`,
         locations: weighted.map((a) => a.refs?.weightPercent ?? a.source),
         quote: weighted.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' + ') + ` = ${total}%`,
-        basis: { source: '맞물림 규칙 J12 (국가층 · 사실 확인)', text: '평가계획의 학기 반영비율은 모두 더해 100%여야 합니다.' },
+        basis: { source: '두 문서 대조 · 사실 확인', text: '평가계획의 학기 반영비율은 모두 더해 100%여야 합니다.' },
         actions: ['fix', 'memo'],
         fix: `반영비율을 더해 100%가 되게 고치세요. 지금은 ${total - 100 > 0 ? `${total - 100}%p 많아요` : `${100 - total}%p 모자라요`}.`,
       });
@@ -90,7 +90,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         title: `채점기준표의 ‘${r.name}’과 짝을 이루는 평가를 찾지 못했어요`,
         locations: [r.source],
         quote: `채점기준표 평가명: ${r.name}`,
-        basis: { source: '맞물림 규칙 J12 (연결 확인)', text: '이름이 달라 자동으로 짝짓지 못했어요. 확인 화면에서 같은 평가를 지정하면 배점을 비교합니다.' },
+        basis: { source: '두 문서 대조 · 연결 확인', text: '이름이 달라 자동으로 짝짓지 못했어요. 확인 화면에서 같은 평가를 지정하면 배점을 비교합니다.' },
         actions: ['link', 'memo'],
         fix: '확인 화면의 ‘같은 평가 짝짓기’에서 평가계획의 평가를 골라 주세요.',
       });
@@ -119,7 +119,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
           diffEls.map(({ pe, re }) => ` ‘${pe.name}’ 배점이 평가계획 ${fmt(pe.points, '점')}, 채점기준표 ${fmt(re.points, '점')}로 달라요.`).join(''),
         quote: `평가계획서 만점 ${p.maxScore}점 · 채점기준표 배점 ${r.elements.map((e) => fmt(e.points, '')).join(' + ')} = ${rubricTotal}점`,
         basis: {
-          source: '맞물림 규칙 J12 (국가층 · 사실 확인)',
+          source: '두 문서 대조 · 사실 확인',
           text: '교사가 같은 평가로 짝지은 두 문서에서, 평가계획의 만점과 채점기준표 배점의 합은 같아야 합니다. 반영비율(%)은 비교에 쓰지 않습니다.',
         },
         actions: ['fix', 'memo'],
@@ -140,7 +140,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         title: `‘${p.name}’ 평가요소 구성이 달라요 (평가계획 ${p.elements.length}개 · 채점기준표 ${r.elements.length}개)`,
         locations: [...p.elements, ...r.elements].map((e) => e.refs?.name).filter((x): x is CellRef => !!x),
         quote: `평가계획: ${p.elements.map((e) => e.name).join(', ')}\n채점기준표: ${r.elements.map((e) => e.name).join(', ')}`,
-        basis: { source: '맞물림 규칙 J12 (연결 확인)', text: `${finer} 오류로 단정하지 않고 두 문서가 같은 내용을 가리키는지 확인을 요청합니다.` },
+        basis: { source: '두 문서 대조 · 연결 확인', text: `${finer} 오류로 단정하지 않고 두 문서가 같은 내용을 가리키는지 확인을 요청합니다.` },
         actions: ['memo', 'fix'],
         fix: '같은 내용을 나눈 것이라면 이유를 메모하고 넘기세요. 다른 내용이라면 두 문서의 평가요소를 맞추세요.',
         compare,
@@ -161,7 +161,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         title: `‘${p.name}’ 성취기준 목록이 두 문서에서 서로 대응하지 않아요`,
         locations: [...p.elements, ...r.elements].map((e) => e.refs?.standards).filter((x): x is CellRef => !!x),
         quote: [onlyP.length ? `평가계획에만: ${onlyP.join(' ')}` : '', onlyR.length ? `채점기준표에만: ${onlyR.join(' ')}` : ''].filter(Boolean).join('\n'),
-        basis: { source: '맞물림 규칙 J12 (연결 확인)', text: '같은 평가라면 두 문서의 성취기준 코드가 대응해야 합니다. 한쪽에서 일부만 적었을 수 있어 확인을 요청합니다.' },
+        basis: { source: '두 문서 대조 · 연결 확인', text: '같은 평가라면 두 문서의 성취기준 코드가 대응해야 합니다. 한쪽에서 일부만 적었을 수 있어 확인을 요청합니다.' },
         actions: ['fix', 'memo'],
         fix: `두 문서에 같은 성취기준 코드를 적으세요.${onlyP.length ? ` 채점기준표에 ${onlyP.join(' ')}이(가) 없어요.` : ''}${onlyR.length ? ` 평가계획에 ${onlyR.join(' ')}이(가) 없어요.` : ''}`,
         compare,
@@ -182,7 +182,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       title: `평가계획의 ‘${p.name}’에 해당하는 채점기준표를 찾지 못했어요`,
       locations: [p.source],
       quote: `평가계획서 평가명: ${p.name} (${p.method ?? '수행'})`,
-      basis: { source: '맞물림 규칙 J12 (연결 확인)', text: '수행평가는 채점기준표와 짝을 이뤄야 배점을 비교할 수 있습니다. 확인 화면에서 짝을 지정하세요.' },
+      basis: { source: '두 문서 대조 · 연결 확인', text: '수행평가는 채점기준표와 짝을 이뤄야 배점을 비교할 수 있습니다. 확인 화면에서 짝을 지정하세요.' },
       actions: ['link', 'memo'],
       fix: '채점기준표에 이 평가가 있다면 확인 화면에서 짝을 지정하고, 없다면 채점기준표를 함께 올려 주세요.',
     });
@@ -323,7 +323,7 @@ function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       locations: [row.ref],
       quote: `${row.code} ${row.text}`,
       basis: {
-        source: '맞물림 규칙 J6 (연결 확인 · Webb 범주 일치, UbD)',
+        source: '성취기준–평가 정렬 · Webb 범주 일치, UbD',
         text: '문서에서 연결을 찾지 못했다는 뜻이며, 실제로 가르치거나 평가하지 않았다는 뜻은 아닙니다. 교육적 타당성은 자동으로 판정하지 않습니다.',
       },
       actions: ['link', 'memo'],
@@ -348,7 +348,7 @@ function s5(input: CheckInput, cards: Card[]) {
     title: '학생이 자기 과정을 돌아보는 기회가 평가 안에 있나요?',
     locations: [perf[0].source],
     quote: `채점기준표 평가요소 ${perf.reduce((n, a) => n + a.elements.length, 0)}개 중 성찰·자기평가·동료평가 요소 없음`,
-    basis: { source: '맞물림 제안 S5 (2022 개정 교육과정 총론의 평가 방향)', text: '판정이 아닌 질문입니다. 수업 중 다른 활동으로 다루고 있다면 넘겨도 됩니다.' },
+    basis: { source: '제안 · 2022 개정 교육과정 총론의 평가 방향', text: '판정이 아닌 질문입니다. 수업 중 다른 활동으로 다루고 있다면 넘겨도 됩니다.' },
     actions: ['memo'],
   });
 }

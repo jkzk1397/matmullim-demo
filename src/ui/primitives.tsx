@@ -33,24 +33,31 @@ export function NumChip({ n, s }: { n: number; s: Severity }) {
   );
 }
 
-/** 근거의 강도: 사실·의무·권고·제안 네 칸 중 하나 */
+/** 근거의 강도: 사실 > 의무 > 권고 > 제안 순서의 눈금. 누르는 버튼이 아니다 */
 export function StrengthScale({ s }: { s: Strength }) {
+  const at = STRENGTHS.indexOf(s);
   return (
-    <div>
-      <div className="mb-1.5 text-meta text-ink-3">근거의 강도</div>
-      <div className="flex gap-1" role="img" aria-label={`근거의 강도: ${s} (${STRENGTH_HINT[s]})`}>
-        {STRENGTHS.map((x) => (
+    <div className="w-[236px]" role="img" aria-label={`근거의 강도: ${s} (${STRENGTH_HINT[s]})`}>
+      <div className="mb-2 text-meta text-ink-3">근거의 강도 · 강함 → 약함</div>
+      <div className="relative h-2">
+        <div className="absolute inset-x-[10%] top-[3px] h-0.5 rounded bg-line" />
+        <div className="absolute top-[3px] h-0.5 rounded bg-graphite" style={{ left: '10%', width: `${(at / 3) * 80}%` }} />
+        {STRENGTHS.map((x, i) => (
           <span
             key={x}
-            className={`flex h-7 min-w-[52px] items-center justify-center rounded-md px-2 text-meta ${
-              x === s ? 'bg-graphite font-semibold text-white' : 'bg-desk-2 text-ink-3'
-            }`}
-          >
+            className={`absolute top-0 h-2 w-2 -translate-x-1/2 rounded-full ${i <= at ? 'bg-graphite' : 'bg-line'} ${i === at ? 'scale-150' : ''}`}
+            style={{ left: `${10 + (i / 3) * 80}%` }}
+          />
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-4 text-center text-meta">
+        {STRENGTHS.map((x) => (
+          <span key={x} className={x === s ? 'font-bold text-ink' : 'text-ink-3'}>
             {x}
           </span>
         ))}
       </div>
-      <div className="mt-1.5 text-meta text-ink-3">{STRENGTH_HINT[s]}</div>
+      <div className="mt-1 text-meta text-ink-2">{STRENGTH_HINT[s]}</div>
     </div>
   );
 }

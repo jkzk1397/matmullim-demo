@@ -34,7 +34,7 @@ function stop(p: ChildProcess) {
 
 async function shot(page: Page, name: string) {
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(800); // 형광펜이 그어지는 동작(520ms)이 끝난 뒤
   await page.screenshot({ path: `${OUT}/${name}.png` });
   console.log(`  ✓ ${OUT}/${name}.png`);
 }
@@ -80,7 +80,7 @@ async function main() {
 
     await page.getByRole('button', { name: '결과로 돌아가기' }).click();
     await page.getByRole('button', { name: /만점은 30점인데/ }).click();
-    await page.getByRole('button', { name: '고치기', exact: true }).click();
+    await page.getByRole('button', { name: /^고치기/ }).click();
     await shot(page, '05a-reupload');
     await loadSample(page, '수정판');
     await confirmAndCheck(page, 1200);

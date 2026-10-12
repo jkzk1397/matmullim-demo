@@ -73,11 +73,6 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
         <RunBox run={prev} cards={pc} tag="지난 점검" />
         <div className="flex items-center text-ink-3">{Icon.arrow('h-5 w-5')}</div>
         <RunBox run={curr} cards={cc} tag="이번 점검" now />
-        <div className="ml-3 flex items-center gap-2">
-          <StatusPill s="resolved" n={d.resolved.length} />
-          <StatusPill s="remaining" n={d.remaining.length} />
-          <StatusPill s="added" n={d.added.length} />
-        </div>
       </div>
 
       <div className="min-h-0 flex-1 px-8 pb-8 pt-5">
@@ -100,16 +95,23 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
                       <StatusBadge s={s} />
                     </td>
                     <td className="px-3 py-3.5 align-top">
-                      <SeverityLabel s={c.severity} />
+                      {s === 'resolved' ? (
+                        <span className="inline-flex items-center gap-2 text-meta text-ink-3">
+                          <Swatch s={c.severity} />
+                          {SEVERITY[c.severity].label}
+                        </span>
+                      ) : (
+                        <SeverityLabel s={c.severity} />
+                      )}
                     </td>
-                    <td className={`px-3 py-3.5 align-top text-[15px] font-semibold leading-[22px] ${s === 'resolved' ? 'text-ink-2' : 'text-ink'}`}>{c.title}</td>
+                    <td className={`px-3 py-3.5 align-top text-[15px] leading-[22px] ${s === 'resolved' ? 'font-medium text-ink-3' : 'font-semibold text-ink'}`}>{c.title}</td>
                     <td className="px-5 py-3.5 align-top text-[14px]">
                       {ch ? (
                         <>
                           <div className="flex flex-wrap items-baseline gap-x-2">
                             <span className="text-ink-3 line-through decoration-ink-3">{ch.from}</span>
                             <span className="text-ink-3">→</span>
-                            <span className="font-semibold text-pen">{ch.to}</span>
+                            <span className="font-semibold text-ink">{ch.to}</span>
                           </div>
                           <div className="mt-0.5 truncate text-meta text-ink-3">{ch.where}</div>
                         </>
@@ -128,12 +130,10 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
   );
 }
 
-const SHORT: Record<Severity, string> = { red: '확인된 오류', orange: '권고', gray: '연결 확인', yellow: '제안' };
-
 const STATUS: Record<Status, { label: string; cls: string }> = {
-  resolved: { label: '해결됨', cls: 'bg-pen text-white' },
-  remaining: { label: '남음', cls: 'bg-desk-2 text-ink shadow-[inset_0_0_0_1px_#c3c7ce]' },
-  added: { label: '새로 생김', cls: 'bg-graphite text-white' },
+  resolved: { label: '해결됨', cls: 'text-ink-3' },
+  remaining: { label: '남음', cls: 'bg-graphite text-white' },
+  added: { label: '새로 생김', cls: 'bg-sev-red-bg text-sev-red-ink shadow-[inset_0_0_0_1px_#c8382d]' },
 };
 
 function StatusBadge({ s }: { s: Status }) {
@@ -142,15 +142,6 @@ function StatusBadge({ s }: { s: Status }) {
       {s === 'resolved' && Icon.check('h-3.5 w-3.5')}
       {STATUS[s].label}
     </span>
-  );
-}
-
-function StatusPill({ s, n }: { s: Status; n: number }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center rounded-xl bg-paper px-5 shadow-paper">
-      <span className={`text-stat font-bold ${s === 'resolved' ? 'text-pen' : n ? 'text-ink' : 'text-ink-3'}`}>{n}</span>
-      <span className="text-meta text-ink-3">{STATUS[s].label}</span>
-    </div>
   );
 }
 
@@ -163,11 +154,11 @@ function RunBox({ run, cards, tag, now }: { run: Run; cards: Card[]; tag: string
         <span className="text-[15px] font-semibold text-ink">{run.label}</span>
         <span className="text-meta text-ink-3">{formatTime(run.at)}</span>
       </div>
-      <div className="mt-1.5 flex gap-4 whitespace-nowrap">
+      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 whitespace-nowrap">
         {(['red', 'orange', 'gray', 'yellow'] as Severity[]).map((s) => (
           <div key={s} className="flex items-center gap-1.5 text-meta text-ink-2">
             <Swatch s={s} />
-            {SHORT[s]}
+            {SEVERITY[s].label}
             <span className={`text-[16px] font-bold ${n[s] ? SEVERITY[s].ink : 'text-ink-3'}`}>{n[s]}</span>
           </div>
         ))}

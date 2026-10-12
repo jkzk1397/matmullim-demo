@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { countBySeverity, diffRuns, runChecks } from '../domain/rules';
 import type { Action, Card, CheckResult, PassedCheck, RuleId, Severity } from '../domain/types';
 import { SEVERITY, formatDuration, refPath, sameRef, type Run } from '../ui/helpers';
-import { PageHead, Paper } from '../ui/layout';
+import { PageHead } from '../ui/layout';
 import { Button, Icon, NumChip, SeverityLabel, StrengthScale, Swatch } from '../ui/primitives';
 import { Sheet, buildSheets } from '../ui/sheets';
 
@@ -21,7 +21,7 @@ type Props = {
 
 const ORDER: Severity[] = ['red', 'orange', 'gray', 'yellow'];
 const RULE_NAME: Record<RuleId, string> = { J12: '문서 간 일치', J4: '성취기준 코드', J7: '채점기준 표현', J6: '성취기준–평가 연결', S5: '제안 질문' };
-const ACTION_LABEL: Record<Action, string> = { fix: '고치기', memo: '메모하고 넘기기', link: '연결 지정' };
+const ACTION_LABEL: Record<Action, string> = { fix: '고치기 · 고친 문서 올리기', memo: '메모하고 넘기기', link: '연결 지정' };
 type Filter = Severity | 'all' | 'passed';
 
 export function headline(cards: Card[]): string {
@@ -51,11 +51,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHead
         title={headline(cards)}
-        sub={
-          <>
-            {run.label} · 규칙과 성취기준 DB로 점검 · 같은 표를 넣으면 언제나 같은 결과 · 확인에 걸린 시간 {formatDuration(run.confirmMs)}
-          </>
-        }
+        sub={`${run.label}을 교사 확인(${formatDuration(run.confirmMs)}) 뒤 규칙과 성취기준 DB로 점검했어요. 같은 표를 넣으면 언제나 같은 결과가 나와요.`}
         right={
           <>
             {diff && (
@@ -64,9 +60,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
               </Button>
             )}
             <Button onClick={onMap}>정렬 맵</Button>
-            <Button variant="primary" onClick={onRecheck}>
-              {clean ? '다른 문서 올리기' : '고친 문서 다시 올리기'}
-            </Button>
+            <Button onClick={onRecheck}>{clean ? '다른 문서 올리기' : '고친 문서 다시 올리기'}</Button>
           </>
         }
       />
@@ -109,7 +103,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
           }`}
         >
           <span className="flex items-center gap-2 text-[14px] text-ink-2">
-            <span className="text-pen">{Icon.check()}</span>통과한 점검
+            <span className="text-ink">{Icon.check()}</span>통과한 점검
           </span>
           <span className="text-stat font-bold text-ink">{passed.length}</span>
         </button>
@@ -151,7 +145,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
           })}
         </ol>
 
-        <Paper className="min-h-0 overflow-y-auto">
+        <div className={`min-h-0 overflow-y-auto ${selected ? '' : 'rounded-xl bg-paper shadow-paper'}`}>
           {selected ? (
             <CardDetail
               key={selected.key}
@@ -166,7 +160,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
           ) : (
             <PassedPanel passed={passed} clean={clean} run={run} />
           )}
-        </Paper>
+        </div>
       </div>
     </div>
   );
@@ -196,7 +190,7 @@ function CardDetail({
   const basisInSheet = card.rule === 'J7';
 
   return (
-    <article className="px-7 py-4">
+    <article className="px-1 pb-2 pt-1">
       <div className="flex items-center gap-3">
         <NumChip n={n} s={card.severity} />
         <SeverityLabel s={card.severity} />
@@ -223,7 +217,7 @@ function CardDetail({
         )}
       </div>
 
-      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-6 border-t border-line-2 pt-4">
+      <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-6 px-1">
           <div className="min-w-0">
             <div className="text-meta text-ink-3">근거</div>
             <div className="mt-0.5 text-[14px] font-semibold text-ink-2">
@@ -242,7 +236,7 @@ function CardDetail({
       </div>
 
       {memo && !editing && (
-        <div className="mt-4 flex items-start gap-2 rounded-lg bg-pen-50 px-4 py-3 text-body text-pen">
+        <div className="mx-1 mt-4 flex items-start gap-2 rounded-lg bg-pen-50 px-4 py-3 text-body text-pen">
           {Icon.pen('mt-1 h-4 w-4 shrink-0')}
           <span className="flex-1">
             <b className="font-semibold">교사 메모</b> · {memo}
@@ -254,13 +248,13 @@ function CardDetail({
       )}
 
       {editing ? (
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-2 px-1">
           <textarea
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="넘기는 이유를 남겨 두세요. 예: 학교 규정에 분량 기준이 있어 유지함"
-            className="h-20 w-full resize-none rounded-lg bg-desk-2 px-3 py-2 text-body text-pen placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-pen"
+            className="h-20 w-full resize-none rounded-lg bg-paper px-3 py-2 text-body text-pen placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-pen"
           />
           <div className="flex gap-2">
             <Button
@@ -276,17 +270,18 @@ function CardDetail({
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex items-center gap-2">
-          {card.actions.map((a, i) => (
-            <Button key={a} variant={i === 0 ? 'primary' : 'secondary'} onClick={() => (a === 'memo' ? setEditing(true) : onAction(a, card))}>
-              {ACTION_LABEL[a]}
-            </Button>
-          ))}
+        <div className="mt-4 flex items-center gap-2 px-1">
           {card.rule !== 'S5' && card.rule !== 'J6' && (
-            <Button variant="quiet" className="ml-auto" onClick={() => onReviewValue(card)}>
+            <Button variant="quiet" onClick={() => onReviewValue(card)}>
               추출값이 틀렸나요? 원문 값 다시 확인
             </Button>
           )}
+          <span className="ml-auto" />
+          {[...card.actions].reverse().map((a) => (
+            <Button key={a} variant={a === card.actions[0] ? 'primary' : 'secondary'} onClick={() => (a === 'memo' ? setEditing(true) : onAction(a, card))}>
+              {ACTION_LABEL[a]}
+            </Button>
+          ))}
         </div>
       )}
     </article>
@@ -302,7 +297,7 @@ function PassedPanel({ passed, clean, run }: { passed: PassedCheck[]; clean: boo
   return (
     <div className="px-9 py-8">
       <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pen-50 text-pen">{Icon.check('h-5 w-5')}</span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-desk-2 text-ink">{Icon.check('h-5 w-5')}</span>
         <h2 className="text-h2 font-bold text-ink">{clean ? '두 문서를 서로, 그리고 지침과 대조했어요. 확인된 오류가 없어요.' : `통과한 점검 ${passed.length}개`}</h2>
       </div>
       <ul className="mt-6 divide-y divide-line-2">
@@ -310,7 +305,7 @@ function PassedPanel({ passed, clean, run }: { passed: PassedCheck[]; clean: boo
           <li key={p.rule} className="flex items-baseline gap-4 py-3.5">
             <span className="w-44 shrink-0 text-body font-semibold text-ink">{p.label}</span>
             <span className="text-body text-ink-2">{p.detail}</span>
-            <span className="ml-auto flex items-center gap-1 text-meta font-semibold text-pen">{Icon.check('h-3.5 w-3.5')}통과</span>
+            <span className="ml-auto flex items-center gap-1 text-meta font-semibold text-ink">{Icon.check('h-3.5 w-3.5')}통과</span>
           </li>
         ))}
       </ul>
@@ -333,7 +328,7 @@ function PassedPanel({ passed, clean, run }: { passed: PassedCheck[]; clean: boo
                   <td className="py-2.5 font-semibold text-ink">{p.name}</td>
                   <td className="py-2.5 text-ink">{p.maxScore ?? '—'}점</td>
                   <td className="py-2.5 text-ink">
-                    {total}점 {total === p.maxScore && <span className="ml-1 text-meta font-semibold text-pen">일치</span>}
+                    {total}점 {total === p.maxScore && <span className="ml-1 text-meta font-semibold text-ink-2">일치</span>}
                   </td>
                   <td className="py-2.5 text-ink-2">
                     {pn}개 · {rn}개

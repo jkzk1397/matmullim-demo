@@ -38,14 +38,14 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
             >
               <span
                 className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
-                  active ? 'bg-sev-yellow-mark text-graphite' : done ? 'bg-graphite-2 text-white' : 'bg-graphite-2 text-graphite-ink'
+                  active ? 'bg-white text-graphite' : done ? 'bg-graphite-2 text-white' : 'bg-graphite-2 text-graphite-ink'
                 }`}
               >
                 {done ? Icon.check('h-3 w-3') : i + 1}
               </span>
               <span className={`relative ${active ? 'font-semibold' : ''}`}>
                 {s.label}
-                {active && <span className="absolute -bottom-1 left-[-3px] right-[-3px] -z-0 h-[3px] -skew-x-12 rounded-sm bg-sev-yellow-mark" aria-hidden />}
+                {active && <span className="absolute -bottom-1.5 left-0 right-0 h-[2px] rounded-sm bg-white" aria-hidden />}
               </span>
             </button>
           );

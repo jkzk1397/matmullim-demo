@@ -113,7 +113,7 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
       }}
       onClick={() => input.current?.click()}
       className={`flex flex-1 cursor-pointer flex-col justify-between rounded-xl bg-paper px-7 py-6 shadow-paper transition-shadow duration-150 hover:shadow-lift ${
-        tall ? 'min-h-[300px]' : 'min-h-[176px]'
+        tall ? 'min-h-[300px]' : 'min-h-[236px]'
       } ${over ? 'ring-2 ring-pen' : ''}`}
     >
       <input
@@ -131,6 +131,26 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
         <h2 className="text-h2 font-bold text-ink">{kind === 'plan' ? '평가계획서' : '수행평가 채점기준표'}</h2>
         <p className="mt-1 text-meta text-ink-3">{hint}</p>
       </div>
+      {!doc && tall && (
+        <div className="my-4 space-y-2" aria-label="읽는 표 머리글">
+          <div className="text-meta text-ink-3">이런 머리글의 표를 읽어요</div>
+          {(kind === 'plan'
+            ? [
+                ['평가명', '평가 방법', '반영비율(%)', '만점(점)'],
+                ['평가명', '평가요소', '배점(점)', '성취기준 코드'],
+              ]
+            : [['평가명', '평가요소', '성취기준 코드', '채점기준', '배점(점)']]
+          ).map((row, i) => (
+            <div key={i} className="flex overflow-hidden rounded-md text-meta shadow-[inset_0_0_0_1px_#dcdfe4]">
+              {row.map((h) => (
+                <span key={h} className="flex-1 truncate border-r border-line px-2.5 py-1.5 text-ink-2 last:border-0">
+                  {h}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
       {doc ? (
         <div className="flex items-center gap-3 rounded-lg bg-pen-50 px-4 py-3">
           <span className="text-pen">{Icon.check('h-5 w-5')}</span>
@@ -154,20 +174,25 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
 function LastRunBanner({ run, hint }: { run: Run; hint?: string | null }) {
   const n = countBySeverity(runChecks(run.input).cards);
   return (
-    <Paper className="flex items-center gap-5 px-5 py-3.5">
-      <span className="text-meta font-semibold text-ink-3">지난 점검</span>
-      <span className="text-[15px] font-semibold text-ink">
-        {run.label} · {formatTime(run.at)}
-      </span>
-      <span className="flex gap-4 text-meta text-ink-2">
+    <Paper className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-1.5 px-5 py-3.5">
+      <span className="whitespace-nowrap text-meta font-semibold text-ink-3">지난 점검</span>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+        <span className="whitespace-nowrap text-[15px] font-semibold text-ink">
+          {run.label} · {formatTime(run.at)}
+        </span>
         {(['red', 'orange', 'gray', 'yellow'] as Severity[]).map((s) => (
-          <span key={s} className="inline-flex items-center gap-1.5">
+          <span key={s} className="inline-flex items-center gap-1.5 whitespace-nowrap text-meta text-ink-2">
             <Swatch s={s} />
             {SEVERITY[s].label} <b className="font-semibold text-ink">{n[s]}</b>
           </span>
         ))}
-      </span>
-      {hint && <span className="ml-auto truncate text-meta text-ink-2">고칠 곳: {hint}</span>}
+      </div>
+      {hint && (
+        <>
+          <span className="whitespace-nowrap text-meta font-semibold text-ink-3">고칠 곳</span>
+          <p className="text-[14px] leading-[22px] text-ink">{hint}</p>
+        </>
+      )}
     </Paper>
   );
 }
