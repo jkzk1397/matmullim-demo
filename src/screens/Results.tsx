@@ -61,7 +61,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
     />
   );
 
-  if (clean) return <CleanResult head={head} result={result} memos={memos} onMemo={onMemo} />;
+  if (clean) return <CleanResult head={head} run={run} result={result} memos={memos} onMemo={onMemo} />;
 
   return (
     <Page>
@@ -250,54 +250,80 @@ function CardDetail({
 /** 고치는 법은 첫 문장만 보여 준다 */
 const firstSentence = (t: string) => t.split(/(?<=요\.)\s+/)[0];
 
-/** 정상판: 가운데 큰 초록 체크 + 통과 목록. 제안과 맞물린 값은 접어 둔다 */
-function CleanResult({ head, result, memos, onMemo }: { head: React.ReactNode; result: CheckResult; memos: Record<string, string>; onMemo: Props['onMemo'] }) {
+/** 정상판: 왼쪽 큰 초록 체크 + 통과 목록, 오른쪽 점검한 문서·맞물린 값·제안 */
+function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNode; run: Run; result: CheckResult; memos: Record<string, string>; onMemo: Props['onMemo'] }) {
   const suggestions = result.cards.filter((c) => c.severity === 'yellow');
+  const { plan, rubric, pairs, planStandards } = run.input;
+  const matched = rubric.flatMap((r) => {
+    const p = plan.find((x) => x.id === pairs[r.id]);
+    return p ? [{ p, total: r.elements.reduce((n, e) => n + (e.points ?? 0), 0) }] : [];
+  });
+  const weight = plan.reduce((n, a) => n + (a.weightPercent ?? 0), 0);
   return (
     <Page>
       {head}
-      <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto pb-8 pt-2">
-        <Box className="h-fit w-full max-w-[760px] px-10 py-8">
-          <div className="flex items-center gap-4">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-green text-white">{Icon.check('h-9 w-9')}</span>
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] gap-6 pb-8">
+        <Box className="flex flex-col px-8 py-8">
+          <div className="flex items-center gap-6">
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand-green text-white">{Icon.check('h-11 w-11')}</span>
             <div>
               <div className="text-title font-extrabold text-ink">확인된 오류 0건</div>
               <p className="text-key font-bold text-brand-green">점검 {result.passed.length}가지 모두 통과</p>
             </div>
           </div>
-          <ul className="mt-4 divide-y divide-line-2 border-y border-line-2">
+          <ul className="mt-8 flex flex-1 flex-col justify-between divide-y divide-line-2 border-t border-line-2">
             {result.passed.map((p: PassedCheck) => (
-              <li key={p.rule} className="flex items-center gap-4 py-2">
-                <span className="text-brand-green">{Icon.check('h-5 w-5')}</span>
-                <span className="w-48 shrink-0 text-body font-bold text-ink">{p.label}</span>
+              <li key={p.rule} className="flex flex-1 items-center gap-4">
+                <span className="text-brand-green">{Icon.check('h-6 w-6')}</span>
+                <span className="w-44 shrink-0 text-body font-bold text-ink">{p.label}</span>
                 <span className="text-body text-ink-2">{p.detail}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-4 space-y-1">
-            {suggestions.length > 0 && (
-              <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-body font-bold text-ink-2">
-                  <span className="transition-transform group-open:rotate-180">{Icon.chevron()}</span>
-                  <Dot s="yellow" />
-                  제안 {suggestions.length}건 보기
-                </summary>
-                {suggestions.map((c) => (
-                  <div key={c.key} className="flex items-center gap-4 py-2 pl-6 text-body text-ink">
-                    <span className="flex-1">{c.title}</span>
-                    {memos[c.key] ? (
-                      <span className="text-help text-brand-blue">메모함</span>
-                    ) : (
-                      <Button variant="quiet" onClick={() => onMemo(c.key, '수업에서 다룸')}>
-                        수업에서 다뤄요
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </details>
-            )}
-          </div>
         </Box>
+
+        <div className="flex min-h-0 flex-col gap-6">
+          <Box className="px-6 py-6">
+            <h2 className="text-key font-bold text-ink">점검한 문서</h2>
+            <div className="mt-4 grid grid-cols-3 gap-4 text-center">
+              {[
+                ['평가', `${plan.length}개`],
+                ['성취기준', `${planStandards.length}개`],
+                ['반영비율 합계', `${weight}%`],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-xl bg-canvas py-4">
+                  <div className="text-title font-extrabold text-brand-navy">{v}</div>
+                  <div className="text-body text-ink-2">{k}</div>
+                </div>
+              ))}
+            </div>
+          </Box>
+          <Box className="flex-1 px-6 py-6">
+            <h2 className="text-key font-bold text-ink">만점과 배점 합계</h2>
+            <ul className="mt-2 divide-y divide-line-2">
+              {matched.map(({ p, total }) => (
+                <li key={p.id} className="flex items-center gap-4 py-4 text-body">
+                  <span className="flex-1 font-bold text-ink">{p.name}</span>
+                  <span className="text-ink-2">
+                    {p.maxScore}점 = {total}점
+                  </span>
+                  <span className="text-brand-green">{Icon.check('h-5 w-5')}</span>
+                </li>
+              ))}
+            </ul>
+          </Box>
+          {suggestions.map((c) => (
+            <Box key={c.key} className="flex items-center gap-4 px-6 py-4">
+              <Dot s="yellow" />
+              <span className="flex-1 text-body font-bold text-ink">{c.title}</span>
+              {memos[c.key] ? (
+                <span className="text-body text-brand-blue">메모함</span>
+              ) : (
+                <Button onClick={() => onMemo(c.key, '수업에서 다룸')}>수업에서 다뤄요</Button>
+              )}
+            </Box>
+          ))}
+        </div>
       </div>
     </Page>
   );

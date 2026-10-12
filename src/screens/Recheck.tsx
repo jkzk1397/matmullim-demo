@@ -1,9 +1,9 @@
-import { buildAlignment, diffRuns, runChecks } from '../domain/rules';
+import { buildAlignment, countBySeverity, diffRuns, runChecks } from '../domain/rules';
 import { extractCodes } from '../domain/standards';
-import type { Card as CardT } from '../domain/types';
-import { cellAt, refPath, type Run } from '../ui/helpers';
+import type { Card as CardT, Severity } from '../domain/types';
+import { SEVERITY, cellAt, refPath, type Run } from '../ui/helpers';
 import { Page, PageHead } from '../ui/layout';
-import { Button, Card, Icon, SeverityLabel } from '../ui/primitives';
+import { Button, Card, Dot, Icon, SeverityLabel } from '../ui/primitives';
 
 type Props = { prev?: Run; curr?: Run; onUpload: () => void; onResults: () => void };
 type Status = 'resolved' | 'remaining' | 'added';
@@ -62,6 +62,8 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
     ...d.remaining.map((c) => ({ s: 'remaining' as const, c })),
     ...d.added.map((c) => ({ s: 'added' as const, c })),
   ];
+  const before = countBySeverity(pc);
+  const after = countBySeverity(cc);
   const pct = pc.length ? Math.round((d.resolved.length / pc.length) * 100) : 0;
   const resolvedRed = d.resolved.filter((c) => c.severity === 'red').length;
 
@@ -79,27 +81,29 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
         }
       />
 
-      <Card className="flex shrink-0 items-center gap-8 px-6 py-4">
-        <div className="shrink-0">
+      <Card className="grid shrink-0 grid-cols-[360px_minmax(0,1fr)] items-center gap-8 px-6 py-4">
+        <div>
           <div className="text-title font-extrabold text-ink">
             {pc.length}건 중 <span className="text-brand-green">{d.resolved.length}건 해결</span>
           </div>
-        </div>
-        <div className="flex-1">
-          <div className="h-3 overflow-hidden rounded-full bg-line-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+          <div className="mt-2 h-3 overflow-hidden rounded-full bg-line-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
             <div className="h-full rounded-full bg-brand-green" style={{ width: `${pct}%` }} />
           </div>
-          <div className="mt-2 flex gap-6 text-body text-ink-2">
-            <span>
-              해결됨 <b className="font-bold text-ink">{d.resolved.length}</b>
-            </span>
-            <span>
-              남음 <b className="font-bold text-ink">{d.remaining.length}</b>
-            </span>
-            <span>
-              새로 생김 <b className="font-bold text-ink">{d.added.length}</b>
-            </span>
-          </div>
+        </div>
+        <div className="grid grid-cols-4 divide-x divide-line-2">
+          {(['red', 'orange', 'gray', 'yellow'] as Severity[]).map((s) => (
+            <div key={s} className="px-4">
+              <div className={`flex items-center gap-2 text-help font-bold ${SEVERITY[s].text}`}>
+                <Dot s={s} />
+                {SEVERITY[s].label}
+              </div>
+              <div className="mt-1 flex items-baseline gap-2">
+                <span className="text-key font-bold text-ink-3">{before[s]}</span>
+                <span className="text-ink-3">→</span>
+                <span className={`text-title font-extrabold ${after[s] < before[s] ? 'text-brand-green' : 'text-ink'}`}>{after[s]}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -119,16 +123,16 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
                 const ch = s === 'resolved' ? changeOf(c, prev, curr) : null;
                 return (
                   <tr key={c.key} className="border-b border-line-2 last:border-0">
-                    <td className="py-2 pl-6 pr-4 align-top">
+                    <td className="py-3 pl-6 pr-4 align-top">
                       <StatusBadge s={s} />
                     </td>
-                    <td className="px-4 py-2 align-top">
+                    <td className="px-4 py-3 align-top">
                       <SeverityLabel s={c.severity} className={s === 'resolved' ? 'opacity-70' : ''} />
                     </td>
-                    <td className={`px-4 py-2 align-top text-body ${s === 'resolved' ? 'text-ink-3' : 'font-bold text-ink'}`}>
+                    <td className={`px-4 py-3 align-top text-body ${s === 'resolved' ? 'text-ink-3' : 'font-bold text-ink'}`}>
                       <span className="line-clamp-2">{c.title}</span>
                     </td>
-                    <td className="px-6 py-2 align-top text-body">
+                    <td className="px-6 py-3 align-top text-body">
                       {ch ? (
                         <div className="flex items-baseline gap-x-2 whitespace-nowrap">
                           <span className="text-ink-2">

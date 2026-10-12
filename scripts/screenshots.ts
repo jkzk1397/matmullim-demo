@@ -41,8 +41,7 @@ async function shot(page: Page, name: string) {
 }
 
 async function loadSample(page: Page, label: string) {
-  await page.getByRole('button', { name: '샘플 문서 열기' }).click();
-  await page.getByRole('menuitem', { name: label }).click();
+  await page.getByRole('row', { name: new RegExp(label) }).getByRole('button').click();
   await page.getByRole('heading', { name: '읽어 낸 값을 확인해 주세요' }).waitFor();
 }
 

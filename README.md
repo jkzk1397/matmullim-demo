@@ -26,7 +26,7 @@ GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-s
 
 | # | 화면 | 파일 |
 |---|---|---|
-| 1 | 올리기: 큰 업로드 칸 두 개, “샘플 문서 열기”(오류판·수정판·정상판) | `screenshots/01-upload.png` |
+| 1 | 올리기: 업로드 칸 두 개와 샘플 문서 목록(각 문서의 실제 점검 결과 요약과 열기 버튼) | `screenshots/01-upload.png` |
 | 2 | 확인: 왼쪽 원문 표, 오른쪽 추출값. 선택한 칸만 점선. 만점·배점·성취기준 코드는 굵게, 반영비율·채점기준은 “전체 보기”로. “2쌍 자동 연결” | `screenshots/02-confirm.png` |
 | 3 | 결과(오류판): 확인된 오류 개수를 크게, 왼쪽은 색별 목록, 오른쪽은 두 문서를 나란히 놓고 다른 값만 빨강. 고치는 법 한 문장 | `screenshots/03-results.png` |
 | 4 | 결과(정상판): 큰 초록 체크와 “확인된 오류 0건”, 통과한 점검 5줄 | `screenshots/04-results-normal.png` |

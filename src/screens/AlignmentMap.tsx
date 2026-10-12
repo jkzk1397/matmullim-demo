@@ -68,6 +68,20 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
                 <Row key={r.code} row={r} input={input} onToggle={onToggle} />
               ))}
             </tbody>
+            <tfoot>
+              <tr className="border-t border-line bg-canvas">
+                <td className="py-4 pl-6 pr-4 text-body font-bold text-ink">평가별 성취기준</td>
+                {input.plan.map((a) => {
+                  const k = rows.filter((r) => r.cells.find((c) => c.assessmentId === a.id)?.via).length;
+                  return (
+                    <td key={a.id} className="border-l border-line-2 py-4 text-center text-key font-extrabold text-brand-navy">
+                      {k}
+                      <span className="ml-0.5 text-body font-bold text-ink-2">개</span>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tfoot>
           </table>
         </Card>
       </div>
