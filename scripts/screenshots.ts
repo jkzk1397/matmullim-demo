@@ -41,7 +41,7 @@ async function shot(page: Page, name: string) {
 
 async function loadSample(page: Page, label: string) {
   await page.getByRole('button', { name: new RegExp(`^${label}`) }).click();
-  await page.getByRole('heading', { name: '추출한 값을 원문과 대조해 확인해 주세요' }).waitFor();
+  await page.getByRole('heading', { name: '읽어 낸 값을 원문과 맞춰 보고 확인해 주세요' }).waitFor();
 }
 
 async function confirmAndCheck(page: Page, waitMs = 0) {
@@ -79,12 +79,13 @@ async function main() {
     await shot(page, '04-alignment');
 
     await page.getByRole('button', { name: '결과로 돌아가기' }).click();
-    await page.getByRole('button', { name: '고친 문서 다시 올리기' }).click();
+    await page.getByRole('button', { name: /만점은 30점인데/ }).click();
+    await page.getByRole('button', { name: '고치기', exact: true }).click();
     await shot(page, '05a-reupload');
     await loadSample(page, '수정판');
     await confirmAndCheck(page, 1200);
     await page.getByRole('button', { name: /이전 점검 대비/ }).click();
-    await page.getByRole('heading', { name: /이전 점검과 비교해/ }).waitFor();
+    await page.getByRole('heading', { name: /해결됐어요|해결된 지적이 없어요/ }).waitFor();
     await shot(page, '05-recheck');
     await page.close();
 

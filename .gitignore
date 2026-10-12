@@ -150,3 +150,8 @@ vite.config.ts.timestamp-*
 
 # build
 dist/
+
+# impeccable 작업 산출물 (로컬)
+.impeccable/live/
+.impeccable/questions/
+.impeccable/review/

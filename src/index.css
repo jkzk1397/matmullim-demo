@@ -5,11 +5,35 @@
 
 html, body, #root { height: 100%; }
 body {
-  @apply bg-white text-ink font-sans text-body antialiased;
+  @apply bg-desk text-ink font-sans text-body antialiased;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
 }
+::selection { background: #fff08a; color: #1b1d21; }
+:focus-visible { outline: 2px solid #2747c0; outline-offset: 2px; }
+input, textarea, select { caret-color: #2747c0; }
+* { scrollbar-width: thin; scrollbar-color: #c3c7ce transparent; }
+
+/* 형광펜: 글자 줄 위에만 칠한다 */
+.mark {
+  background-image: linear-gradient(transparent 12%, var(--mark) 12%, var(--mark) 92%, transparent 92%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0 3px;
+  margin: 0 -1px;
+  border-radius: 3px;
+}
+.mark-red { --mark: #ffc9c3; }
+.mark-orange { --mark: #ffd9a6; }
+.mark-yellow { --mark: #fff08a; }
+/* 회색은 형광펜이 아니라 연필 점선 밑줄 */
+.mark-gray {
+  --mark: transparent;
+  text-decoration: underline dotted #6b7079 2px;
+  text-underline-offset: 4px;
+}
+
+/* 정렬 맵: 연결을 찾지 못한 행 (요청된 의미 표시) */
 .stripes {
-  background-image: repeating-linear-gradient(135deg, #f1f2f4 0 6px, #fafafb 6px 12px);
+  background-image: repeating-linear-gradient(135deg, #eef0f2 0 6px, #f8f9fa 6px 12px);
 }
-.scroll-thin { scrollbar-width: thin; scrollbar-color: #d4d7dd transparent; }

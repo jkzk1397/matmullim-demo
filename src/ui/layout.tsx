@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { CellRef, ParsedTable } from '../domain/types';
-import { sameRef } from './helpers';
+import { refKey, sameRef } from './helpers';
 import { Icon } from './primitives';
 
 export type Step = 'upload' | 'confirm' | 'results' | 'map' | 'recheck';
@@ -12,46 +12,48 @@ export const STEPS: { id: Step; label: string }[] = [
   { id: 'recheck', label: '재점검' },
 ];
 
+/** 흑연색 상단바. 지금 단계는 형광펜 밑줄로 표시 */
 export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<Step, boolean>; onStep: (s: Step) => void }) {
   const idx = STEPS.findIndex((s) => s.id === step);
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-white px-8">
-      <div className="flex items-baseline gap-3">
-        <span className="text-[20px] font-bold tracking-tight text-ink">「맞물림」</span>
-        <span className="text-meta text-ink-3">교·수·평 정렬 사전 점검</span>
+    <header className="flex h-14 shrink-0 items-center justify-between bg-graphite px-8 text-graphite-ink">
+      <div className="flex w-[260px] items-baseline gap-3">
+        <span className="text-[19px] font-bold tracking-[-0.02em] text-white">「맞물림」</span>
+        <span className="text-meta">교·수·평 사전 점검</span>
       </div>
-      <nav className="flex items-center gap-1" aria-label="단계">
+      <nav className="flex h-full items-stretch gap-1" aria-label="단계">
         {STEPS.map((s, i) => {
           const active = s.id === step;
           const done = i < idx;
           return (
-            <div key={s.id} className="flex items-center">
-              {i > 0 && <span className={`mx-1 h-px w-6 ${i <= idx ? 'bg-accent' : 'bg-line'}`} />}
-              <button
-                type="button"
-                disabled={!enabled[s.id]}
-                onClick={() => onStep(s.id)}
-                aria-current={active ? 'step' : undefined}
-                className={`flex h-9 items-center gap-2 rounded-full pl-1.5 pr-3.5 text-[14px] transition-colors disabled:cursor-default ${
-                  active ? 'bg-accent text-white' : done ? 'text-accent hover:bg-accent-50' : 'text-ink-3 enabled:hover:bg-canvas'
+            <button
+              key={s.id}
+              type="button"
+              disabled={!enabled[s.id]}
+              onClick={() => onStep(s.id)}
+              aria-current={active ? 'step' : undefined}
+              className={`group flex items-center gap-2 px-3.5 text-[14px] transition-colors duration-150 disabled:cursor-default disabled:opacity-50 ${
+                active ? 'text-white' : 'enabled:hover:text-white'
+              }`}
+            >
+              <span
+                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
+                  active ? 'bg-sev-yellow-mark text-graphite' : done ? 'bg-graphite-2 text-white' : 'bg-graphite-2 text-graphite-ink'
                 }`}
               >
-                <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-semibold ${
-                    active ? 'bg-white text-accent' : done ? 'bg-accent-100 text-accent' : 'bg-canvas text-ink-3'
-                  }`}
-                >
-                  {done ? Icon.check('h-3.5 w-3.5') : i + 1}
-                </span>
-                <span className={active ? 'font-semibold' : ''}>{s.label}</span>
-              </button>
-            </div>
+                {done ? Icon.check('h-3 w-3') : i + 1}
+              </span>
+              <span className={`relative ${active ? 'font-semibold' : ''}`}>
+                {s.label}
+                {active && <span className="absolute -bottom-1 left-[-3px] right-[-3px] -z-0 h-[3px] -skew-x-12 rounded-sm bg-sev-yellow-mark" aria-hidden />}
+              </span>
+            </button>
           );
         })}
       </nav>
-      <div className="flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-meta text-ink-2">
-        {Icon.lock('h-4 w-4 text-accent')}
-        모든 처리는 브라우저 안에서 · 서버로 보내지 않음
+      <div className="flex w-[260px] items-center justify-end gap-2 text-meta">
+        {Icon.lock('h-4 w-4 text-white')}
+        브라우저 안에서만 처리 · 서버 전송 없음
       </div>
     </header>
   );
@@ -59,33 +61,36 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
 
 export function PageHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex shrink-0 items-end justify-between gap-8 px-8 pb-5 pt-7">
+    <div className="flex shrink-0 items-end justify-between gap-8 px-8 pb-4 pt-5">
       <div className="min-w-0">
-        <h1 className="text-h1 font-bold tracking-tight text-ink">{title}</h1>
-        {sub && <p className="mt-1.5 text-body text-ink-3">{sub}</p>}
+        <h1 className="text-h1 font-bold tracking-[-0.025em] text-ink">{title}</h1>
+        {sub && <p className="mt-1 text-body text-ink-3">{sub}</p>}
       </div>
       {right && <div className="flex shrink-0 items-center gap-2">{right}</div>}
     </div>
   );
 }
 
-/** 원문 표 렌더링. highlight 칸은 남색 테두리, marks 칸은 옅게 표시 */
+/** 흰 종이 한 장 */
+export function Paper({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <section className={`rounded-xl bg-paper shadow-paper ${className}`}>{children}</section>;
+}
+
+/** 원문 표 렌더링 (확인 화면). 인식한 칸은 볼펜 점선, 지금 칸은 볼펜 실선 */
 export function DocTable({
   table,
   index,
   doc,
   highlight,
-  marks = [],
+  recognized,
   onCell,
-  compact,
 }: {
   table: ParsedTable;
   index: number;
   doc: 'plan' | 'rubric';
   highlight?: CellRef | null;
-  marks?: CellRef[];
+  recognized?: Set<string>;
   onCell?: (ref: CellRef) => void;
-  compact?: boolean;
 }) {
   const covered = new Set<string>();
   const spanAt = new Map<string, { rowSpan: number; colSpan: number }>();
@@ -96,10 +101,7 @@ export function DocTable({
   }
   return (
     <div>
-      <div className="mb-2 flex items-baseline gap-2">
-        <span className="rounded bg-canvas px-1.5 py-0.5 text-[12px] font-semibold text-ink-3">표{index + 1}</span>
-        <span className="text-[14px] font-semibold text-ink-2">{table.title}</span>
-      </div>
+      <h3 className="mb-2 text-[14px] font-semibold text-ink-2">{table.title}</h3>
       <table className="w-full border-collapse text-[13px] leading-5">
         <tbody>
           {table.rows.map((row, r) => (
@@ -109,20 +111,20 @@ export function DocTable({
                 const sp = spanAt.get(`${r},${c}`);
                 const ref = { doc, table: index, row: r, col: c };
                 const hi = sameRef(highlight, ref);
-                const marked = marks.some((m) => sameRef(m, ref));
+                const rec = recognized?.has(refKey(ref));
                 const Tag = r === 0 ? 'th' : 'td';
                 return (
                   <Tag
                     key={c}
-                    id={`cell-${doc}-${index}-${r}-${c}`}
+                    id={`cell-${refKey(ref)}`}
                     rowSpan={sp?.rowSpan}
                     colSpan={sp?.colSpan}
-                    onClick={onCell ? () => onCell(ref) : undefined}
-                    className={`border border-line ${compact ? 'px-2 py-1' : 'px-2.5 py-1.5'} text-left align-top ${
-                      r === 0 ? 'bg-canvas font-semibold text-ink-2' : 'text-ink'
-                    } ${hi ? 'relative bg-accent-50 outline outline-2 -outline-offset-1 outline-accent' : marked ? 'bg-accent-50/60' : ''} ${
-                      onCell ? 'cursor-pointer' : ''
-                    } ${/^\[[^\]]+\]$/.test(text.trim()) ? 'whitespace-nowrap' : ''}`}
+                    onClick={rec && onCell ? () => onCell(ref) : undefined}
+                    className={`relative border border-line px-2.5 py-1.5 text-left align-top ${r === 0 ? 'bg-desk-2 font-semibold text-ink-2' : 'text-ink'} ${
+                      /^\[[^\]]+\]$/.test(text.trim()) ? 'whitespace-nowrap' : ''
+                    } ${rec ? 'cursor-pointer hover:bg-pen-50' : ''} ${
+                      hi ? 'bg-pen-50 outline outline-2 -outline-offset-2 outline-pen' : rec ? 'outline-dashed outline-1 -outline-offset-[3px] outline-pen/40' : ''
+                    }`}
                   >
                     {text}
                   </Tag>

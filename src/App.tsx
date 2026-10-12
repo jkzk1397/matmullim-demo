@@ -4,7 +4,7 @@ import { parseHwpx } from './domain/hwpx';
 import { runChecks } from './domain/rules';
 import type { Action, Card, CellRef, DocKind, Extraction, ParsedDocument } from './domain/types';
 import { SAMPLES, type SampleId } from './fixtures';
-import type { Run } from './ui/helpers';
+import { editedRefs, type Run } from './ui/helpers';
 import { Header, type Step } from './ui/layout';
 import AlignmentMap from './screens/AlignmentMap';
 import Confirm from './screens/Confirm';
@@ -32,6 +32,8 @@ export default function App() {
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string>();
   const [ex, setEx] = useState<Extraction | null>(null);
+  const [original, setOriginal] = useState<Extraction | null>(null);
+  const [fixHint, setFixHint] = useState<string | null>(null);
   const [pairs, setPairs] = useState<Record<string, string | null>>({});
   const [confirmStart, setConfirmStart] = useState(Date.now());
   const [focus, setFocus] = useState<CellRef | null>(null);
@@ -46,6 +48,7 @@ export default function App() {
   const prepare = (plan: ParsedDocument, rubric: ParsedDocument) => {
     const e = extract(plan, rubric);
     setEx(e);
+    setOriginal(e);
     setPairs(suggestPairs(e.plan, e.rubric));
     setFocus(e.plan[0]?.source ?? null);
     setConfirmStart(Date.now());
@@ -77,7 +80,7 @@ export default function App() {
   };
 
   const submit = () => {
-    if (!ex || !slots.plan || !slots.rubric) return;
+    if (!ex || !original || !slots.plan || !slots.rubric) return;
     const r: Run = {
       id: runs.length + 1,
       label: slots.label ?? '업로드한 문서',
@@ -85,15 +88,26 @@ export default function App() {
       docs: { plan: slots.plan, rubric: slots.rubric },
       input: { plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, pairs, links: [] },
       confirmMs: Date.now() - confirmStart,
+      editedRefs: editedRefs(original, ex),
     };
     setRuns((rs) => [...rs, r]);
     setMemos({});
     setLastLinked(null);
+    setFixHint(null);
     setStep('results');
   };
 
   const onAction = (a: Action, card: Card) => {
     if (a === 'link' && card.rule === 'J6') return setStep('map');
+    if (a === 'fix') {
+      // 고치기 = 문서를 고쳐 다시 올리기. 앱 안에서 값을 바꿔 카드를 지우지 않는다.
+      setFixHint(card.fix ?? card.title);
+      return reupload();
+    }
+    reviewValue(card);
+  };
+
+  const reviewValue = (card: Card) => {
     setFocus(card.locations[0] ?? null);
     setConfirmStart(Date.now());
     setStep('confirm');
@@ -108,11 +122,11 @@ export default function App() {
     setLastLinked(exists ? null : { code, name: run.input.plan.find((p) => p.id === assessmentId)?.name ?? '' });
   };
 
-  const reupload = () => {
+  function reupload() {
     setSlots({});
     setError(undefined);
     setStep('upload');
-  };
+  }
 
   const enabled: Record<Step, boolean> = {
     upload: true,
@@ -133,17 +147,18 @@ export default function App() {
             error={error}
             loading={loading}
             lastRun={run}
+            fixHint={fixHint}
             onFile={onFile}
             onSample={onSample}
             onNext={() => slots.plan && slots.rubric && prepare(slots.plan, slots.rubric)}
           />
         )}
-        {step === 'confirm' && ex && slots.plan && slots.rubric && (
+        {step === 'confirm' && ex && original && slots.plan && slots.rubric && (
           <Confirm
             docs={{ plan: slots.plan, rubric: slots.rubric }}
             ex={ex}
+            original={original}
             pairs={pairs}
-            startedAt={confirmStart}
             focus={focus}
             onFocus={setFocus}
             onChange={setEx}
@@ -158,8 +173,16 @@ export default function App() {
             prevRun={prevRun}
             result={result}
             memos={memos}
-            onMemo={(k, t) => setMemos((m) => ({ ...m, [k]: t }))}
+            onMemo={(k, t) =>
+              setMemos((m) => {
+                const next = { ...m };
+                if (t === null) delete next[k];
+                else next[k] = t;
+                return next;
+              })
+            }
             onAction={onAction}
+            onReviewValue={reviewValue}
             onRecheck={reupload}
             onCompare={() => setStep('recheck')}
             onMap={() => setStep('map')}

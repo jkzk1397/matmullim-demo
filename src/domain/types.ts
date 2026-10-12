@@ -107,6 +107,10 @@ export type Card = {
   actions: Action[];
   /** 시도층 규칙 카드에 붙는 안내 */
   note?: string;
+  /** 고치는 방법 (결정적 문장) */
+  fix?: string;
+  /** locations 중 형광펜으로 칠할 칸. 없으면 locations 전체 */
+  emphasis?: CellRef[];
   /** 두 문서 나란히 비교 */
   compare?: CompareRow[];
 };

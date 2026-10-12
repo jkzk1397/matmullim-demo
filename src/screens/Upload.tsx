@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { countBySeverity, runChecks } from '../domain/rules';
-import type { DocKind, ParsedDocument } from '../domain/types';
+import type { DocKind, ParsedDocument, Severity } from '../domain/types';
 import type { SampleId } from '../fixtures';
 import { SAMPLES } from '../fixtures';
-import { DOC_NAME, SEVERITY, formatTime, type Run } from '../ui/helpers';
-import { PageHead } from '../ui/layout';
-import { Button, Icon } from '../ui/primitives';
+import { SEVERITY, formatTime, type Run } from '../ui/helpers';
+import { PageHead, Paper } from '../ui/layout';
+import { Button, Icon, Swatch } from '../ui/primitives';
 
 type Props = {
   plan?: ParsedDocument;
@@ -13,6 +13,7 @@ type Props = {
   error?: string;
   loading?: string | null;
   lastRun?: Run;
+  fixHint?: string | null;
   onFile: (kind: DocKind, file: File) => void;
   onSample: (id: SampleId) => void;
   onNext: () => void;
@@ -20,35 +21,39 @@ type Props = {
 
 const SAMPLE_ORDER: SampleId[] = ['error', 'fixed', 'normal'];
 
-export default function Upload({ plan, rubric, error, loading, lastRun, onFile, onSample, onNext }: Props) {
+export default function Upload({ plan, rubric, error, loading, lastRun, fixHint, onFile, onSample, onNext }: Props) {
   const ready = !!plan && !!rubric;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHead
-        title={lastRun ? '고친 문서를 다시 올려 주세요' : '평가계획서와 채점기준표를 올려 주세요'}
-        sub="2022 개정 교육과정 · 중학교 정보 · HWPX 파일. 두 문서를 나란히 읽고 서로 맞물리지 않는 곳을 찾아요."
+        title={lastRun ? '고친 문서를 올리면 지난 점검과 비교해 드려요' : '평가계획서와 채점기준표를 나란히 놓고, 맞지 않는 칸을 찾아요'}
+        sub="2022 개정 교육과정 중학교 정보 · 한글(HWPX) 문서 두 개 · 파일은 이 브라우저 밖으로 나가지 않아요"
       />
-      <div className="flex min-h-0 flex-1 flex-col gap-6 px-8 pb-8">
-        {lastRun && <LastRunBanner run={lastRun} />}
-        <div className="grid grid-cols-2 gap-6">
-          <DropSlot kind="plan" tall={!lastRun} doc={plan} onFile={onFile} hint="평가 개요(평가명·반영비율·만점)와 평가요소·배점·성취기준 표" />
-          <DropSlot kind="rubric" tall={!lastRun} doc={rubric} onFile={onFile} hint="수행평가별 평가요소·성취기준·채점기준·배점 표" />
+      <div className="flex min-h-0 flex-1 flex-col gap-5 px-8 pb-8">
+        {lastRun && <LastRunBanner run={lastRun} hint={fixHint} />}
+
+        <div className="flex items-stretch gap-3">
+          <DropSlot kind="plan" tall={!lastRun} doc={plan} onFile={onFile} hint="평가 개요(평가명·반영비율·만점) 표와 평가요소·배점·성취기준 표가 있는 문서" />
+          <div className="flex w-10 shrink-0 items-center justify-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-paper text-ink-2 shadow-paper">{Icon.swap('h-5 w-5')}</span>
+          </div>
+          <DropSlot kind="rubric" tall={!lastRun} doc={rubric} onFile={onFile} hint="수행평가별 평가요소·성취기준·채점기준·배점 표가 있는 문서" />
         </div>
         {error && <p className="rounded-lg bg-sev-red-bg px-4 py-3 text-body text-sev-red-ink">{error}</p>}
 
         <div className="flex items-center justify-between">
           <p className="text-meta text-ink-3">
-            {ready ? '두 문서를 읽었어요. 다음 단계에서 추출한 값을 원문과 대조해 확인해요.' : '두 문서를 모두 올리면 다음 단계로 넘어가요.'}
+            HWP 파일이라면 한글에서 <b className="font-semibold text-ink-2">파일 › 다른 이름으로 저장 › 한글 문서(*.hwpx)</b>로 바꿔 주세요.
           </p>
           <Button variant="primary" size="lg" disabled={!ready} onClick={onNext}>
-            추출 결과 확인하기 {Icon.arrow()}
+            읽어 낸 값 확인하기 {Icon.arrow()}
           </Button>
         </div>
 
-        <section className="mt-2 border-t border-line pt-6">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-h2 font-semibold">예시 불러오기</h2>
-            <span className="text-meta text-ink-3">팀이 직접 쓴 중학교 2학년 정보 평가계획 · public/samples/*.hwpx를 실제로 파싱해요</span>
+        <section className="mt-1">
+          <div className="mb-3 flex items-baseline gap-3">
+            <h2 className="text-h2 font-bold text-ink">예시 문서로 해 보기</h2>
+            <span className="text-meta text-ink-3">팀이 쓴 가상의 중학교 2학년 정보 평가계획 · 실제 HWPX 파일을 읽어요</span>
           </div>
           <div className="grid grid-cols-3 gap-4">
             {SAMPLE_ORDER.map((id) => (
@@ -57,31 +62,28 @@ export default function Upload({ plan, rubric, error, loading, lastRun, onFile, 
                 type="button"
                 onClick={() => onSample(id)}
                 disabled={!!loading}
-                className="group flex items-center justify-between rounded-xl border border-line bg-white px-5 py-4 text-left transition-colors hover:border-accent hover:bg-accent-50/50 disabled:opacity-60"
+                className="group flex items-center justify-between rounded-xl bg-paper px-5 py-4 text-left shadow-paper transition-shadow duration-150 hover:shadow-lift disabled:opacity-60"
               >
-                <div>
-                  <div className="text-body font-semibold text-ink">{SAMPLES[id].label}</div>
-                  <div className="mt-0.5 text-meta text-ink-3">{SAMPLES[id].desc}</div>
-                  <div className="mt-2 text-[12px] text-ink-4">
-                    {SAMPLES[id].plan.fileName} · {SAMPLES[id].rubric.fileName}
-                  </div>
-                </div>
-                <span className="text-ink-4 group-hover:text-accent">{loading === id ? '읽는 중…' : Icon.arrow('h-5 w-5')}</span>
+                <span>
+                  <span className="block text-body font-semibold text-ink">{SAMPLES[id].label}</span>
+                  <span className="mt-0.5 block text-meta text-ink-3">{SAMPLES[id].desc}</span>
+                </span>
+                <span className="text-ink-3 transition-colors duration-150 group-hover:text-ink">{loading === id ? '읽는 중…' : Icon.arrow('h-5 w-5')}</span>
               </button>
             ))}
           </div>
         </section>
 
-        <section className="mt-auto grid grid-cols-4 gap-4 rounded-xl bg-canvas px-6 py-5">
+        <section className="mt-auto grid grid-cols-4 gap-6 border-t border-line pt-5">
           {[
-            ['문서 간 불일치', '같은 평가의 만점과 채점기준표 배점 합계, 반영비율 합계'],
-            ['성취기준 코드', '2022 개정 중학교 정보 성취기준 25개 DB와 대조'],
-            ['채점기준 표현', '경기도교육청 2026 지침의 지양 표현(수행률·분량·감점 등)'],
-            ['정렬 맵', '계획의 성취기준이 어떤 평가와 연결되는지'],
+            ['두 문서 사이', '같은 평가의 만점과 채점기준표 배점 합계, 반영비율 합계'],
+            ['성취기준 코드', '2022 개정 중학교 정보 성취기준 25개와 대조'],
+            ['채점기준 표현', '교육청 지침이 지양하는 표현(수행률·분량·감점 등)'],
+            ['평가와의 연결', '계획의 성취기준이 어느 평가와 이어지는지'],
           ].map(([t, d]) => (
             <div key={t}>
-              <div className="text-[14px] font-semibold text-ink">{t}</div>
-              <div className="mt-1 text-meta text-ink-3">{d}</div>
+              <h3 className="text-[14px] font-semibold text-ink">{t}</h3>
+              <p className="mt-0.5 text-meta text-ink-3">{d}</p>
             </div>
           ))}
         </section>
@@ -95,6 +97,9 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
   const [over, setOver] = useState(false);
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && input.current?.click()}
       onDragOver={(e) => {
         e.preventDefault();
         setOver(true);
@@ -107,9 +112,9 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
         if (f) onFile(kind, f);
       }}
       onClick={() => input.current?.click()}
-      className={`flex ${tall ? 'h-[256px]' : 'h-[188px]'} cursor-pointer flex-col justify-between rounded-xl border-2 border-dashed px-6 py-5 transition-colors ${
-        over ? 'border-accent bg-accent-50' : doc ? 'border-accent-100 bg-accent-50/40' : 'border-line hover:border-ink-4'
-      }`}
+      className={`flex flex-1 cursor-pointer flex-col justify-between rounded-xl bg-paper px-7 py-6 shadow-paper transition-shadow duration-150 hover:shadow-lift ${
+        tall ? 'min-h-[300px]' : 'min-h-[176px]'
+      } ${over ? 'ring-2 ring-pen' : ''}`}
     >
       <input
         ref={input}
@@ -122,52 +127,47 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
           e.target.value = '';
         }}
       />
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-h2 font-semibold">{kind === 'plan' ? '평가계획서' : '수행평가 채점기준표'}</div>
-          <div className="mt-1 text-meta text-ink-3">{hint}</div>
-        </div>
-        <span className={`flex h-10 w-10 items-center justify-center rounded-full ${doc ? 'bg-accent text-white' : 'bg-canvas text-ink-3'}`}>
-          {doc ? Icon.check('h-5 w-5') : Icon.upload()}
-        </span>
+      <div>
+        <h2 className="text-h2 font-bold text-ink">{kind === 'plan' ? '평가계획서' : '수행평가 채점기준표'}</h2>
+        <p className="mt-1 text-meta text-ink-3">{hint}</p>
       </div>
       {doc ? (
-        <div className="flex items-center gap-3 rounded-lg bg-white px-4 py-3">
-          {Icon.file('h-5 w-5 text-accent')}
+        <div className="flex items-center gap-3 rounded-lg bg-pen-50 px-4 py-3">
+          <span className="text-pen">{Icon.check('h-5 w-5')}</span>
           <div className="min-w-0">
-            <div className="truncate text-body font-semibold">{doc.fileName}</div>
-            <div className="text-meta text-ink-3">
-              표 {doc.tables.length}개 · {doc.tables.reduce((n, t) => n + t.rows.length - 1, 0)}줄 읽음 · {DOC_NAME[kind]}
-            </div>
+            <div className="truncate text-body font-semibold text-ink">{doc.fileName}</div>
+            <div className="text-meta text-ink-2">표 {doc.tables.length}개, {doc.tables.reduce((n, t) => n + t.rows.length - 1, 0)}줄을 읽었어요</div>
           </div>
         </div>
       ) : (
-        <div className="text-body text-ink-3">
-          HWPX 파일을 끌어 놓거나 <span className="font-semibold text-accent">눌러서 고르기</span>
+        <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-line px-4 py-3.5 text-body text-ink-3">
+          {Icon.upload()}
+          <span>
+            HWPX 파일을 끌어 놓거나 <span className="font-semibold text-ink">눌러서 고르기</span>
+          </span>
         </div>
       )}
     </div>
   );
 }
 
-function LastRunBanner({ run }: { run: Run }) {
+function LastRunBanner({ run, hint }: { run: Run; hint?: string | null }) {
   const n = countBySeverity(runChecks(run.input).cards);
   return (
-    <div className="flex items-center justify-between rounded-xl border border-accent-100 bg-accent-50/60 px-5 py-3.5">
-      <div className="text-body">
-        <span className="font-semibold">이전 점검</span>
-        <span className="mx-2 text-ink-4">|</span>
+    <Paper className="flex items-center gap-5 px-5 py-3.5">
+      <span className="text-meta font-semibold text-ink-3">지난 점검</span>
+      <span className="text-[15px] font-semibold text-ink">
         {run.label} · {formatTime(run.at)}
-        <span className="ml-4 inline-flex gap-3 text-meta text-ink-2">
-          {(['red', 'orange', 'gray', 'yellow'] as const).map((s) => (
-            <span key={s} className="inline-flex items-center gap-1.5">
-              <span className={`h-2 w-2 rounded-full ${SEVERITY[s].dot}`} />
-              {SEVERITY[s].label} {n[s]}
-            </span>
-          ))}
-        </span>
-      </div>
-      <span className="text-meta text-ink-3">고친 문서를 올리면 무엇이 해결됐는지 비교해 보여 드려요</span>
-    </div>
+      </span>
+      <span className="flex gap-4 text-meta text-ink-2">
+        {(['red', 'orange', 'gray', 'yellow'] as Severity[]).map((s) => (
+          <span key={s} className="inline-flex items-center gap-1.5">
+            <Swatch s={s} />
+            {SEVERITY[s].label} <b className="font-semibold text-ink">{n[s]}</b>
+          </span>
+        ))}
+      </span>
+      {hint && <span className="ml-auto truncate text-meta text-ink-2">고칠 곳: {hint}</span>}
+    </Paper>
   );
 }

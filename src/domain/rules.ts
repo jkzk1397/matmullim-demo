@@ -72,6 +72,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         quote: weighted.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' + ') + ` = ${total}%`,
         basis: { source: '맞물림 규칙 J12 (국가층 · 사실 확인)', text: '평가계획의 학기 반영비율은 모두 더해 100%여야 합니다.' },
         actions: ['fix', 'memo'],
+        fix: `반영비율을 더해 100%가 되게 고치세요. 지금은 ${total - 100 > 0 ? `${total - 100}%p 많아요` : `${100 - total}%p 모자라요`}.`,
       });
     } else passed.push({ rule: 'J12-weight', label: '반영비율 합계', detail: `${weighted.length}개 평가 합계 100%` });
   }
@@ -91,6 +92,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         quote: `채점기준표 평가명: ${r.name}`,
         basis: { source: '맞물림 규칙 J12 (연결 확인)', text: '이름이 달라 자동으로 짝짓지 못했어요. 확인 화면에서 같은 평가를 지정하면 배점을 비교합니다.' },
         actions: ['link', 'memo'],
+        fix: '확인 화면의 ‘같은 평가 짝짓기’에서 평가계획의 평가를 골라 주세요.',
       });
       continue;
     }
@@ -99,13 +101,22 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     const compare = compareRows(p, r);
 
     if (p.maxScore !== undefined && hasPoints && rubricTotal !== p.maxScore) {
+      const diffEls = p.elements.flatMap((pe) => {
+        const re = r.elements.find((x) => normalizeName(x.name) === normalizeName(pe.name));
+        return re && re.points !== pe.points ? [{ pe, re }] : [];
+      });
+      const pts = (els: typeof p.elements) => els.map((e) => e.refs?.points).filter((x): x is CellRef => !!x);
       cards.push({
         key: `J12-max:${normalizeName(p.name)}`,
         rule: 'J12',
         severity: 'red',
         strength: '사실',
         title: `‘${p.name}’ 만점은 ${p.maxScore}점인데 채점기준표 배점 합계는 ${rubricTotal}점이에요`,
-        locations: [p.refs?.maxScore ?? p.source, ...r.elements.map((e) => e.refs?.points).filter((x): x is CellRef => !!x)],
+        locations: [p.refs?.maxScore ?? p.source, ...pts(p.elements), ...pts(r.elements)],
+        emphasis: [p.refs?.maxScore ?? p.source, ...diffEls.flatMap(({ pe, re }) => [pe.refs?.points, re.refs?.points]).filter((x): x is CellRef => !!x)],
+        fix:
+          `채점기준표 배점을 더해 ${p.maxScore}점이 되게 하거나, 평가계획 만점을 ${rubricTotal}점으로 고치세요.` +
+          diffEls.map(({ pe, re }) => ` ‘${pe.name}’ 배점이 평가계획 ${fmt(pe.points, '점')}, 채점기준표 ${fmt(re.points, '점')}로 달라요.`).join(''),
         quote: `평가계획서 만점 ${p.maxScore}점 · 채점기준표 배점 ${r.elements.map((e) => fmt(e.points, '')).join(' + ')} = ${rubricTotal}점`,
         basis: {
           source: '맞물림 규칙 J12 (국가층 · 사실 확인)',
@@ -131,6 +142,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         quote: `평가계획: ${p.elements.map((e) => e.name).join(', ')}\n채점기준표: ${r.elements.map((e) => e.name).join(', ')}`,
         basis: { source: '맞물림 규칙 J12 (연결 확인)', text: `${finer} 오류로 단정하지 않고 두 문서가 같은 내용을 가리키는지 확인을 요청합니다.` },
         actions: ['memo', 'fix'],
+        fix: '같은 내용을 나눈 것이라면 이유를 메모하고 넘기세요. 다른 내용이라면 두 문서의 평가요소를 맞추세요.',
         compare,
       });
     }
@@ -151,6 +163,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         quote: [onlyP.length ? `평가계획에만: ${onlyP.join(' ')}` : '', onlyR.length ? `채점기준표에만: ${onlyR.join(' ')}` : ''].filter(Boolean).join('\n'),
         basis: { source: '맞물림 규칙 J12 (연결 확인)', text: '같은 평가라면 두 문서의 성취기준 코드가 대응해야 합니다. 한쪽에서 일부만 적었을 수 있어 확인을 요청합니다.' },
         actions: ['fix', 'memo'],
+        fix: `두 문서에 같은 성취기준 코드를 적으세요.${onlyP.length ? ` 채점기준표에 ${onlyP.join(' ')}이(가) 없어요.` : ''}${onlyR.length ? ` 평가계획에 ${onlyR.join(' ')}이(가) 없어요.` : ''}`,
         compare,
       });
     }
@@ -171,6 +184,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       quote: `평가계획서 평가명: ${p.name} (${p.method ?? '수행'})`,
       basis: { source: '맞물림 규칙 J12 (연결 확인)', text: '수행평가는 채점기준표와 짝을 이뤄야 배점을 비교할 수 있습니다. 확인 화면에서 짝을 지정하세요.' },
       actions: ['link', 'memo'],
+      fix: '채점기준표에 이 평가가 있다면 확인 화면에서 짝을 지정하고, 없다면 채점기준표를 함께 올려 주세요.',
     });
   }
   if (okPairs) passed.push({ rule: 'J12', label: '만점 = 배점 합계', detail: `짝지은 ${okPairs}개 평가 일치` });
@@ -231,6 +245,7 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
             : `중학교 정보 성취기준 ${STANDARDS_DB.standards.length}개 중 같은 영역 번호가 없습니다.`,
         },
         actions: ['fix', 'memo'],
+        fix: siblings.length ? `같은 영역 코드(${siblings[0]}~${siblings[siblings.length - 1]}) 중 이 평가가 다루는 코드로 고치세요.` : '2022 개정 중학교 정보 성취기준 코드로 고치세요.',
       });
     } else {
       cards.push({
@@ -243,6 +258,7 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         quote: `문서에 적힌 코드: ${code}`,
         basis: { source: DB_SOURCE, text: '다른 교과나 다른 교육과정의 코드는 이번 데모의 DB에 없어 실재 여부를 판정하지 않습니다.' },
         actions: ['memo'],
+        fix: '의도한 다른 교과 코드라면 메모하고 넘기세요.',
       });
     }
   }
@@ -287,6 +303,7 @@ function j7(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         basis: { source: GG_2026, page: J7_PAGE, text: J7_SOURCE_TEXT },
         actions: ['fix', 'memo'],
         note: SCHOOL_RULE_NOTE,
+        fix: '분량·횟수 대신 성취기준의 핵심 행동이 드러나는 수준별 기술로 바꾸세요.',
       });
     }
   if (checked && !cards.some((c) => c.rule === 'J7'))
@@ -310,6 +327,7 @@ function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         text: '문서에서 연결을 찾지 못했다는 뜻이며, 실제로 가르치거나 평가하지 않았다는 뜻은 아닙니다. 교육적 타당성은 자동으로 판정하지 않습니다.',
       },
       actions: ['link', 'memo'],
+      fix: '정렬 맵에서 이 성취기준을 다루는 평가 칸을 눌러 연결하거나, 평가 요소 표에 코드를 적으세요.',
     });
   }
   if (rows.length && rows.every((r) => r.linked))
