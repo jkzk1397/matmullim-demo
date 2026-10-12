@@ -1,0 +1,633 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T21:52:53+00:00",
+  "title": "Design System: 맞물림",
+  "extensions": {
+    "colorMeta": {
+      "graphite": {
+        "role": "primary",
+        "displayName": "흑연",
+        "canonical": "oklch(26.8% 0.010 260.7)",
+        "tonalRamp": [
+          "#090b10",
+          "#22252a",
+          "#3f4248",
+          "#5e6167",
+          "#7f8289",
+          "#a1a5ac",
+          "#c5c9d0",
+          "#ebeff6"
+        ]
+      },
+      "graphite-raised": {
+        "role": "primary",
+        "displayName": "밝은 흑연",
+        "canonical": "oklch(34.7% 0.013 261.7)",
+        "tonalRamp": [
+          "#080b11",
+          "#21252c",
+          "#3e4249",
+          "#5d6169",
+          "#7e838b",
+          "#a0a5ae",
+          "#c4c9d2",
+          "#eaeff8"
+        ]
+      },
+      "graphite-ink": {
+        "role": "neutral",
+        "displayName": "흑연 잉크",
+        "canonical": "oklch(82.9% 0.011 261.8)",
+        "tonalRamp": [
+          "#090b10",
+          "#22252a",
+          "#3f4248",
+          "#5e6167",
+          "#7f8289",
+          "#a1a5ac",
+          "#c5c9d0",
+          "#ebeff6"
+        ]
+      },
+      "desk": {
+        "role": "neutral",
+        "displayName": "책상 회색",
+        "canonical": "oklch(93.6% 0.005 258.3)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242527",
+          "#404244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c7c9cc",
+          "#edeff2"
+        ]
+      },
+      "desk-light": {
+        "role": "neutral",
+        "displayName": "옅은 책상",
+        "canonical": "oklch(96.1% 0.003 264.5)",
+        "tonalRamp": [
+          "#0a0b0c",
+          "#242526",
+          "#414243",
+          "#606163",
+          "#818284",
+          "#a4a5a7",
+          "#c8c9cb",
+          "#edeef0"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "흰 종이",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "먹",
+        "canonical": "oklch(23.0% 0.008 264.4)",
+        "tonalRamp": [
+          "#090b0f",
+          "#232529",
+          "#404247",
+          "#5f6166",
+          "#808287",
+          "#a2a5aa",
+          "#c6c9cf",
+          "#eceef4"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "보조 먹",
+        "canonical": "oklch(40.8% 0.016 262.3)",
+        "tonalRamp": [
+          "#080b12",
+          "#21252d",
+          "#3d424b",
+          "#5c616b",
+          "#7d838d",
+          "#9fa5b0",
+          "#c3c9d4",
+          "#e9effa"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "옅은 먹",
+        "canonical": "oklch(49.4% 0.018 260.7)",
+        "tonalRamp": [
+          "#070b13",
+          "#20252e",
+          "#3d424c",
+          "#5c626c",
+          "#7c838d",
+          "#9fa5b0",
+          "#c3cad5",
+          "#e8effb"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "괘선",
+        "canonical": "oklch(90.3% 0.008 260.7)",
+        "tonalRamp": [
+          "#090b0e",
+          "#232529",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a2a5aa",
+          "#c6c9ce",
+          "#eceff4"
+        ]
+      },
+      "line-light": {
+        "role": "neutral",
+        "displayName": "옅은 괘선",
+        "canonical": "oklch(94.8% 0.005 258.3)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242527",
+          "#404244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c7c9cc",
+          "#edeff2"
+        ]
+      },
+      "pen": {
+        "role": "secondary",
+        "displayName": "파란 볼펜",
+        "canonical": "oklch(45.7% 0.193 266.7)",
+        "tonalRamp": [
+          "#010134",
+          "#080179",
+          "#162da6",
+          "#3053cc",
+          "#4e77f4",
+          "#7ea1fb",
+          "#b2c8fc",
+          "#e8eefe"
+        ]
+      },
+      "pen-wash": {
+        "role": "secondary",
+        "displayName": "볼펜 물",
+        "canonical": "oklch(95.9% 0.015 273.9)",
+        "tonalRamp": [
+          "#090b12",
+          "#23252d",
+          "#3f424a",
+          "#5e616a",
+          "#7f828c",
+          "#a2a5af",
+          "#c6c9d3",
+          "#ebeef9"
+        ]
+      },
+      "marker-red": {
+        "role": "tertiary",
+        "displayName": "빨강 형광",
+        "canonical": "oklch(88.2% 0.062 25.7)",
+        "tonalRamp": [
+          "#1f0001",
+          "#3e1715",
+          "#5f3430",
+          "#81534f",
+          "#a5746f",
+          "#c99691",
+          "#efbab4",
+          "#fee9e7"
+        ]
+      },
+      "marker-orange": {
+        "role": "tertiary",
+        "displayName": "주황 형광",
+        "canonical": "oklch(90.5% 0.078 74.7)",
+        "tonalRamp": [
+          "#130900",
+          "#352000",
+          "#5a3b03",
+          "#7b5a2a",
+          "#9e7c4b",
+          "#c29e6d",
+          "#e8c290",
+          "#ffebd1"
+        ]
+      },
+      "marker-yellow": {
+        "role": "tertiary",
+        "displayName": "노랑 형광",
+        "canonical": "oklch(94.6% 0.124 101.0)",
+        "tonalRamp": [
+          "#0e0b00",
+          "#2b2501",
+          "#4b4306",
+          "#6d6210",
+          "#93840a",
+          "#b6a73f",
+          "#dbcc66",
+          "#fff195"
+        ]
+      },
+      "pencil-gray": {
+        "role": "tertiary",
+        "displayName": "연필 회색",
+        "canonical": "oklch(54.4% 0.015 262.3)",
+        "tonalRamp": [
+          "#080b12",
+          "#21252d",
+          "#3e424a",
+          "#5d616a",
+          "#7d838c",
+          "#a0a5af",
+          "#c4c9d3",
+          "#e9eff9"
+        ]
+      },
+      "pencil-gray-patch": {
+        "role": "tertiary",
+        "displayName": "연필 견본 바탕",
+        "canonical": "oklch(91.8% 0.008 260.7)",
+        "tonalRamp": [
+          "#090b0e",
+          "#232529",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a2a5aa",
+          "#c6c9ce",
+          "#eceff4"
+        ]
+      },
+      "red-line": {
+        "role": "tertiary",
+        "displayName": "빨강 실선",
+        "canonical": "oklch(55.6% 0.183 28.8)",
+        "tonalRamp": [
+          "#1f0000",
+          "#4b0403",
+          "#810102",
+          "#b21f18",
+          "#da4a3d",
+          "#fd7666",
+          "#fcb4a9",
+          "#ffe9e5"
+        ]
+      },
+      "red-wash": {
+        "role": "tertiary",
+        "displayName": "빨강 물",
+        "canonical": "oklch(96.0% 0.017 26.6)",
+        "tonalRamp": [
+          "#110908",
+          "#2d2221",
+          "#4a3f3d",
+          "#6a5e5c",
+          "#8c7f7d",
+          "#afa19f",
+          "#d4c5c3",
+          "#faebe9"
+        ]
+      },
+      "red-ink": {
+        "role": "tertiary",
+        "displayName": "빨강 잉크",
+        "canonical": "oklch(46.1% 0.151 28.8)",
+        "tonalRamp": [
+          "#1f0000",
+          "#4d0001",
+          "#7f0605",
+          "#a6342a",
+          "#cd594b",
+          "#f57c6d",
+          "#fbb5aa",
+          "#fee9e5"
+        ]
+      },
+      "orange-wash": {
+        "role": "tertiary",
+        "displayName": "주황 물",
+        "canonical": "oklch(96.8% 0.021 76.5)",
+        "tonalRamp": [
+          "#100a03",
+          "#2b2419",
+          "#494135",
+          "#686054",
+          "#8a8174",
+          "#ada497",
+          "#d1c8ba",
+          "#f7eddf"
+        ]
+      },
+      "orange-ink": {
+        "role": "tertiary",
+        "displayName": "주황 잉크",
+        "canonical": "oklch(46.0% 0.109 56.7)",
+        "tonalRamp": [
+          "#160700",
+          "#3b1c02",
+          "#653300",
+          "#8e4f16",
+          "#b3703c",
+          "#d9935f",
+          "#fbb988",
+          "#feeadc"
+        ]
+      },
+      "gray-ink": {
+        "role": "tertiary",
+        "displayName": "연필 잉크",
+        "canonical": "oklch(41.5% 0.016 262.3)",
+        "tonalRamp": [
+          "#080b12",
+          "#21252d",
+          "#3d424b",
+          "#5c616b",
+          "#7d838c",
+          "#a0a5b0",
+          "#c3c9d4",
+          "#e9effa"
+        ]
+      },
+      "yellow-wash": {
+        "role": "tertiary",
+        "displayName": "노랑 물",
+        "canonical": "oklch(97.4% 0.039 100.9)",
+        "tonalRamp": [
+          "#0e0b00",
+          "#29260d",
+          "#46432a",
+          "#666248",
+          "#878368",
+          "#aaa68a",
+          "#cecaad",
+          "#f4f0d2"
+        ]
+      },
+      "yellow-ink": {
+        "role": "tertiary",
+        "displayName": "노랑 잉크",
+        "canonical": "oklch(44.7% 0.092 94.4)",
+        "tonalRamp": [
+          "#0f0b00",
+          "#2d2402",
+          "#4f4100",
+          "#726016",
+          "#94813d",
+          "#b7a460",
+          "#dcc983",
+          "#feefb8"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "stat": {
+        "displayName": "Stat",
+        "purpose": "종류별 개수 막대의 숫자."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "화면마다 한 줄 결론 제목. 화면당 하나."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "선택한 지적의 제목, 섹션 제목."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "근거 문장, 고치는 법, 메모."
+      },
+      "sheet": {
+        "displayName": "Sheet",
+        "purpose": "종이 시트와 원문 표의 칸. 칠한 칸은 600."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "경로, 캡션, 필드 이름, 표 머리."
+      }
+    },
+    "shadows": [
+      {
+        "name": "paper",
+        "value": "0 1px 2px rgba(20,22,26,0.06), 0 6px 20px -4px rgba(20,22,26,0.10)",
+        "purpose": "모든 종이 시트와 패널의 기본."
+      },
+      {
+        "name": "lift",
+        "value": "0 1px 2px rgba(20,22,26,0.08), 0 10px 28px -6px rgba(20,22,26,0.16)",
+        "purpose": "선택된 여백 항목, 호버한 올리기 카드."
+      },
+      {
+        "name": "hairline",
+        "value": "inset 0 0 0 1px #dcdfe4",
+        "purpose": "보조 버튼, 표 머리 견본의 안쪽 괘선."
+      },
+      {
+        "name": "filter-underline",
+        "value": "inset 0 -3px 0 #23262b",
+        "purpose": "개수 막대에서 고른 종류."
+      },
+      {
+        "name": "new-issue-ring",
+        "value": "inset 0 0 0 1px #c8382d",
+        "purpose": "재점검의 '새로 생김' 상태 표시만."
+      },
+      {
+        "name": "footer-rule",
+        "value": "0 -1px 0 #dcdfe4",
+        "purpose": "확인 화면 하단 행동 막대의 윗선."
+      }
+    ],
+    "motion": [
+      {
+        "name": "mark-sweep",
+        "value": "520ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "카드를 고르면 형광 띠가 왼쪽에서 오른쪽으로 한 번 그어진다(background-size 0% → 100%). prefers-reduced-motion에서는 없음."
+      },
+      {
+        "name": "state",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "버튼·탭·목록 항목의 색과 그림자 전환."
+      }
+    ],
+    "focus": {
+      "value": "outline: 2px solid #2747c0; outline-offset: 2px",
+      "purpose": "모든 포커스는 파란 볼펜. 입력 caret도 볼펜."
+    },
+    "textures": [
+      {
+        "name": "unlinked-hatch",
+        "value": "repeating-linear-gradient(135deg, #eef0f2 0 6px, #f8f9fa 6px 12px)",
+        "purpose": "정렬 맵의 연결 없는 성취기준 행과 그 범례에만(사용자 원래 요청). 일반 질감 금지."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop-min",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "화면당 하나인 주 행동. 대조 보기 오른쪽 아래.",
+      "html": "<button class=\"ds-btn-primary\">고치기 · 고친 문서 올리기</button>",
+      "css": ".ds-btn-primary{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border:none;border-radius:8px;background:#23262b;color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background-color 150ms cubic-bezier(0.4,0,0.2,1);}.ds-btn-primary:hover{background:#363a41;}.ds-btn-primary:focus-visible{outline:2px solid #2747c0;outline-offset:2px;}.ds-btn-primary:disabled{opacity:.4;cursor:not-allowed;}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "종이 위 보조 행동. 안쪽 1px 괘선.",
+      "html": "<button class=\"ds-btn-secondary\">메모하고 넘기기</button>",
+      "css": ".ds-btn-secondary{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border:none;border-radius:8px;background:#fff;color:#1b1d21;font-size:14px;font-weight:600;box-shadow:inset 0 0 0 1px #dcdfe4;cursor:pointer;transition:background-color 150ms cubic-bezier(0.4,0,0.2,1);}.ds-btn-secondary:hover{background:#f1f2f4;}.ds-btn-secondary:focus-visible{outline:2px solid #2747c0;outline-offset:2px;}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "곁가지 행동. 바탕 없는 밑줄 글자.",
+      "html": "<button class=\"ds-btn-quiet\">추출값이 틀렸나요? 원문 값 다시 확인</button>",
+      "css": ".ds-btn-quiet{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;height:40px;padding:0 16px;border:none;background:transparent;color:#454a53;font-size:14px;font-weight:600;text-decoration:underline;text-decoration-color:#dcdfe4;text-underline-offset:4px;cursor:pointer;transition:color 150ms,text-decoration-color 150ms;}.ds-btn-quiet:hover{color:#1b1d21;text-decoration-color:#5c626c;}.ds-btn-quiet:focus-visible{outline:2px solid #2747c0;outline-offset:2px;}"
+    },
+    {
+      "name": "Shell Header",
+      "kind": "nav",
+      "refersTo": "shell-header",
+      "description": "흑연 셸: 워드마크, 다섯 단계 탭, 처리 위치 안내.",
+      "html": "<header class=\"ds-shell\"><div class=\"ds-shell-brand\"><b>「맞물림」</b><span>교·수·평 사전 점검</span></div><nav class=\"ds-shell-steps\"><button class=\"ds-step is-done\"><i><svg viewBox=\"0 0 20 20\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4.5 10.5l3.5 3.5 7.5-8\"/></svg></i>확인</button><button class=\"ds-step is-active\" aria-current=\"step\"><i>3</i><span>결과</span></button><button class=\"ds-step\"><i>4</i>정렬 맵</button></nav><div class=\"ds-shell-note\"><svg viewBox=\"0 0 20 20\" width=\"16\" height=\"16\" fill=\"none\" stroke=\"#fff\" stroke-width=\"1.6\"><rect x=\"4\" y=\"9\" width=\"12\" height=\"8\" rx=\"2\"/><path d=\"M7 9V6.5a3 3 0 0 1 6 0V9\"/></svg>브라우저 안에서만 처리 · 서버 전송 없음</div></header>",
+      "css": ".ds-shell{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 32px;background:#23262b;color:#c3c7ce;font-size:13px;}.ds-shell-brand{display:flex;align-items:baseline;gap:12px;}.ds-shell-brand b{color:#fff;font-size:19px;font-weight:700;letter-spacing:-0.02em;}.ds-shell-steps{display:flex;align-self:stretch;gap:4px;}.ds-step{display:flex;align-items:center;gap:8px;padding:0 14px;border:none;background:none;color:#c3c7ce;font:inherit;font-size:14px;cursor:pointer;transition:color 150ms;}.ds-step:hover{color:#fff;}.ds-step:focus-visible{outline:2px solid #2747c0;outline-offset:2px;}.ds-step i{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:9999px;background:#363a41;font-style:normal;font-size:11px;font-weight:700;}.ds-step.is-done i{color:#fff;}.ds-step.is-active{color:#fff;font-weight:600;}.ds-step.is-active i{background:#fff;color:#23262b;}.ds-step.is-active span{position:relative;}.ds-step.is-active span::after{content:'';position:absolute;left:0;right:0;bottom:-6px;height:2px;border-radius:2px;background:#fff;}.ds-shell-note{display:flex;align-items:center;gap:8px;}"
+    },
+    {
+      "name": "Count Filter Bar",
+      "kind": "chip",
+      "refersTo": "count-filter",
+      "description": "카드 종류별 개수 막대. 칸을 누르면 그 종류만 걸러 본다.",
+      "html": "<div class=\"ds-count\" role=\"tablist\"><button class=\"ds-count-seg is-active\" role=\"tab\" aria-selected=\"true\"><span class=\"ds-count-lbl\"><i class=\"ds-sw ds-sw-red\"></i>확인된 오류</span><b class=\"ds-red\">2<small>건</small></b></button><button class=\"ds-count-seg\" role=\"tab\"><span class=\"ds-count-lbl\"><i class=\"ds-sw ds-sw-orange\"></i>지침 권고와 다름</span><b class=\"ds-orange\">1<small>건</small></b></button><button class=\"ds-count-seg\" role=\"tab\"><span class=\"ds-count-lbl\"><svg width=\"24\" height=\"14\" viewBox=\"0 0 24 14\"><rect y=\"1\" width=\"24\" height=\"10\" rx=\"2\" fill=\"#e1e4e9\"/><line x1=\"1\" y1=\"12.5\" x2=\"23\" y2=\"12.5\" stroke=\"#6b7079\" stroke-width=\"2\" stroke-dasharray=\"2 2\"/></svg>연결 확인 필요</span><b class=\"ds-gray\">2<small>건</small></b></button><button class=\"ds-count-seg\" role=\"tab\"><span class=\"ds-count-lbl\"><i class=\"ds-sw ds-sw-yellow\"></i>제안</span><b class=\"ds-yellow\">1<small>건</small></b></button></div>",
+      "css": ".ds-count{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(20,22,26,0.06),0 6px 20px -4px rgba(20,22,26,0.10);overflow:hidden;}.ds-count-seg{flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 20px;border:none;border-right:1px solid #eceef1;background:none;font:inherit;cursor:pointer;transition:background-color 150ms;}.ds-count-seg:last-child{border-right:none;}.ds-count-seg:hover{background:#f1f2f4;}.ds-count-seg:focus-visible{outline:2px solid #2747c0;outline-offset:2px;outline-offset:-2px;}.ds-count-seg.is-active{background:#f1f2f4;box-shadow:inset 0 -3px 0 #23262b;}.ds-count-lbl{display:flex;align-items:center;gap:10px;font-size:14px;color:#454a53;}.ds-count-seg b{font-size:28px;line-height:32px;font-weight:700;}.ds-count-seg small{margin-left:2px;font-size:14px;font-weight:500;color:#5c626c;}.ds-sw{display:inline-block;width:24px;height:14px;border-radius:3px;transform:skewX(-12deg);}.ds-sw-red{background:#ffc9c3;}.ds-sw-orange{background:#ffd9a6;}.ds-sw-yellow{background:#fff08a;}.ds-red{color:#9b2a21;}.ds-orange{color:#844506;}.ds-gray{color:#474c55;}.ds-yellow{color:#655300;}"
+    },
+    {
+      "name": "Margin List Item",
+      "kind": "custom",
+      "refersTo": "margin-item",
+      "description": "왼쪽 여백 목록의 지적 하나: 번호 칩, 종류 라벨, 제목, 원문 경로. 고른 항목은 종이로 떠오른다.",
+      "html": "<button class=\"ds-item is-active\"><span class=\"ds-chip ds-chip-red\">1</span><span class=\"ds-item-body\"><span class=\"ds-sev ds-red\"><i class=\"ds-sw ds-sw-red\"></i>확인된 오류</span><span class=\"ds-item-title\">‘프로그래밍 프로젝트’ 만점은 30점인데 채점기준표 배점 합계는 25점이에요</span><span class=\"ds-item-path\">평가계획서 › 평가 개요 › 프로그래밍 프로젝트 › 만점</span></span></button>",
+      "css": ".ds-item{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;gap:12px;width:400px;padding:10px 16px;border:none;border-radius:12px;background:transparent;text-align:left;cursor:pointer;transition:background-color 150ms,box-shadow 150ms;}.ds-item:hover{background:#f1f2f4;}.ds-item:focus-visible{outline:2px solid #2747c0;outline-offset:2px;}.ds-item.is-active{background:#fff;box-shadow:0 1px 2px rgba(20,22,26,0.08),0 10px 28px -6px rgba(20,22,26,0.16);}.ds-chip{display:flex;flex-shrink:0;align-items:center;justify-content:center;width:24px;height:24px;border-radius:9999px;font-size:12px;font-weight:700;}.ds-chip-red{background:#fdeeec;color:#9b2a21;}.ds-item-body{display:flex;flex-direction:column;gap:2px;min-width:0;}.ds-sev{display:inline-flex;align-items:center;gap:8px;font-size:13px;line-height:20px;font-weight:600;}.ds-sev .ds-sw{width:16px;height:12px;border-radius:3px;transform:skewX(-12deg);background:#ffc9c3;}.ds-red{color:#9b2a21;}.ds-item-title{font-size:15px;line-height:22px;font-weight:600;color:#1b1d21;}.ds-item-path{font-size:13px;line-height:20px;color:#5c626c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}"
+    },
+    {
+      "name": "Comparison Sheets",
+      "kind": "card",
+      "refersTo": "comparison-sheet",
+      "description": "시그니처: 내 문서 한 장 ↔ 대조 문서 한 장. 지적된 칸은 형광 띠로 한 번 그어진다.",
+      "html": "<div class=\"ds-pair\"><section class=\"ds-sheet\"><header><b>평가계획서</b><span>plan-error.hwpx</span></header><div class=\"ds-sheet-body\"><div class=\"ds-part\">평가 개요</div><table><thead><tr><th class=\"w\">평가명</th><th>만점</th></tr></thead><tbody><tr><td class=\"w\">프로그래밍 프로젝트</td><td><mark class=\"ds-mark ds-mark-red\">30점</mark></td></tr></tbody></table></div></section><span class=\"ds-joint\">≠</span><section class=\"ds-sheet\"><header><b>채점기준표</b><span>rubric-error.hwpx</span></header><div class=\"ds-sheet-body\"><div class=\"ds-part\">수행평가 채점기준 · 프로그래밍 프로젝트</div><table><thead><tr><th class=\"w\">평가요소</th><th>배점</th></tr></thead><tbody><tr><td class=\"w\">결과 공유와 개선</td><td><mark class=\"ds-mark ds-mark-red\">5</mark></td></tr><tr><td class=\"w\">합계 (맞물림 계산)</td><td><mark class=\"ds-mark ds-mark-red\">25</mark></td></tr></tbody></table></div></section></div>",
+      "css": ".ds-pair{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:flex;align-items:stretch;gap:12px;padding:16px;background:#e8eaed;}.ds-sheet{flex:1;min-width:0;background:#fff;border-radius:8px;box-shadow:0 1px 2px rgba(20,22,26,0.06),0 6px 20px -4px rgba(20,22,26,0.10);}.ds-sheet header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid #eceef1;}.ds-sheet header b{font-size:14px;font-weight:600;color:#1b1d21;}.ds-sheet header span{font-size:13px;color:#5c626c;}.ds-sheet-body{padding:12px 16px;}.ds-part{margin-bottom:4px;font-size:13px;line-height:20px;color:#5c626c;}.ds-sheet table{width:100%;border-collapse:collapse;font-size:14px;line-height:22px;}.ds-sheet th{padding:4px 6px;border-bottom:1px solid #dcdfe4;text-align:left;font-size:13px;font-weight:600;color:#5c626c;white-space:nowrap;}.ds-sheet td{padding:4px 6px;color:#1b1d21;white-space:nowrap;}.ds-sheet tr+tr td{border-top:1px solid #eceef1;}.ds-sheet .w{width:100%;}.ds-joint{display:flex;align-self:center;align-items:center;justify-content:center;flex-shrink:0;width:28px;height:28px;border-radius:9999px;background:#fdeeec;color:#9b2a21;font-size:15px;font-weight:700;}.ds-mark{--mark:#ffc9c3;padding:0 3px;margin:0 -1px;border-radius:3px;background:linear-gradient(transparent 12%,var(--mark) 12%,var(--mark) 92%,transparent 92%) no-repeat;background-size:100% 100%;-webkit-box-decoration-break:clone;box-decoration-break:clone;color:#1b1d21;font-weight:600;animation:ds-sweep 520ms cubic-bezier(0.16,1,0.3,1) both;}.ds-mark-orange{--mark:#ffd9a6;}.ds-mark-yellow{--mark:#fff08a;}.ds-mark-gray{--mark:transparent;text-decoration:underline dotted #6b7079 2px;text-underline-offset:4px;}@keyframes ds-sweep{from{background-size:0% 100%;}}@media (prefers-reduced-motion:reduce){.ds-mark{animation:none;}}"
+    },
+    {
+      "name": "Strength Scale",
+      "kind": "custom",
+      "refersTo": "strength-scale",
+      "description": "근거의 강도 눈금(사실 > 의무 > 권고 > 제안). 읽는 표시이지 누르는 컨트롤이 아니다.",
+      "html": "<div class=\"ds-strength\" role=\"img\" aria-label=\"근거의 강도: 권고\"><div class=\"ds-strength-cap\">근거의 강도 · 강함 → 약함</div><div class=\"ds-strength-track\"><span class=\"rail\"></span><span class=\"fill\" style=\"width:53.3%\"></span><i class=\"on\" style=\"left:10%\"></i><i class=\"on\" style=\"left:36.7%\"></i><i class=\"on cur\" style=\"left:63.3%\"></i><i style=\"left:90%\"></i></div><div class=\"ds-strength-lbl\"><span>사실</span><span>의무</span><b>권고</b><span>제안</span></div><div class=\"ds-strength-hint\">원문이 권고로 쓴 사항</div></div>",
+      "css": ".ds-strength{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;width:236px;font-size:13px;line-height:20px;}.ds-strength-cap{margin-bottom:8px;color:#5c626c;}.ds-strength-track{position:relative;height:8px;}.ds-strength-track .rail{position:absolute;left:10%;right:10%;top:3px;height:2px;border-radius:2px;background:#dcdfe4;}.ds-strength-track .fill{position:absolute;left:10%;top:3px;height:2px;border-radius:2px;background:#23262b;}.ds-strength-track i{position:absolute;top:0;width:8px;height:8px;border-radius:9999px;background:#dcdfe4;transform:translateX(-50%);}.ds-strength-track i.on{background:#23262b;}.ds-strength-track i.cur{transform:translateX(-50%) scale(1.5);}.ds-strength-lbl{display:grid;grid-template-columns:repeat(4,1fr);margin-top:8px;text-align:center;color:#5c626c;}.ds-strength-lbl b{color:#1b1d21;font-weight:700;}.ds-strength-hint{margin-top:4px;color:#454a53;}"
+    },
+    {
+      "name": "Extraction Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "확인 화면의 값 칸. 테두리 없이, 포커스는 볼펜 물과 볼펜 링, 교사가 고친 값은 볼펜 글자.",
+      "html": "<label class=\"ds-field\"><span>만점</span><input value=\"30\" inputmode=\"numeric\"><span>점</span></label> <label class=\"ds-field is-edited\"><span>배점</span><input value=\"10\" inputmode=\"numeric\"><span>점</span><svg viewBox=\"0 0 20 20\" width=\"14\" height=\"14\" fill=\"none\" stroke=\"#2747c0\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M13.5 3.5l3 3L7 16l-4 1 1-4 9.5-9.5z\"/></svg></label>",
+      "css": ".ds-field{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:6px;width:180px;height:40px;padding:0 8px;border-radius:6px;transition:background-color 150ms;}.ds-field:hover{background:#f1f2f4;}.ds-field:focus-within{background:#eef1fc;box-shadow:0 0 0 2px #2747c0;}.ds-field span{flex-shrink:0;font-size:13px;color:#5c626c;}.ds-field input{flex:1;min-width:0;border:none;outline:none;background:transparent;font:inherit;font-size:15px;color:#1b1d21;text-align:right;caret-color:#2747c0;}.ds-field.is-edited input{color:#2747c0;}"
+    },
+    {
+      "name": "Unlinked Alignment Row",
+      "kind": "custom",
+      "refersTo": "alignment-row-unlinked",
+      "description": "정렬 맵에서 연결을 찾지 못한 성취기준 행만 회색 빗금(사용자 원래 요청). 일반 질감이 아니다.",
+      "html": "<table class=\"ds-align\"><tr><td><b>[9정01-02]</b> 피지컬 컴퓨팅의 개념을 이해하고, 생활 속에서 적용된 사례 조사를 통해 컴퓨팅 시스템의 필요성과 가치를 판단한다.</td><td><span class=\"ds-dot\"></span></td></tr><tr class=\"is-unlinked\"><td><b>[9정05-03]</b> 사례를 중심으로 디지털 공간에서 함께 살아가기 위해 개인 정보 및 권리와 저작권을 보호 하는 실천 방법을 탐구한다.<div><span class=\"ds-badge\">연결 확인 필요</span></div></td><td><button class=\"ds-add\" aria-label=\"연결 지정\">+</button></td></tr></table>",
+      "css": ".ds-align{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;width:100%;border-collapse:collapse;background:#fff;font-size:14px;line-height:22px;color:#454a53;}.ds-align td{padding:10px 20px;border-bottom:1px solid #eceef1;}.ds-align td+td{width:148px;text-align:center;border-left:1px solid #eceef1;}.ds-align b{margin-right:12px;color:#1b1d21;font-weight:600;}.ds-align .is-unlinked{background-image:repeating-linear-gradient(135deg,#eef0f2 0 6px,#f8f9fa 6px 12px);}.ds-badge{display:inline-block;margin-top:4px;padding:2px 6px;border-radius:4px;background:#fff;font-size:13px;font-weight:600;color:#474c55;}.ds-dot{display:inline-block;width:16px;height:16px;border-radius:9999px;background:#23262b;}.ds-add{width:24px;height:24px;border:none;border-radius:9999px;background:transparent;color:#2747c0;box-shadow:0 0 0 1px rgba(39,71,192,.5);cursor:pointer;}.ds-add:hover{background:#eef1fc;}.ds-add:focus-visible{outline:2px solid #2747c0;outline-offset:2px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "형광펜 대조의 책상",
+    "overview": "**Creative North Star: \"형광펜 대조의 책상\"**\n\n인쇄한 두 문서를 나란히 놓고, 맞지 않는 칸에 형광펜을 긋던 교사의 책상이 이 시스템의 전부다. 흑연색 상단 셸 아래 옅은 책상 회색이 깔리고, 그 위에 테두리 없는 흰 종이가 부드러운 그림자로 놓인다. 모든 지적은 \"내 문서 한 장 ↔ 대조 문서 한 장\"으로 보이고, 지적된 칸은 원문 그대로 칠해진다.\n\n표시를 하는 손은 둘이다. 도구는 형광펜(빨강·주황·노랑 형광 띠, 회색은 연필 점선 밑줄)으로만 말하고, 교사의 판단(메모·연결 지정·고친 값)은 파란 볼펜 잉크로만 남는다. 밀도는 높지만 차분하다. 한 화면이 발표 슬라이드 한 장으로 읽혀야 하므로, 상단 한 줄 제목이 그 화면의 결론을 말한다.\n\n확인된 거부: 회색 SaaS 위에 숫자 타일과 이슈 목록을 늘어놓는 배열, 카드 왼쪽 색 띠.",
+    "keyCharacteristics": [
+      "흑연 셸 · 책상 회색 바탕 · 테두리 없는 흰 종이",
+      "도구의 표시는 형광펜, 교사의 판단은 파란 볼펜",
+      "지적 하나 = 종이 두 장의 대조",
+      "Pretendard 한 가족, 숫자는 tabular",
+      "색은 언제나 글자 라벨과 함께"
+    ],
+    "rules": [
+      {
+        "name": "The Two Hands Rule",
+        "body": "도구가 찾은 것은 형광펜 색으로만, 교사가 정한 것은 파란 볼펜으로만 표시한다. 도구의 출력에 파랑을 쓰거나 교사의 메모에 형광을 쓰지 않는다.",
+        "section": "colors"
+      },
+      {
+        "name": "The Label-With-Color Rule",
+        "body": "카드 종류는 네 가지로 고정(확인된 오류 · 지침 권고와 다름 · 연결 확인 필요 · 제안)이며, 색 견본은 언제나 이 글자 라벨과 함께 나온다. 색만으로 구분하지 않는다.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pencil-Not-Marker Rule",
+        "body": "\"연결 확인 필요\"는 오류로 단정하지 않으므로 형광을 칠하지 않고 연필 점선 밑줄만 긋는다.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Pretendard 하나만 쓴다. 디스플레이용 두 번째 서체나 모노 서체를 들이지 않는다. 숫자는 언제나 tabular.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Sheets Rule",
+        "body": "지적 하나는 \"내 문서 한 장 ↔ 대조 문서 한 장\"(평가계획서 ↔ 채점기준표, 내 문서 ↔ 성취기준 DB, 채점기준표 ↔ 교육청 지침)으로 보인다. 대조할 상대가 없을 때만 한 장.",
+        "section": "layout"
+      },
+      {
+        "name": "The Paper-On-Desk Rule",
+        "body": "종이는 테두리 없이 그림자로만 책상에서 떨어진다. 종이 안쪽의 표 괘선은 허용하지만, 종이 바깥에 선을 두르지 않는다.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hatch-Is-Meaning Rule",
+        "body": "135° 회색 빗금(6px 간격, #eef0f2 / #f8f9fa)은 정렬 맵에서 연결을 찾지 못한 성취기준 행과 그 범례에만 쓴다(원래 요청: \"빈 행은 회색 줄무늬\"). 일반 질감이나 장식으로 쓰지 않는다.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** 지적 하나를 종이 두 장(내 문서 ↔ 대조 문서)으로 보이고, 지적된 칸을 원문 그대로 형광 띠로 칠한다.",
+      "**Do** 형광 견본 옆에 고정된 종류 라벨(확인된 오류 · 지침 권고와 다름 · 연결 확인 필요 · 제안)을 함께 단다.",
+      "**Do** 교사의 메모·고친 값·지정한 연결은 파란 볼펜(#2747c0)과 볼펜 물 바탕으로 표시한다.",
+      "**Do** 종이는 Paper 그림자로 띄우고, 선택한 하나만 Lift로 올린다.",
+      "**Do** 숫자는 tabular, 글자 대비는 4.5:1 이상(ink-3가 가장 옅은 본문 색).",
+      "**Do** 화면마다 한 줄 결론 제목(26px 700)을 둔다."
+    ],
+    "donts": [
+      "**Don't** 회색 SaaS 바탕 위에 숫자 타일과 이슈 목록을 늘어놓지 않는다. 개수는 필터를 겸한 한 줄 막대로만.",
+      "**Don't** 카드나 목록 항목 왼쪽에 색 띠를 두르지 않는다.",
+      "**Don't** 종이 바깥에 테두리를 두르지 않는다.",
+      "**Don't** \"연결 확인 필요\"에 형광을 칠하거나 빨강을 쓰지 않는다. 연필 점선 밑줄만.",
+      "**Don't** 도구의 출력에 파란 볼펜 색을 쓰지 않는다.",
+      "**Don't** 빗금 패턴을 정렬 맵의 연결 없는 행 밖에서 쓰지 않는다.",
+      "**Don't** Pretendard 외의 서체를 들이지 않는다."
+    ]
+  }
+}
