@@ -5,176 +5,203 @@
 <title>맞물림 소개 영상</title>
 <style>
   @font-face { font-family: 'P'; src: url('../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2') format('woff2'); font-weight: 100 900; }
-  :root { --navy:#0d2b57; --blue:#0b5cad; --green:#2b8a3e; --red:#d7263d; --orange:#e8590c; --gold:#b08800; --ink:#1b1f24; }
+  :root { --navy:#0d2b57; --green:#2b8a3e; --red:#d7263d; --ink:#1b1f24; }
   * { box-sizing: border-box; margin: 0; }
   html, body { width: 1920px; height: 1080px; overflow: hidden; }
-  body { font-family: 'P', sans-serif; letter-spacing: -0.03em; word-break: keep-all; background: #fff; }
+  body { font-family: 'P', sans-serif; letter-spacing: -0.03em; word-break: keep-all; background: #e9eef5; }
   .layer { position: absolute; inset: 0; }
-  .abs { position: absolute; will-change: transform, opacity; }
+  .abs { position: absolute; }
   .center { left: 0; right: 0; text-align: center; }
-  .h { font-weight: 800; }
-  .win { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(13,43,87,.35), 0 0 0 1px rgba(13,43,87,.08); background: #fff; }
-  .win img { width: 1600px; height: 900px; display: block; }
-  .ring { position: absolute; border: 5px solid var(--red); border-radius: 12px; }
-  .cap { position: absolute; left: 0; right: 0; top: 960px; text-align: center; }
-  .cap span { display: inline-block; padding: 18px 36px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 44px; font-weight: 700; box-shadow: 0 16px 40px -12px rgba(13,43,87,.5); }
+  /* 화면 틀은 고정, 안쪽 내용만 강조할 때 살짝 확대했다가 전체로 돌아온다 */
+  #view { position: absolute; left: 160px; top: 24px; width: 1600px; height: 900px; overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 24px 60px -24px rgba(13,43,87,.35), 0 0 0 1px rgba(13,43,87,.08); }
+  #inner { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
+  #inner img { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; }
+  #marks { position: absolute; left: 0; top: 0; }
+  .hl { mix-blend-mode: multiply; }
+  #cap { position: absolute; left: 0; right: 0; top: 952px; height: 100px; display: flex; align-items: center; justify-content: center; gap: 20px; }
+  #capNum { width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 30px; font-weight: 800; display: flex; align-items: center; justify-content: center; letter-spacing: 0; }
+  #capText { font-size: 44px; font-weight: 700; color: var(--ink); }
 </style>
 </head>
 <body>
-  <div class="layer" id="bgGrad" style="background: radial-gradient(1200px 700px at 15% 10%, #dbe8fb 0%, transparent 60%), radial-gradient(1000px 700px at 90% 90%, #dcefe2 0%, transparent 60%), linear-gradient(135deg, #eef3fb, #f3f7f4)"></div>
-
-  <!-- 인트로 문장 -->
-  <div class="layer" id="intro" style="background:#fff">
-    <div class="abs center h" id="w1" style="top:470px;font-size:110px;color:var(--navy)">평가계획서.</div>
-    <div class="abs center h" id="w2" style="top:470px;font-size:110px;color:var(--orange)">채점기준표.</div>
-    <div class="abs center h" id="w3" style="top:470px;font-size:110px;color:var(--gold)">교육청 지침.</div>
-    <div class="abs center h" id="w4" style="top:470px;font-size:110px;color:var(--ink)">서로 <span style="color:var(--green)">맞물리나요?</span></div>
-  </div>
-
-  <!-- 앱 화면 (두 장을 교차) -->
   <div class="layer" id="app">
-    <div class="win" id="winA"><img id="imgA" src="demo/1-upload.png" /><div id="ringsA"></div></div>
-    <div class="win" id="winB"><img id="imgB" src="demo/2-confirm.png" /><div id="ringsB"></div></div>
-    <div class="layer" id="scrim" style="background:rgba(13,43,87,.72)"></div>
-    <div class="abs center h" id="punch" style="top:440px;font-size:128px;color:#fff"></div>
-    <svg class="abs" id="cur" width="56" height="56" viewBox="0 0 24 24" style="left:0;top:0"><path d="M5 3l14 8-6 1.5L10 19z" fill="#1b1f24" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
-    <div class="abs" id="clickRing" style="left:0;top:0;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;border:4px solid var(--blue)"></div>
-    <div class="cap" id="cap"><span id="capText"></span></div>
+    <div id="view">
+      <div id="inner">
+        <img id="imgA" src="demo/1-upload.png" />
+        <img id="imgB" src="demo/2-confirm.png" />
+        <svg id="marks" width="1600" height="900" viewBox="0 0 1600 900"></svg>
+      </div>
+    </div>
+    <div id="cap"><div id="capNum">1</div><div id="capText"></div></div>
+    <svg class="abs" id="cur" width="48" height="48" viewBox="0 0 24 24" style="left:0;top:0"><path d="M5 3l14 8-6 1.5L10 19z" fill="#1b1f24" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <div class="abs" id="clickRing" style="left:0;top:0;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:3px solid rgba(13,43,87,.6)"></div>
   </div>
 
-  <!-- 점검 중 -->
-  <div class="layer" id="think" style="background:#fff">
-    <div class="abs center h" id="thinkText" style="top:480px;font-size:76px;background:linear-gradient(90deg,#9aa3ad 0%,#9aa3ad 40%,#0d2b57 50%,#9aa3ad 60%,#9aa3ad 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent">점검하는 중</div>
+  <!-- 시작 -->
+  <div class="layer" id="intro" style="background:#fff">
+    <div class="abs center" id="i1" style="top:400px;font-size:72px;font-weight:700;color:var(--ink)">평가계획서와 채점기준표,</div>
+    <div class="abs center" id="i2" style="top:520px;font-size:88px;font-weight:800;color:var(--navy)">서로 <span style="color:var(--green)">맞물리나요?</span></div>
   </div>
 
-  <!-- 엔딩 -->
+  <!-- 끝 -->
   <div class="layer" id="end" style="background:#fff">
-    <img class="abs" id="eLogo" src="logo.png" style="left:810px;top:250px;width:300px;height:300px" />
-    <div class="abs center h" id="eName" style="top:580px;font-size:140px;color:var(--navy);letter-spacing:-0.04em">맞물림</div>
-    <div class="abs center" id="eLine" style="top:790px;font-size:48px;font-weight:700;color:var(--ink)">평가계획서와 채점기준표가 <span style="color:var(--green)">서로 맞물리는지</span> 확인합니다</div>
+    <img class="abs" id="eLogo" src="logo.png" style="left:840px;top:260px;width:240px;height:240px" />
+    <div class="abs center" id="eName" style="top:540px;font-size:120px;font-weight:800;color:var(--navy);letter-spacing:-0.04em">맞물림</div>
+    <div class="abs center" id="eLine" style="top:740px;font-size:44px;font-weight:600;color:#3a4350">평가계획서와 채점기준표가 서로 맞물리는지 확인합니다</div>
   </div>
 
 <script>
-const B = {"open-error": {"x": 1300, "y": 496, "w": 96, "h": 40}, "sample-list": {"x": 180, "y": 409, "w": 1240, "h": 459}, "cell-30": {"x": 694, "y": 483, "w": 78, "h": 39}, "field-30": {"x": 1316, "y": 377, "w": 60, "h": 28}, "check-btn": {"x": 1290, "y": 836, "w": 130, "h": 48}, "result-title": {"x": 180, "y": 73, "w": 630, "h": 40}, "result-counts": {"x": 180, "y": 129, "w": 1240, "h": 56}, "result-detail": {"x": 544, "y": 201, "w": 876, "h": 491}, "result-fix": {"x": 544, "y": 576, "w": 876, "h": 60}, "map-btn": {"x": 1193, "y": 73, "w": 71, "h": 40}, "recheck-summary": {"x": 180, "y": 129, "w": 1240, "h": 98}, "recheck-table": {"x": 180, "y": 243, "w": 1240, "h": 468}, "link-select": {"x": 717, "y": 620, "w": 183, "h": 40}, "map-table": {"x": 180, "y": 173, "w": 1240, "h": 562}};
 const $ = (id) => document.getElementById(id);
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const prog = (t, a, b) => clamp((t - a) / (b - a));
-const outExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
-const outBack = (x, s = 1.7) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2);
-const inOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const outCubic = (x) => 1 - Math.pow(1 - x, 3);
 const lerp = (a, b, x) => a + (b - a) * x;
-const mid = (b) => [b.x + b.w / 2, b.y + b.h / 2];
-const set = (el, { o = 1, x = 0, y = 0, s = 1, blur = 0 }) => {
-  el.style.opacity = o;
-  el.style.transform = `translate(${x}px,${y}px) scale(${s})`;
-  el.style.filter = blur ? `blur(${blur}px)` : 'none';
+const fadeUp = (el, t, a, d = 0.7, dy = 24) => {
+  const e = outCubic(prog(t, a, a + d));
+  el.style.opacity = e;
+  el.style.transform = `translateY(${lerp(dy, 0, e)}px)`;
 };
-function pop(el, t, a, b, dy = 60) {
-  const i = outBack(prog(t, a, a + 0.42), 1.9);
-  const o = b ? prog(t, b - 0.16, b) : 0;
-  set(el, { o: clamp(prog(t, a, a + 0.12)) * (1 - o), y: lerp(dy, 0, i) - 40 * outExpo(o), s: lerp(0.92, 1, i), blur: 8 * (1 - clamp(prog(t, a, a + 0.2))) });
-}
-const show = (id, o) => { $(id).style.opacity = o; $(id).style.display = o > 0.001 ? 'block' : 'none'; };
 
-// 카메라: 이미지 좌표 (fx,fy)를 화면 중앙(960,520)에, 배율 z
-const CAM0 = { fx: 800, fy: 450, z: 0.96 };
-function camAt(keys, t) {
-  let k = keys[0][1];
-  for (let i = 0; i < keys.length - 1; i++) {
-    const [t0, c0] = keys[i], [t1, c1] = keys[i + 1];
-    if (t >= t0 && t <= t1) { const e = inOut(prog(t, t0, t1)); return { fx: lerp(c0.fx, c1.fx, e), fy: lerp(c0.fy, c1.fy, e), z: lerp(c0.z, c1.z, e) }; }
-    if (t > t1) k = c1;
-  }
-  return k;
-}
-const applyCam = (el, c, extraY = 0, extraS = 1) => {
-  const z = c.z * extraS;
-  el.style.transform = `translate(${960 - c.fx * z}px, ${520 - c.fy * z + extraY}px) scale(${z})`;
-};
-const toScreen = (c, x, y) => [960 + (x - c.fx) * c.z, 520 + (y - c.fy) * c.z];
-
-const focus = (b, z) => ({ fx: b.x + b.w / 2, fy: b.y + b.h / 2, z });
-const SHOTS = [
-  { a: 4.2, b: 7.7, img: '1-upload', cam: [[4.2, CAM0], [6.2, CAM0], [7.6, { fx: 1000, fy: 520, z: 1.25 }]], cap: [5.0, 7.5, '평가계획서와 채점기준표를 올리면'], cursor: { from: [1700, 980], to: mid(B['open-error']), a: 6.3, b: 7.2, click: 7.45 } },
-  { a: 7.6, b: 11.75, img: '2-confirm', cam: [[7.6, { fx: 1000, fy: 520, z: 1.25 }], [8.4, { fx: 1035, fy: 470, z: 1.55 }], [10.4, { fx: 1035, fy: 470, z: 1.55 }], [11.2, { fx: 1000, fy: 560, z: 1.12 }]], rings: [[8.6, B['cell-30']], [8.85, B['field-30']]], cap: [8.7, 10.6, '읽어 낸 값을 원문 칸과 바로 맞춰 보고'], cursor: { from: [1500, 1000], to: mid(B['check-btn']), a: 10.5, b: 11.25, click: 11.45 } },
-  { a: 13.0, b: 17.05, img: '3-results', cam: [[13.0, { fx: 800, fy: 450, z: 1.08 }], [14.2, { fx: 800, fy: 400, z: 1.0 }], [15.3, { ...focus(B['result-detail'], 1.6), fy: 420 }], [17.05, { ...focus(B['result-detail'], 1.68), fy: 420 }]], cap: [15.2, 16.95, '두 문서가 어긋난 칸을, 원문 그대로'] },
-  { a: 17.0, b: 18.75, img: '4-map', cam: [[17.0, { fx: 800, fy: 470, z: 1.05 }], [18.2, { fx: 1000, fy: 560, z: 1.32 }]], cap: [17.3, 19.45, '연결되지 않은 성취기준은 직접 연결'], cursor: { from: [1750, 1000], to: mid(B['link-select']), a: 17.6, b: 18.35, click: 18.5 } },
-  { a: 18.65, b: 19.6, img: '5-map-linked', cam: [[18.65, { fx: 1000, fy: 560, z: 1.32 }], [19.6, { fx: 1000, fy: 560, z: 1.38 }]] },
-  { a: 19.5, b: 22.05, img: '6-recheck', cam: [[19.5, { fx: 800, fy: 420, z: 1.0 }], [20.4, { ...focus(B['recheck-summary'], 1.45) }], [22.05, { ...focus(B['recheck-summary'], 1.52) }]], rings: [[20.7, B['recheck-summary'], 'var(--green)']], cap: [20.2, 21.95, '고친 문서를 올리면, 해결됐는지 바로'] },
-  { a: 22.0, b: 23.0, img: '3-results', cam: [[22.0, { ...focus(B['result-detail'], 1.3) }], [23.0, { ...focus(B['result-detail'], 1.5) }]], punch: '근거는 <span style="color:#ffd84d">원문 그대로</span>' },
-  { a: 23.0, b: 23.9, img: '2-confirm', cam: [[23.0, { fx: 1035, fy: 470, z: 1.3 }], [23.9, { fx: 1035, fy: 470, z: 1.5 }]], punch: '판단은 <span style="color:#8fe3a4">선생님이</span>' },
-  { a: 23.9, b: 24.8, img: '5-map-linked', cam: [[23.9, { fx: 800, fy: 450, z: 1.05 }], [24.8, { fx: 800, fy: 450, z: 1.25 }]], punch: '문서는 <span style="color:#9cc6ff">브라우저 안에서</span>' },
-  { a: 24.8, b: 25.75, img: '6-recheck', cam: [[24.8, { fx: 800, fy: 300, z: 1.1 }], [25.75, { fx: 800, fy: 300, z: 1.35 }]], punch: '같은 표, <span style="color:#ffb38a">같은 결과</span>' },
+// 장면: 화면, 자막, 확대(강조할 때만, 끝나면 전체 화면으로), 표시(형광펜·동그라미·화살표·밑줄), 커서
+// 좌표는 모두 1600×900 앱 화면 기준
+const FULL = { fx: 800, fy: 450, z: 1 };
+const SCENES = [
+  { a: 3.4, b: 7.9, img: '1-upload', n: 1, cap: '평가계획서와 채점기준표를 올립니다',
+    marks: [{ k: 'hl', at: 4.6, x: 256, y: 488, w: 170, h: 30 }],
+    cursor: { from: [1500, 880], to: [1348, 516], a: 5.4, b: 6.5, click: 6.9 } },
+  { a: 7.5, b: 14.7, img: '2-confirm', n: 2, cap: '읽어 낸 값을 원문과 나란히 확인합니다',
+    zoom: { at: 8.6, out: 12.4, cam: { fx: 1000, fy: 450, z: 1.4 } },
+    marks: [
+      { k: 'ring', at: 9.9, x: 690, y: 480, w: 86, h: 45, col: '#d7263d' },
+      { k: 'arrow', at: 10.6, p: [[780, 500], [1060, 500], [1270, 404]], col: '#d7263d' },
+      { k: 'ring', at: 11.3, x: 1274, y: 368, w: 132, h: 46, col: '#d7263d' },
+    ],
+    cursor: { from: [1560, 880], to: [1354, 860], a: 13.0, b: 13.8, click: 14.1 } },
+  { a: 14.3, b: 21.1, img: '3-results', n: 3, cap: '두 문서가 어긋난 곳을 근거와 함께 보여 줍니다',
+    zoom: { at: 15.4, out: 19.6, cam: { fx: 982, fy: 430, z: 1.35 } },
+    marks: [
+      { k: 'ring', at: 16.6, x: 866, y: 323, w: 84, h: 32, col: '#d7263d' },
+      { k: 'ring', at: 17.2, x: 1330, y: 476, w: 56, h: 32, col: '#d7263d' },
+      { k: 'line', at: 18.0, x: 644, y: 622, w: 540, col: '#0b5cad' },
+    ] },
+  { a: 20.7, b: 26.3, img: '4-map', n: 4, cap: '빠진 연결은 선생님이 직접 정합니다', swap: { at: 23.6, img: '5-map-linked' },
+    marks: [
+      { k: 'hl', at: 21.7, x: 196, y: 626, w: 98, h: 30, until: 23.6 },
+      { k: 'ring', at: 24.1, x: 1144, y: 618, w: 48, h: 44, col: '#2b8a3e' },
+      { k: 'hl', at: 24.7, x: 1076, y: 130, w: 346, h: 28, col: 'rgba(120,220,140,.45)' },
+    ],
+    cursor: { from: [1500, 880], to: [808, 640], a: 22.2, b: 23.1, click: 23.4 } },
+  { a: 25.9, b: 31.3, img: '6-recheck', n: 5, cap: '고친 문서를 다시 올리면, 해결됐는지 비교합니다',
+    zoom: { at: 26.9, out: 29.9, cam: { fx: 600, fy: 300, z: 1.4 } },
+    marks: [
+      { k: 'hl', at: 27.9, x: 284, y: 150, w: 112, h: 36, col: 'rgba(120,220,140,.5)' },
+      { k: 'ring', at: 28.5, x: 600, y: 170, w: 90, h: 44, col: '#2b8a3e' },
+    ] },
 ];
 
+function camOf(s, t) {
+  if (!s.zoom) return FULL;
+  const { at, out, cam } = s.zoom;
+  const e = t < out ? ease(prog(t, at, at + 1.0)) : 1 - ease(prog(t, out, out + 1.0));
+  const z = lerp(1, cam.z, e);
+  const hx = 800 / z, hy = 450 / z;
+  return { fx: clamp(lerp(800, cam.fx, e), hx, 1600 - hx), fy: clamp(lerp(450, cam.fy, e), hy, 900 - hy), z };
+}
+const toScreen = (c, x, y) => [160 + 800 + (x - c.fx) * c.z, 24 + 450 + (y - c.fy) * c.z];
+
+function markSvg(m, t, o) {
+  const p = prog(t, m.at, m.at + 0.6);
+  if (p <= 0) return '';
+  const op = o * (m.until ? 1 - prog(t, m.until, m.until + 0.3) : 1);
+  if (m.k === 'hl') {
+    return `<rect class="hl" x="${m.x}" y="${m.y}" width="${m.w * outCubic(p)}" height="${m.h}" rx="4" fill="${m.col || 'rgba(255,214,0,.55)'}" opacity="${op}"/>`;
+  }
+  if (m.k === 'line') {
+    return `<path d="M${m.x} ${m.y} L${m.x + m.w * outCubic(p)} ${m.y}" stroke="${m.col}" stroke-width="4" stroke-linecap="round" fill="none" opacity="${op}"/>`;
+  }
+  if (m.k === 'ring') {
+    // 손으로 한 바퀴 두른 듯한 동그라미
+    const cx = m.x + m.w / 2, cy = m.y + m.h / 2, rx = m.w / 2 + 8, ry = m.h / 2 + 6;
+    const len = Math.PI * (rx + ry) * 1.3;
+    const d = `M${cx - rx * 0.2} ${cy - ry} C${cx + rx * 1.1} ${cy - ry * 1.05}, ${cx + rx * 1.08} ${cy + ry * 1.05}, ${cx} ${cy + ry} S${cx - rx * 1.08} ${cy - ry * 0.9}, ${cx + rx * 0.15} ${cy - ry * 1.08}`;
+    return `<path d="${d}" stroke="${m.col}" stroke-width="4" stroke-linecap="round" fill="none" stroke-dasharray="${len}" stroke-dashoffset="${len * (1 - outCubic(p))}" opacity="${op}"/>`;
+  }
+  if (m.k === 'arrow') {
+    const [[x0, y0], [cx, cy], [x1, y1]] = m.p;
+    const len = 800;
+    const ah = prog(t, m.at + 0.45, m.at + 0.65);
+    const ang = Math.atan2(y1 - cy, x1 - cx), h = 18;
+    const a1 = [x1 - h * Math.cos(ang - 0.5), y1 - h * Math.sin(ang - 0.5)], a2 = [x1 - h * Math.cos(ang + 0.5), y1 - h * Math.sin(ang + 0.5)];
+    return `<path d="M${x0} ${y0} Q${cx} ${cy} ${x1} ${y1}" stroke="${m.col}" stroke-width="4" stroke-linecap="round" fill="none" stroke-dasharray="${len}" stroke-dashoffset="${len * (1 - outCubic(p))}" opacity="${op}"/>` +
+      `<path d="M${a1[0]} ${a1[1]} L${x1} ${y1} L${a2[0]} ${a2[1]}" stroke="${m.col}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="${op * ah}"/>`;
+  }
+  return '';
+}
+
+const setImg = (img, name) => { if (!img.src.endsWith(`/${name}.png`)) img.src = `demo/${name}.png`; };
+const imgOf = (s, t) => (s.swap && t >= s.swap.at ? s.swap.img : s.img);
+
 window.render = (t) => {
-  const introO = 1 - clamp(prog(t, 4.0, 4.3));
-  show('intro', introO);
-  if (introO > 0) {
-    pop($('w1'), t, 0.25, 0.95); pop($('w2'), t, 0.95, 1.65); pop($('w3'), t, 1.65, 2.45); pop($('w4'), t, 2.45, 4.3);
+  const introO = 1 - prog(t, 3.0, 3.5);
+  $('intro').style.opacity = introO;
+  $('intro').style.display = introO > 0 ? 'block' : 'none';
+  fadeUp($('i1'), t, 0.3, 0.8);
+  fadeUp($('i2'), t, 1.2, 0.8);
+
+  const endO = prog(t, 31.0, 31.6) * (1 - prog(t, 35.3, 36));
+  $('end').style.opacity = endO;
+  $('end').style.display = endO > 0 ? 'block' : 'none';
+  fadeUp($('eLogo'), t, 31.6, 0.9, 30);
+  fadeUp($('eName'), t, 32.3, 0.9, 30);
+  fadeUp($('eLine'), t, 33.1, 0.9, 20);
+
+  const live = SCENES.filter((s) => t >= s.a && t < s.b);
+  if (!live.length) return;
+  const s = live[live.length - 1];
+  const prev = live.length > 1 ? live[0] : null;
+  const k = prev ? ease(prog(t, s.a, prev.b)) : 1;
+  if (prev) {
+    setImg($('imgA'), imgOf(prev, t)); setImg($('imgB'), imgOf(s, t));
+    $('imgB').style.opacity = k;
+  } else if (s.swap) {
+    const sw = prog(t, s.swap.at, s.swap.at + 0.3);
+    setImg($('imgA'), s.img); setImg($('imgB'), s.swap.img);
+    $('imgB').style.opacity = sw;
+  } else {
+    setImg($('imgB'), s.img); $('imgB').style.opacity = 1;
   }
-  const thinkO = clamp(prog(t, 11.7, 11.9)) * (1 - clamp(prog(t, 12.85, 13.0)));
-  show('think', thinkO);
-  if (thinkO > 0) {
-    $('thinkText').style.backgroundPosition = `${100 - ((t - 11.7) / 1.3) * 200}% 0`;
-    $('thinkText').textContent = '점검하는 중' + '.'.repeat(1 + (Math.floor(t * 4) % 3));
-  }
-  const endO = clamp(prog(t, 25.7, 25.85));
-  show('end', endO);
-  if (endO > 0) {
-    const k = outBack(prog(t, 25.8, 26.4), 2.2);
-    set($('eLogo'), { o: clamp(prog(t, 25.8, 25.9)), s: lerp(0.4, 1, k), y: lerp(60, 0, k) });
-    const n = outBack(prog(t, 26.3, 26.8), 2);
-    set($('eName'), { o: clamp(prog(t, 26.3, 26.4)), s: lerp(1.4, 1, n), blur: 10 * (1 - clamp(prog(t, 26.3, 26.5))) });
-    pop($('eLine'), t, 26.9, 0, 30);
-    $('end').style.opacity = endO * (1 - prog(t, 29.4, 30));
-  }
+  const appIn = outCubic(prog(t, 3.3, 4.1));
+  $('view').style.opacity = appIn;
+  $('view').style.transform = `translateY(${lerp(30, 0, appIn)}px)`;
 
-  const active = SHOTS.filter((s) => t >= s.a && t < s.b);
-  show('app', active.length ? 1 : 0);
-  if (!active.length) return;
-  const cur = active[active.length - 1];
-  const prev = active.length > 1 ? active[0] : null;
-  const drawWin = (win, img, rings, shot, o, enter) => {
-    if (!img.src.endsWith(`${shot.img}.png`)) img.src = `demo/${shot.img}.png`;
-    const c = camAt(shot.cam, t);
-    const fast = !!shot.punch;
-    const k = outBack(prog(t, shot.a, shot.a + (fast ? 0.25 : 0.6)), 1.3);
-    const dy = enter && shot === SHOTS[0] ? lerp(500, 0, k) : 0;
-    const sc = enter && (fast || shot === SHOTS[0] || shot.img === '3-results') ? lerp(fast ? 1.12 : 0.9, 1, k) : 1;
-    applyCam(win, c, dy, sc);
-    win.style.opacity = o;
-    rings.innerHTML = (shot.rings || []).filter(([at]) => t >= at).map(([at, b, col]) => {
-      const p = outBack(prog(t, at, at + 0.35), 2.4);
-      return `<div class="ring" style="left:${b.x - 8}px;top:${b.y - 8}px;width:${b.w + 16}px;height:${b.h + 16}px;transform:scale(${lerp(1.6, 1, p)});opacity:${clamp(prog(t, at, at + 0.1))};${col ? `border-color:${col}` : ''}"></div>`;
-    }).join('');
-  };
-  const fadeIn = prev ? clamp(prog(t, cur.a, Math.min(prev.b, cur.a + 0.35))) : 1;
-  drawWin($('winB'), $('imgB'), $('ringsB'), cur, fadeIn, true);
-  if (prev) drawWin($('winA'), $('imgA'), $('ringsA'), prev, 1, false); else $('winA').style.opacity = 0;
+  const c = camOf(prev ? prev : s, t);
+  $('inner').style.transform = `translate(${800 - c.fx * c.z}px, ${450 - c.fy * c.z}px) scale(${c.z})`;
+  $('marks').innerHTML = prev
+    ? (prev.marks || []).map((m) => markSvg(m, t, 1 - k)).join('')
+    : (s.marks || []).map((m) => markSvg(m, t, 1)).join('');
 
-  if (cur.punch) {
-    $('scrim').style.opacity = 1;
-    $('punch').innerHTML = cur.punch;
-    const k = outBack(prog(t, cur.a, cur.a + 0.28), 2.4);
-    set($('punch'), { o: 1, s: lerp(1.3, 1, k), blur: 6 * (1 - clamp(prog(t, cur.a, cur.a + 0.12))) });
-  } else { $('scrim').style.opacity = 0; $('punch').style.opacity = 0; }
+  // 자막: 장면이 바뀔 때만 조용히 교체
+  const capS = SCENES.filter((x) => t >= x.a + 0.3).pop() || SCENES[0];
+  const ce = outCubic(prog(t, capS.a + 0.3, capS.a + 0.9));
+  const capOut = 1 - prog(t, 30.6, 31.0);
+  $('capNum').textContent = capS.n;
+  $('capText').textContent = capS.cap;
+  $('cap').style.opacity = ce * appIn * capOut;
+  $('cap').style.transform = `translateY(${lerp(14, 0, ce)}px)`;
 
-  const capShot = SHOTS.find((s) => s.cap && t >= s.cap[0] && t < s.cap[1]);
-  if (capShot) { $('capText').textContent = capShot.cap[2]; pop($('cap'), t, capShot.cap[0], capShot.cap[1], 40); } else $('cap').style.opacity = 0;
-
-  const cs = SHOTS.find((s) => s.cursor && t >= s.cursor.a - 0.2 && t < s.b);
+  const cs = SCENES.find((x) => x.cursor && t >= x.cursor.a - 0.3 && t < x.cursor.click + 0.6);
   if (cs) {
     const m = cs.cursor;
-    const target = toScreen(camAt(cs.cam, t), m.to[0], m.to[1]);
-    const e = inOut(prog(t, m.a, m.b));
-    const x = lerp(m.from[0], target[0], e), y = lerp(m.from[1], target[1], e);
-    const press = 1 - 0.18 * Math.sin(Math.PI * clamp(prog(t, m.click - 0.08, m.click + 0.08)));
-    $('cur').style.opacity = clamp(prog(t, m.a - 0.2, m.a));
-    $('cur').style.transform = `translate(${x - 10}px,${y - 6}px) scale(${press})`;
-    const r = prog(t, m.click, m.click + 0.45);
+    const tgt = toScreen(camOf(cs, t), m.to[0], m.to[1]);
+    const e = ease(prog(t, m.a, m.b));
+    const x = lerp(m.from[0] + 160, tgt[0], e), y = lerp(m.from[1] + 24, tgt[1], e);
+    const press = 1 - 0.12 * Math.sin(Math.PI * prog(t, m.click - 0.08, m.click + 0.08));
+    $('cur').style.opacity = prog(t, m.a - 0.3, m.a) * (1 - prog(t, m.click + 0.35, m.click + 0.6));
+    $('cur').style.transform = `translate(${x - 9}px,${y - 6}px) scale(${press})`;
+    const r = prog(t, m.click, m.click + 0.5);
     $('clickRing').style.opacity = r > 0 && r < 1 ? 1 - r : 0;
-    $('clickRing').style.transform = `translate(${x}px,${y}px) scale(${lerp(0.3, 1.4, outExpo(r))})`;
+    $('clickRing').style.transform = `translate(${x}px,${y}px) scale(${lerp(0.4, 1.3, outCubic(r))})`;
   } else { $('cur').style.opacity = 0; $('clickRing').style.opacity = 0; }
 };
 

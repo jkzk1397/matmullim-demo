@@ -1,11 +1,11 @@
-# 소개 영상 배경 음악 합성 (30초, 120 BPM, A단조 → C장조).
-# 잔잔한 패드로 시작해 아르페지오·베이스·킥이 차례로 쌓이고, 22초부터 빨라지는 원칙 컷에 맞춰 고조된 뒤
-# 25.7초 엔딩에서 한 번 터지고 가라앉는다. 사용: python3 scripts/intro-music.py video/music.wav
+# 소개 영상 배경 음악 합성 (36초, 느린 템포, A단조 → C장조).
+# 잔잔한 패드로 시작해 장면이 넘어갈 때마다 아르페지오·베이스·부드러운 박자가 하나씩 더해지고,
+# 31초 엔딩에서 C장조로 조용히 풀린다. 효과음과 겹쳐도 시끄럽지 않게 전체를 낮게 둔다. 사용: python3 scripts/intro-music.py video/music.wav
 import sys, wave
 import numpy as np
 
 SR = 44100
-DUR = 30.5
+DUR = 36.5
 N = int(SR * DUR)
 t = np.arange(N) / SR
 out = np.zeros((N, 2))
@@ -40,7 +40,7 @@ def pad_note(m, dur):
 def pluck(m, dur=0.45):
     n = int(dur * SR); tt = np.arange(n) / SR
     sig = np.sin(2 * np.pi * hz(m) * tt) + 0.35 * np.sin(2 * np.pi * hz(m) * 2 * tt) + 0.12 * np.sin(2 * np.pi * hz(m) * 3 * tt)
-    return sig * np.exp(-tt * 9)
+    return sig * np.exp(-tt * 6)
 
 def bass(m, dur):
     n = int(dur * SR); tt = np.arange(n) / SR
@@ -57,65 +57,48 @@ def hat(dur=0.06):
     x = rng.standard_normal(n); x = np.diff(np.concatenate([[0], x]))
     return x * np.exp(-tt * 70)
 
-# 코드 진행: 2초(1마디)마다 Am F C G
+# 코드 진행: 2.4초(1마디, 100 BPM)마다 Am F C G
 CH = [[57, 60, 64], [53, 57, 60], [48, 52, 55, 60], [55, 59, 62]]
 ROOT = [45, 41, 36, 43]
 ARP = [[69, 72, 76, 72], [69, 72, 77, 72], [67, 72, 76, 72], [67, 71, 74, 71]]
-BEAT = 0.5
+BAR = 2.4
+BEAT = BAR / 4
+END = 31.0
 
-for bar in range(13):
-    t0 = bar * 2.0
-    if t0 >= 25.6: break
+for bar in range(14):
+    t0 = bar * BAR
+    if t0 >= END - 0.1: break
     k = bar % 4
-    # 패드: 처음부터, 점점 커짐
-    g = 0.10 + 0.10 * min(1, t0 / 20)
-    for m in CH[k]: add(t0, pad_note(m, 2.3), pan=(m % 5 - 2) * 0.15, gain=g)
-    # 아르페지오: 7초부터 8분음표, 20초부터 16분음표
-    if t0 >= 6.0:
-        step = BEAT / 2 if t0 < 20 else BEAT / 4
-        for i in range(int(2.0 / step)):
-            st = t0 + i * step
-            if st < 7.0: continue
-            add(st, pluck(ARP[k][i % 4] + (12 if t0 >= 20 and i % 2 else 0)), pan=0.35 if i % 2 else -0.35, gain=0.13)
-    # 베이스: 13초부터
-    if t0 >= 12.0:
-        for i in range(4):
-            st = t0 + i * BEAT
-            if st >= 13.0: add(st, bass(ROOT[k], BEAT * 0.9), gain=0.16)
-    # 킥: 13초부터 4박, 18.5초부터 하이햇
+    # 패드: 처음부터, 아주 조금씩 커짐
+    g = 0.10 + 0.05 * min(1, t0 / 25)
+    for m in CH[k]: add(t0, pad_note(m, BAR + 0.4), pan=(m % 5 - 2) * 0.15, gain=g)
+    # 아르페지오: 7.5초부터 8분음표
+    for i in range(8):
+        st = t0 + i * BEAT / 2
+        if 7.5 <= st < END: add(st, pluck(ARP[k][i % 4]), pan=0.3 if i % 2 else -0.3, gain=0.08 + 0.03 * min(1, (st - 7.5) / 15))
+    # 베이스: 14.3초부터 한 박에 하나
     for i in range(4):
         st = t0 + i * BEAT
-        if 13.0 <= st < 25.6: add(st, kick(), gain=0.55)
-        if 18.5 <= st < 25.6: add(st + BEAT / 2, hat(), pan=0.2, gain=0.10)
+        if 14.3 <= st < END: add(st, bass(ROOT[k], BEAT * 0.9), gain=0.10)
+    # 부드러운 박자: 20.7초부터 1·3박 킥, 25.9초부터 엇박 하이햇
+    for i in range(4):
+        st = t0 + i * BEAT
+        if 20.7 <= st < END and i % 2 == 0: add(st, kick(), gain=0.22)
+        if 25.9 <= st < END: add(st + BEAT / 2, hat(), pan=0.2, gain=0.04)
 
-# 22~25.6초: 원칙 컷마다 빨라지는 스네어 롤 + 노이즈 라이저
-roll_t = 22.0
-while roll_t < 25.6:
-    p = (roll_t - 22.0) / 3.6
-    add(roll_t, hat(0.09), gain=0.12 + 0.25 * p)
-    roll_t += 0.25 * (1 - p) + 0.05
-n = int(3.6 * SR); tt = np.arange(n) / SR
-noise = rng.standard_normal(n)
-riser = np.convolve(noise, np.ones(8) / 8, mode='same') * (tt / 3.6) ** 2
-add(22.0, riser, gain=0.22)
-
-# 25.7초 엔딩: 임팩트 + C장조 큰 화음, 길게 울림
-add(25.7, kick(), gain=0.9)
-n = int(4.8 * SR); tt = np.arange(n) / SR
-boom = rng.standard_normal(n) * np.exp(-tt * 6)
-add(25.7, np.convolve(boom, np.ones(40) / 40, mode='same'), gain=0.35)
-for m in [48, 55, 60, 64, 67, 72]:
-    add(25.7, pad_note(m, 4.6), pan=(m % 5 - 2) * 0.2, gain=0.13)
+# 31초 엔딩: C장조 화음이 조용히 퍼지고 길게 울림
+for m in [48, 55, 60, 64, 67]:
+    add(END, pad_note(m, 5.0), pan=(m % 5 - 2) * 0.2, gain=0.12)
 for i, m in enumerate([72, 76, 79, 84]):
-    add(25.7 + i * 0.12, pluck(m, 1.5), pan=-0.3 + i * 0.2, gain=0.14)
+    add(END + 0.6 + i * 0.25, pluck(m, 1.8), pan=-0.3 + i * 0.2, gain=0.08)
 
-# 전체: 시작 0.4초 페이드 인, 끝 1.5초 페이드 아웃, 리미터
+# 전체: 시작 0.8초 페이드 인, 끝 1.5초 페이드 아웃
 fade = np.ones(N)
-fi = int(0.4 * SR); fade[:fi] = np.linspace(0, 1, fi)
-fo0 = int(28.8 * SR); fade[fo0:] = np.linspace(1, 0, N - fo0)
+fi = int(0.8 * SR); fade[:fi] = np.linspace(0, 1, fi)
+fo0 = int(34.8 * SR); fade[fo0:] = np.linspace(1, 0, N - fo0)
 out *= fade[:, None]
-out = np.tanh(out * 1.4) / np.tanh(1.4)
-out /= max(1e-9, np.abs(out).max()) / 0.9
+out = np.tanh(out * 1.2) / np.tanh(1.2)
+out /= max(1e-9, np.abs(out).max()) / 0.8
 pcm = (out * 32767).astype(np.int16)
 with wave.open(sys.argv[1], 'wb') as w:
     w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes(pcm.tobytes())

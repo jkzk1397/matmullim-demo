@@ -37,9 +37,9 @@ GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-s
 
 ## 소개 영상
 
-`video/matmullim-intro.mp4` (30초, 1920×1080, 30fps). 실제 데모 앱을 끝까지 조작하며 찍은 화면(`video/demo/`)에 카메라 확대·커서 클릭·자막을 입혔습니다.
+`video/matmullim-intro.mp4` (36초, 1920×1080, 30fps). 실제 데모 앱을 끝까지 조작하며 찍은 화면(`video/demo/`)을 순서대로 보여 주고, 강조할 곳에만 형광펜·동그라미·화살표를 그립니다. 확대는 강조할 때만 살짝 했다가 전체 화면으로 돌아옵니다.
 
-- 효과음: ElevenLabs Sound Effects로 생성(`video/sfx/`). 배경 음악: 지금 연결된 ElevenLabs 커넥터는 음악 생성을 지원하지 않아 `scripts/intro-music.py`로 직접 합성(잔잔하게 시작 → 13초 비트 → 22초부터 고조 → 엔딩).
+- 효과음: ElevenLabs Sound Effects로 생성(`video/sfx/`). 배경 음악: 지금 연결된 ElevenLabs 커넥터는 음악 생성을 지원하지 않아 `scripts/intro-music.py`로 직접 합성(잔잔하게 시작해 장면마다 악기가 하나씩 더해지고 엔딩에서 조용히 풀림).
 - 다시 만들기: `npm run build && npx tsx scripts/capture-demo.ts && npx tsx scripts/intro-video.ts && python3 scripts/intro-music.py video/music.wav && python3 scripts/intro-mix.py`
 
 ## 디자인
