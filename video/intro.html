@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>맞물림 소개 영상</title>
+<style>
+  @font-face { font-family: 'P'; src: url('../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2') format('woff2'); font-weight: 100 900; }
+  :root { --navy:#0d2b57; --blue:#0b5cad; --green:#2b8a3e; --red:#d7263d; --orange:#e8590c; --gold:#b08800; --ink:#1b1f24; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body { font-family: 'P', sans-serif; letter-spacing: -0.03em; word-break: keep-all; background: #fff; }
+  .layer { position: absolute; inset: 0; }
+  .abs { position: absolute; will-change: transform, opacity; }
+  .center { left: 0; right: 0; text-align: center; }
+  .h { font-weight: 800; }
+  .win { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px -20px rgba(13,43,87,.35), 0 0 0 1px rgba(13,43,87,.08); background: #fff; }
+  .win img { width: 1600px; height: 900px; display: block; }
+  .ring { position: absolute; border: 5px solid var(--red); border-radius: 12px; }
+  .cap { position: absolute; left: 0; right: 0; top: 960px; text-align: center; }
+  .cap span { display: inline-block; padding: 18px 36px; border-radius: 999px; background: var(--navy); color: #fff; font-size: 44px; font-weight: 700; box-shadow: 0 16px 40px -12px rgba(13,43,87,.5); }
+</style>
+</head>
+<body>
+  <div class="layer" id="bgGrad" style="background: radial-gradient(1200px 700px at 15% 10%, #dbe8fb 0%, transparent 60%), radial-gradient(1000px 700px at 90% 90%, #dcefe2 0%, transparent 60%), linear-gradient(135deg, #eef3fb, #f3f7f4)"></div>
+
+  <!-- 인트로 문장 -->
+  <div class="layer" id="intro" style="background:#fff">
+    <div class="abs center h" id="w1" style="top:470px;font-size:110px;color:var(--navy)">평가계획서.</div>
+    <div class="abs center h" id="w2" style="top:470px;font-size:110px;color:var(--orange)">채점기준표.</div>
+    <div class="abs center h" id="w3" style="top:470px;font-size:110px;color:var(--gold)">교육청 지침.</div>
+    <div class="abs center h" id="w4" style="top:470px;font-size:110px;color:var(--ink)">서로 <span style="color:var(--green)">맞물리나요?</span></div>
+  </div>
+
+  <!-- 앱 화면 (두 장을 교차) -->
+  <div class="layer" id="app">
+    <div class="win" id="winA"><img id="imgA" src="demo/1-upload.png" /><div id="ringsA"></div></div>
+    <div class="win" id="winB"><img id="imgB" src="demo/2-confirm.png" /><div id="ringsB"></div></div>
+    <div class="layer" id="scrim" style="background:rgba(13,43,87,.72)"></div>
+    <div class="abs center h" id="punch" style="top:440px;font-size:128px;color:#fff"></div>
+    <svg class="abs" id="cur" width="56" height="56" viewBox="0 0 24 24" style="left:0;top:0"><path d="M5 3l14 8-6 1.5L10 19z" fill="#1b1f24" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>
+    <div class="abs" id="clickRing" style="left:0;top:0;width:80px;height:80px;margin:-40px 0 0 -40px;border-radius:50%;border:4px solid var(--blue)"></div>
+    <div class="cap" id="cap"><span id="capText"></span></div>
+  </div>
+
+  <!-- 점검 중 -->
+  <div class="layer" id="think" style="background:#fff">
+    <div class="abs center h" id="thinkText" style="top:480px;font-size:76px;background:linear-gradient(90deg,#9aa3ad 0%,#9aa3ad 40%,#0d2b57 50%,#9aa3ad 60%,#9aa3ad 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent">점검하는 중</div>
+  </div>
+
+  <!-- 엔딩 -->
+  <div class="layer" id="end" style="background:#fff">
+    <img class="abs" id="eLogo" src="logo.png" style="left:810px;top:250px;width:300px;height:300px" />
+    <div class="abs center h" id="eName" style="top:580px;font-size:140px;color:var(--navy);letter-spacing:-0.04em">맞물림</div>
+    <div class="abs center" id="eLine" style="top:790px;font-size:48px;font-weight:700;color:var(--ink)">평가계획서와 채점기준표가 <span style="color:var(--green)">서로 맞물리는지</span> 확인합니다</div>
+  </div>
+
+<script>
+const B = {"open-error": {"x": 1300, "y": 496, "w": 96, "h": 40}, "sample-list": {"x": 180, "y": 409, "w": 1240, "h": 459}, "cell-30": {"x": 694, "y": 483, "w": 78, "h": 39}, "field-30": {"x": 1316, "y": 377, "w": 60, "h": 28}, "check-btn": {"x": 1290, "y": 836, "w": 130, "h": 48}, "result-title": {"x": 180, "y": 73, "w": 630, "h": 40}, "result-counts": {"x": 180, "y": 129, "w": 1240, "h": 56}, "result-detail": {"x": 544, "y": 201, "w": 876, "h": 491}, "result-fix": {"x": 544, "y": 576, "w": 876, "h": 60}, "map-btn": {"x": 1193, "y": 73, "w": 71, "h": 40}, "recheck-summary": {"x": 180, "y": 129, "w": 1240, "h": 98}, "recheck-table": {"x": 180, "y": 243, "w": 1240, "h": 468}, "link-select": {"x": 717, "y": 620, "w": 183, "h": 40}, "map-table": {"x": 180, "y": 173, "w": 1240, "h": 562}};
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const outExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const outBack = (x, s = 1.7) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2);
+const inOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const lerp = (a, b, x) => a + (b - a) * x;
+const mid = (b) => [b.x + b.w / 2, b.y + b.h / 2];
+const set = (el, { o = 1, x = 0, y = 0, s = 1, blur = 0 }) => {
+  el.style.opacity = o;
+  el.style.transform = `translate(${x}px,${y}px) scale(${s})`;
+  el.style.filter = blur ? `blur(${blur}px)` : 'none';
+};
+function pop(el, t, a, b, dy = 60) {
+  const i = outBack(prog(t, a, a + 0.42), 1.9);
+  const o = b ? prog(t, b - 0.16, b) : 0;
+  set(el, { o: clamp(prog(t, a, a + 0.12)) * (1 - o), y: lerp(dy, 0, i) - 40 * outExpo(o), s: lerp(0.92, 1, i), blur: 8 * (1 - clamp(prog(t, a, a + 0.2))) });
+}
+const show = (id, o) => { $(id).style.opacity = o; $(id).style.display = o > 0.001 ? 'block' : 'none'; };
+
+// 카메라: 이미지 좌표 (fx,fy)를 화면 중앙(960,520)에, 배율 z
+const CAM0 = { fx: 800, fy: 450, z: 0.96 };
+function camAt(keys, t) {
+  let k = keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [t0, c0] = keys[i], [t1, c1] = keys[i + 1];
+    if (t >= t0 && t <= t1) { const e = inOut(prog(t, t0, t1)); return { fx: lerp(c0.fx, c1.fx, e), fy: lerp(c0.fy, c1.fy, e), z: lerp(c0.z, c1.z, e) }; }
+    if (t > t1) k = c1;
+  }
+  return k;
+}
+const applyCam = (el, c, extraY = 0, extraS = 1) => {
+  const z = c.z * extraS;
+  el.style.transform = `translate(${960 - c.fx * z}px, ${520 - c.fy * z + extraY}px) scale(${z})`;
+};
+const toScreen = (c, x, y) => [960 + (x - c.fx) * c.z, 520 + (y - c.fy) * c.z];
+
+const focus = (b, z) => ({ fx: b.x + b.w / 2, fy: b.y + b.h / 2, z });
+const SHOTS = [
+  { a: 4.2, b: 7.7, img: '1-upload', cam: [[4.2, CAM0], [6.2, CAM0], [7.6, { fx: 1000, fy: 520, z: 1.25 }]], cap: [5.0, 7.5, '평가계획서와 채점기준표를 올리면'], cursor: { from: [1700, 980], to: mid(B['open-error']), a: 6.3, b: 7.2, click: 7.45 } },
+  { a: 7.6, b: 11.75, img: '2-confirm', cam: [[7.6, { fx: 1000, fy: 520, z: 1.25 }], [8.4, { fx: 1035, fy: 470, z: 1.55 }], [10.4, { fx: 1035, fy: 470, z: 1.55 }], [11.2, { fx: 1000, fy: 560, z: 1.12 }]], rings: [[8.6, B['cell-30']], [8.85, B['field-30']]], cap: [8.7, 10.6, '읽어 낸 값을 원문 칸과 바로 맞춰 보고'], cursor: { from: [1500, 1000], to: mid(B['check-btn']), a: 10.5, b: 11.25, click: 11.45 } },
+  { a: 13.0, b: 17.05, img: '3-results', cam: [[13.0, { fx: 800, fy: 450, z: 1.08 }], [14.2, { fx: 800, fy: 400, z: 1.0 }], [15.3, { ...focus(B['result-detail'], 1.6), fy: 420 }], [17.05, { ...focus(B['result-detail'], 1.68), fy: 420 }]], cap: [15.2, 16.95, '두 문서가 어긋난 칸을, 원문 그대로'] },
+  { a: 17.0, b: 18.75, img: '4-map', cam: [[17.0, { fx: 800, fy: 470, z: 1.05 }], [18.2, { fx: 1000, fy: 560, z: 1.32 }]], cap: [17.3, 19.45, '연결되지 않은 성취기준은 직접 연결'], cursor: { from: [1750, 1000], to: mid(B['link-select']), a: 17.6, b: 18.35, click: 18.5 } },
+  { a: 18.65, b: 19.6, img: '5-map-linked', cam: [[18.65, { fx: 1000, fy: 560, z: 1.32 }], [19.6, { fx: 1000, fy: 560, z: 1.38 }]] },
+  { a: 19.5, b: 22.05, img: '6-recheck', cam: [[19.5, { fx: 800, fy: 420, z: 1.0 }], [20.4, { ...focus(B['recheck-summary'], 1.45) }], [22.05, { ...focus(B['recheck-summary'], 1.52) }]], rings: [[20.7, B['recheck-summary'], 'var(--green)']], cap: [20.2, 21.95, '고친 문서를 올리면, 해결됐는지 바로'] },
+  { a: 22.0, b: 23.0, img: '3-results', cam: [[22.0, { ...focus(B['result-detail'], 1.3) }], [23.0, { ...focus(B['result-detail'], 1.5) }]], punch: '근거는 <span style="color:#ffd84d">원문 그대로</span>' },
+  { a: 23.0, b: 23.9, img: '2-confirm', cam: [[23.0, { fx: 1035, fy: 470, z: 1.3 }], [23.9, { fx: 1035, fy: 470, z: 1.5 }]], punch: '판단은 <span style="color:#8fe3a4">선생님이</span>' },
+  { a: 23.9, b: 24.8, img: '5-map-linked', cam: [[23.9, { fx: 800, fy: 450, z: 1.05 }], [24.8, { fx: 800, fy: 450, z: 1.25 }]], punch: '문서는 <span style="color:#9cc6ff">브라우저 안에서</span>' },
+  { a: 24.8, b: 25.75, img: '6-recheck', cam: [[24.8, { fx: 800, fy: 300, z: 1.1 }], [25.75, { fx: 800, fy: 300, z: 1.35 }]], punch: '같은 표, <span style="color:#ffb38a">같은 결과</span>' },
+];
+
+window.render = (t) => {
+  const introO = 1 - clamp(prog(t, 4.0, 4.3));
+  show('intro', introO);
+  if (introO > 0) {
+    pop($('w1'), t, 0.25, 0.95); pop($('w2'), t, 0.95, 1.65); pop($('w3'), t, 1.65, 2.45); pop($('w4'), t, 2.45, 4.3);
+  }
+  const thinkO = clamp(prog(t, 11.7, 11.9)) * (1 - clamp(prog(t, 12.85, 13.0)));
+  show('think', thinkO);
+  if (thinkO > 0) {
+    $('thinkText').style.backgroundPosition = `${100 - ((t - 11.7) / 1.3) * 200}% 0`;
+    $('thinkText').textContent = '점검하는 중' + '.'.repeat(1 + (Math.floor(t * 4) % 3));
+  }
+  const endO = clamp(prog(t, 25.7, 25.85));
+  show('end', endO);
+  if (endO > 0) {
+    const k = outBack(prog(t, 25.8, 26.4), 2.2);
+    set($('eLogo'), { o: clamp(prog(t, 25.8, 25.9)), s: lerp(0.4, 1, k), y: lerp(60, 0, k) });
+    const n = outBack(prog(t, 26.3, 26.8), 2);
+    set($('eName'), { o: clamp(prog(t, 26.3, 26.4)), s: lerp(1.4, 1, n), blur: 10 * (1 - clamp(prog(t, 26.3, 26.5))) });
+    pop($('eLine'), t, 26.9, 0, 30);
+    $('end').style.opacity = endO * (1 - prog(t, 29.4, 30));
+  }
+
+  const active = SHOTS.filter((s) => t >= s.a && t < s.b);
+  show('app', active.length ? 1 : 0);
+  if (!active.length) return;
+  const cur = active[active.length - 1];
+  const prev = active.length > 1 ? active[0] : null;
+  const drawWin = (win, img, rings, shot, o, enter) => {
+    if (!img.src.endsWith(`${shot.img}.png`)) img.src = `demo/${shot.img}.png`;
+    const c = camAt(shot.cam, t);
+    const fast = !!shot.punch;
+    const k = outBack(prog(t, shot.a, shot.a + (fast ? 0.25 : 0.6)), 1.3);
+    const dy = enter && shot === SHOTS[0] ? lerp(500, 0, k) : 0;
+    const sc = enter && (fast || shot === SHOTS[0] || shot.img === '3-results') ? lerp(fast ? 1.12 : 0.9, 1, k) : 1;
+    applyCam(win, c, dy, sc);
+    win.style.opacity = o;
+    rings.innerHTML = (shot.rings || []).filter(([at]) => t >= at).map(([at, b, col]) => {
+      const p = outBack(prog(t, at, at + 0.35), 2.4);
+      return `<div class="ring" style="left:${b.x - 8}px;top:${b.y - 8}px;width:${b.w + 16}px;height:${b.h + 16}px;transform:scale(${lerp(1.6, 1, p)});opacity:${clamp(prog(t, at, at + 0.1))};${col ? `border-color:${col}` : ''}"></div>`;
+    }).join('');
+  };
+  const fadeIn = prev ? clamp(prog(t, cur.a, Math.min(prev.b, cur.a + 0.35))) : 1;
+  drawWin($('winB'), $('imgB'), $('ringsB'), cur, fadeIn, true);
+  if (prev) drawWin($('winA'), $('imgA'), $('ringsA'), prev, 1, false); else $('winA').style.opacity = 0;
+
+  if (cur.punch) {
+    $('scrim').style.opacity = 1;
+    $('punch').innerHTML = cur.punch;
+    const k = outBack(prog(t, cur.a, cur.a + 0.28), 2.4);
+    set($('punch'), { o: 1, s: lerp(1.3, 1, k), blur: 6 * (1 - clamp(prog(t, cur.a, cur.a + 0.12))) });
+  } else { $('scrim').style.opacity = 0; $('punch').style.opacity = 0; }
+
+  const capShot = SHOTS.find((s) => s.cap && t >= s.cap[0] && t < s.cap[1]);
+  if (capShot) { $('capText').textContent = capShot.cap[2]; pop($('cap'), t, capShot.cap[0], capShot.cap[1], 40); } else $('cap').style.opacity = 0;
+
+  const cs = SHOTS.find((s) => s.cursor && t >= s.cursor.a - 0.2 && t < s.b);
+  if (cs) {
+    const m = cs.cursor;
+    const target = toScreen(camAt(cs.cam, t), m.to[0], m.to[1]);
+    const e = inOut(prog(t, m.a, m.b));
+    const x = lerp(m.from[0], target[0], e), y = lerp(m.from[1], target[1], e);
+    const press = 1 - 0.18 * Math.sin(Math.PI * clamp(prog(t, m.click - 0.08, m.click + 0.08)));
+    $('cur').style.opacity = clamp(prog(t, m.a - 0.2, m.a));
+    $('cur').style.transform = `translate(${x - 10}px,${y - 6}px) scale(${press})`;
+    const r = prog(t, m.click, m.click + 0.45);
+    $('clickRing').style.opacity = r > 0 && r < 1 ? 1 - r : 0;
+    $('clickRing').style.transform = `translate(${x}px,${y}px) scale(${lerp(0.3, 1.4, outExpo(r))})`;
+  } else { $('cur').style.opacity = 0; $('clickRing').style.opacity = 0; }
+};
+
+const imgs = ['1-upload', '2-confirm', '3-results', '4-map', '5-map-linked', '6-recheck'].map((n) => { const i = new Image(); i.src = `demo/${n}.png`; return i; });
+window.ready = Promise.all([document.fonts.ready, ...imgs.map((i) => (i.complete ? 1 : new Promise((r) => (i.onload = r)))), ...[...document.images].map((i) => (i.complete ? 1 : new Promise((r) => (i.onload = r))))]);
+window.render(0);
+</script>
+</body>
+</html>

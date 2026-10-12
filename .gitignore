@@ -155,3 +155,7 @@ dist/
 .impeccable/live/
 .impeccable/questions/
 .impeccable/review/
+
+# 소개 영상 중간 산출물
+video/matmullim-intro-silent.mp4
+video/music.wav

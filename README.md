@@ -35,6 +35,13 @@ GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-s
 
 스크린샷은 1366×768, deviceScaleFactor 2(실제 2732×1536)입니다. `npm run build && npm run screenshots`로 다시 찍을 수 있어요.
 
+## 소개 영상
+
+`video/matmullim-intro.mp4` (30초, 1920×1080, 30fps). 실제 데모 앱을 끝까지 조작하며 찍은 화면(`video/demo/`)에 카메라 확대·커서 클릭·자막을 입혔습니다.
+
+- 효과음: ElevenLabs Sound Effects로 생성(`video/sfx/`). 배경 음악: 지금 연결된 ElevenLabs 커넥터는 음악 생성을 지원하지 않아 `scripts/intro-music.py`로 직접 합성(잔잔하게 시작 → 13초 비트 → 22초부터 고조 → 엔딩).
+- 다시 만들기: `npm run build && npx tsx scripts/capture-demo.ts && npx tsx scripts/intro-video.ts && python3 scripts/intro-music.py video/music.wav && python3 scripts/intro-mix.py`
+
 ## 디자인
 
 - 로고: `public/brand/`(마크·전체 로고·파비콘). 상단 바 왼쪽에 마크와 “맞물림”을 두고, 로고의 남색을 주 버튼·현재 단계에, 초록을 “해결됨”·통과 표시에 씁니다.
