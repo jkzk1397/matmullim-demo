@@ -37,10 +37,17 @@
     <div class="abs" id="clickRing" style="left:0;top:0;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;border:3px solid rgba(13,43,87,.6)"></div>
   </div>
 
+  <!-- 시작: 질문으로 여는 한 장면 -->
+  <div class="layer" id="intro" style="background:#fff">
+    <div class="abs center" id="i0" style="top:390px;font-size:84px;font-weight:800;color:var(--navy)"><span id="w1">교육과정,</span> <span id="w2">수업,</span> <span id="w3">평가.</span></div>
+    <div class="abs center" id="i2" style="top:530px;font-size:84px;font-weight:800;color:var(--ink)">서로 <span style="color:var(--green)">맞물리나요?</span></div>
+  </div>
+
   <!-- 끝 -->
   <div class="layer" id="end" style="background:#fff">
-    <img class="abs" id="eLogo" src="logo.png" style="left:840px;top:260px;width:240px;height:240px" />
-    <div class="abs center" id="eName" style="top:540px;font-size:120px;font-weight:800;color:var(--navy);letter-spacing:-0.04em">맞물림</div>
+    <img class="abs" id="eLogo" src="logo.png" style="left:840px;top:240px;width:240px;height:240px" />
+    <div class="abs center" id="eName" style="top:520px;font-size:120px;font-weight:800;color:var(--navy);letter-spacing:-0.04em">맞물림</div>
+    <div class="abs center" id="eLine" style="top:720px;font-size:46px;font-weight:600;color:#3a4350">교육과정, 수업, 평가가 <span style="color:var(--green)">제대로 맞물렸는지</span> 확인합니다</div>
   </div>
 
 <script>
@@ -136,8 +143,14 @@ const setImg = (img, name) => { if (!img.src.endsWith(`/${name}.png`)) img.src =
 const imgOf = (s, t) => (s.swap && t >= s.swap.at ? s.swap.img : s.img);
 
 window.render = (t0) => {
-  // 장면 시각표는 3초부터 시작하도록 짜여 있어 그만큼 당겨 쓴다 (영상 0초 = 시각표 3초)
-  const t = t0 + 3.0;
+  // 시작 질문(0~3.6초) 뒤에 앱 화면이 시각표 3초부터 이어진다 (영상 3.6초 = 시각표 3초)
+  const introO = 1 - prog(t0, 2.9, 3.4);
+  $('intro').style.opacity = introO;
+  $('intro').style.display = introO > 0 ? 'block' : 'none';
+  fadeUp($('w1'), t0, 0.2, 0.6, 0); fadeUp($('w2'), t0, 0.6, 0.6, 0); fadeUp($('w3'), t0, 1.0, 0.6, 0);
+  ['w1', 'w2', 'w3'].forEach((id) => ($(id).style.display = 'inline-block'));
+  fadeUp($('i2'), t0, 1.7, 0.8);
+  const t = t0 - 0.6;
   const appIn = outCubic(prog(t, 3.0, 3.8));
   $('view').style.opacity = appIn;
   $('view').style.transform = `translateY(${lerp(30, 0, appIn)}px)`;
@@ -148,6 +161,7 @@ window.render = (t0) => {
   $('end').style.display = endO > 0 ? 'block' : 'none';
   fadeUp($('eLogo'), t, 31.6, 0.9, 30);
   fadeUp($('eName'), t, 32.3, 0.9, 30);
+  fadeUp($('eLine'), t, 33.1, 0.9, 20);
 
   const live = SCENES.filter((s) => t >= s.a && t < s.b);
   if (!live.length) return;

@@ -28,7 +28,7 @@
 |---|---|---|
 | 발표용 스크린샷 6장 (1366×768 @2x) | `screenshots/` | `npm run build && npm run screenshots` |
 | 기술 스택 이미지 | `docs/tech-stack.png`, 원본 `docs/tech-stack/` | `npx tsx scripts/tech-stack.ts` |
-| 소개 영상 (33초) | `video/matmullim-intro.mp4` | 아래 참고 |
+| 소개 영상 (36초) | `video/matmullim-intro.mp4` | 아래 참고 |
 
 ### 기술 스택 이미지
 - 공식 로고만 사용(devicon, simple-icons). 출처는 `docs/tech-stack/LOGOS.md`. 점선 박스, 최대한 단순하게.
@@ -37,18 +37,20 @@
 
 ### 소개 영상
 - 실제 데모 앱 화면 중심. 화면 틀은 고정, 단계 ①~⑤를 순서대로 보여 주고 강조는 형광펜·손그림 동그라미·화살표·밑줄로 한다.
-  확대는 강조할 때만 살짝 했다가 반드시 전체 화면으로 돌아온다. 엔딩은 로고 + "맞물림"이 나타나서 그대로 멈춘다(페이드 아웃 없음).
-- 사용자 피드백 이력: 줌 남발·빠른 컷·휙 소리 → 어지럽고 시끄럽다고 해서 차분하게 바꿈. 처음/마지막의 "평가계획서와 채점기준표" 문장은 범용성 때문에 뺌.
+  확대는 강조할 때만 살짝 했다가 반드시 전체 화면으로 돌아온다.
+- 시작(0~3.5초): "교육과정, 수업, 평가. / 서로 맞물리나요?" 질문으로 연다(사용자가 좋다고 한 후킹).
+- 엔딩: 로고 + "맞물림" + "교육과정, 수업, 평가가 제대로 맞물렸는지 확인합니다"(발표덱 표지 문구)가 나타나서 그대로 멈춘다(페이드 아웃 없음).
+- 사용자 피드백 이력: 줌 남발·빠른 컷·휙 소리 → 어지럽고 시끄럽다고 해서 차분하게 바꿈. 처음/마지막에 "평가계획서와 채점기준표"로 한정한 문장은 범용성 때문에 뺐고, 대신 교육과정·수업·평가 문구를 씀.
 - 소리: 효과음은 ElevenLabs Sound Effects로 만든 것(`video/sfx/`), 클릭·해결·엔딩에만 작게.
   배경 음악은 지금 연결된 ElevenLabs 커넥터(제한판)가 음악 생성을 못 해서 `scripts/intro-music.py`로 합성했다.
   ElevenLabs로 음악을 만들려면 전체 커넥터(https://api.elevenlabs.io/v1/mcp)를 추가해야 한다.
 - 파일 구조
   - `scripts/capture-demo.ts`: 실제 앱을 조작해 `video/demo/*.png`(1600×900 @2x)와 `boxes.json`(요소 위치) 저장
   - `video/intro.html`: `window.render(t)`로 프레임을 그리는 애니메이션. `SCENES` 배열에 장면·자막·강조 표시 좌표(1600×900 기준)가 있다.
-    시각표는 3초부터 시작하도록 짜여 있어 `render`가 3초를 더해 쓴다.
+    `SCENES` 시각표의 3초가 영상 3.6초에 오도록 `render`가 0.6초를 빼서 쓴다(앞 3.5초는 시작 질문).
   - `scripts/intro-video.ts`: 프레임을 찍어 ffmpeg로 무음 영상 생성 (`--preview 1,2,3`으로 특정 시각 미리보기)
   - `scripts/intro-music.py`: 배경 음악 합성 → `video/music.wav`
-  - `scripts/intro-mix.py`: 음악(앞 3초 잘라 씀) + 효과음 `CUES`를 섞어 최종 mp4
+  - `scripts/intro-mix.py`: 음악(0.6초 늦춰 깖) + 효과음 `CUES`(영상 시각 기준)를 섞어 최종 mp4
 - 다시 만들기:
   `npm run build && npx tsx scripts/capture-demo.ts && npx tsx scripts/intro-video.ts && python3 scripts/intro-music.py video/music.wav && python3 scripts/intro-mix.py`
   (앱 화면이 바뀌면 `SCENES`의 강조 좌표도 같이 고쳐야 한다.)
@@ -57,3 +59,8 @@
 
 - 네트워크: npm 레지스트리는 되고, jsDelivr·wikimedia·hancom 등은 막혀 있었다.
 - 영상 작업에 ffmpeg, numpy가 필요하다(scipy 없음).
+
+## 참고 자료
+
+- 설계서 v2 PDF(「맞물림」 교·수·평 정렬 진단 AI 설계서)와 발표덱 v3 PDF는 대화에 첨부만 했고 저장소에는 없다.
+  발표덱 표지 문구: "교육과정, 수업, 평가가 제대로 맞물렸는지 확인합니다". 제품은 전 교과용으로 설계하고 1차 실증만 한 지역·중학교·정보 교과로 좁혔다.
