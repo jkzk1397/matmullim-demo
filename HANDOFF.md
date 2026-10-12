@@ -28,7 +28,7 @@
 |---|---|---|
 | 발표용 스크린샷 6장 (1366×768 @2x) | `screenshots/` | `npm run build && npm run screenshots` |
 | 기술 스택 이미지 | `docs/tech-stack.png`, 원본 `docs/tech-stack/` | `npx tsx scripts/tech-stack.ts` |
-| 소개 영상 (36초) | `video/matmullim-intro.mp4` | 아래 참고 |
+| 소개 영상 (38초) | `video/matmullim-intro.mp4` | 아래 참고 |
 
 ### 기술 스택 이미지
 - 공식 로고만 사용(devicon, simple-icons). 출처는 `docs/tech-stack/LOGOS.md`. 점선 박스, 최대한 단순하게.
@@ -38,7 +38,8 @@
 ### 소개 영상
 - 실제 데모 앱 화면 중심. 화면 틀은 고정, 단계 ①~⑤를 순서대로 보여 주고 강조는 형광펜·손그림 동그라미·화살표·밑줄로 한다.
   확대는 강조할 때만 살짝 했다가 반드시 전체 화면으로 돌아온다.
-- 시작(0~3.5초): "교육과정, 수업, 평가. / 서로 맞물리나요?" 질문으로 연다(사용자가 좋다고 한 후킹).
+- 시작(0~2.9초): "교육과정, 수업, 평가. / 서로 맞물리나요?" 질문으로 연다(사용자가 좋다고 한 후킹).
+  이어서(3.2~5.3초) 답에 해당하는 장면: "성취기준·배점·채점기준·교육청 지침" 칩 + "문서끼리 하나하나 맞춰 봅니다". 질문에서 바로 앱으로 넘어가면 갑작스럽다는 피드백 때문.
 - 엔딩: 로고 + "맞물림" + "교육과정, 수업, 평가가 제대로 맞물렸는지 확인합니다"(발표덱 표지 문구)가 나타나서 그대로 멈춘다(페이드 아웃 없음).
 - 사용자 피드백 이력: 줌 남발·빠른 컷·휙 소리 → 어지럽고 시끄럽다고 해서 차분하게 바꿈. 처음/마지막에 "평가계획서와 채점기준표"로 한정한 문장은 범용성 때문에 뺐고, 대신 교육과정·수업·평가 문구를 씀.
 - 소리: 효과음은 ElevenLabs Sound Effects로 만든 것(`video/sfx/`), 클릭·해결·엔딩에만 작게.
@@ -47,10 +48,13 @@
 - 파일 구조
   - `scripts/capture-demo.ts`: 실제 앱을 조작해 `video/demo/*.png`(1600×900 @2x)와 `boxes.json`(요소 위치) 저장
   - `video/intro.html`: `window.render(t)`로 프레임을 그리는 애니메이션. `SCENES` 배열에 장면·자막·강조 표시 좌표(1600×900 기준)가 있다.
-    `SCENES` 시각표의 3초가 영상 3.6초에 오도록 `render`가 0.6초를 빼서 쓴다(앞 3.5초는 시작 질문).
+    `SCENES` 시각표의 3초가 영상 5.6초에 오도록 `render`가 2.6초를 빼서 쓴다(앞부분은 질문·답 장면).
+    시작 장면은 겹친 투명도로 글자 주변에 옅은 네모 잔상이 생겼던 적이 있다. 배경 투명도를 따로 계산하고, 투명도 0인 요소는 visibility로 숨겨 해결했다.
+    앱 장면 전에는 자막·커서도 숨겨야 한다(초기 상태로 보였던 버그가 있었음).
   - `scripts/intro-video.ts`: 프레임을 찍어 ffmpeg로 무음 영상 생성 (`--preview 1,2,3`으로 특정 시각 미리보기)
   - `scripts/intro-music.py`: 배경 음악 합성 → `video/music.wav`
-  - `scripts/intro-mix.py`: 음악(0.6초 늦춰 깖) + 효과음 `CUES`(영상 시각 기준)를 섞어 최종 mp4
+  - `scripts/intro-music.py`의 `OFF = 2.6`이 위 시각 차이를 반영한다(음악 시각은 장면 시각표 기준).
+  - `scripts/intro-mix.py`: 음악 + 효과음 `CUES`(영상 시각 기준)를 섞어 최종 mp4
 - 다시 만들기:
   `npm run build && npx tsx scripts/capture-demo.ts && npx tsx scripts/intro-video.ts && python3 scripts/intro-music.py video/music.wav && python3 scripts/intro-mix.py`
   (앱 화면이 바뀌면 `SCENES`의 강조 좌표도 같이 고쳐야 한다.)

@@ -20,6 +20,7 @@
   .hl { mix-blend-mode: multiply; }
   #cap { position: absolute; left: 0; right: 0; top: 952px; height: 100px; display: flex; align-items: center; justify-content: center; gap: 20px; }
   #capNum { width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 30px; font-weight: 800; display: flex; align-items: center; justify-content: center; letter-spacing: 0; }
+  .chip { display: inline-block; padding: 18px 36px; border: 3px solid var(--navy); border-radius: 999px; font-size: 48px; font-weight: 700; color: var(--navy); background: #fff; }
   #capText { font-size: 44px; font-weight: 700; color: var(--ink); }
 </style>
 </head>
@@ -41,6 +42,11 @@
   <div class="layer" id="intro" style="background:#fff">
     <div class="abs center" id="i0" style="top:390px;font-size:84px;font-weight:800;color:var(--navy)"><span id="w1">교육과정,</span> <span id="w2">수업,</span> <span id="w3">평가.</span></div>
     <div class="abs center" id="i2" style="top:530px;font-size:84px;font-weight:800;color:var(--ink)">서로 <span style="color:var(--green)">맞물리나요?</span></div>
+    <!-- 질문에 대한 답: 무엇을 맞춰 보는지 -->
+    <div class="abs center" id="b1" style="top:400px;display:flex;justify-content:center;gap:28px">
+      <span class="chip" id="c1">성취기준</span><span class="chip" id="c2">배점</span><span class="chip" id="c3">채점기준</span><span class="chip" id="c4">교육청 지침</span>
+    </div>
+    <div class="abs center" id="b2" style="top:560px;font-size:64px;font-weight:800;color:var(--ink)">문서끼리 <span style="color:var(--green)">하나하나 맞춰 봅니다</span></div>
   </div>
 
   <!-- 끝 -->
@@ -143,14 +149,32 @@ const setImg = (img, name) => { if (!img.src.endsWith(`/${name}.png`)) img.src =
 const imgOf = (s, t) => (s.swap && t >= s.swap.at ? s.swap.img : s.img);
 
 window.render = (t0) => {
-  // 시작 질문(0~3.6초) 뒤에 앱 화면이 시각표 3초부터 이어진다 (영상 3.6초 = 시각표 3초)
-  const introO = 1 - prog(t0, 2.9, 3.4);
-  $('intro').style.opacity = introO;
-  $('intro').style.display = introO > 0 ? 'block' : 'none';
-  fadeUp($('w1'), t0, 0.2, 0.6, 0); fadeUp($('w2'), t0, 0.6, 0.6, 0); fadeUp($('w3'), t0, 1.0, 0.6, 0);
-  ['w1', 'w2', 'w3'].forEach((id) => ($(id).style.display = 'inline-block'));
+  // 0~2.9초 질문 → 3.2~5.2초 무엇을 맞춰 보는지 → 5.6초부터 앱 화면(시각표 3초 = 영상 5.6초)
+  // 겹친 투명도 때문에 잔상이 생기지 않도록 배경과 글자의 투명도를 따로 계산한다
+  const bgA = 1 - prog(t0, 5.3, 5.8);
+  $('intro').style.opacity = 1;
+  $('intro').style.background = `rgba(255,255,255,${bgA})`;
+  $('intro').style.display = bgA > 0 ? 'block' : 'none';
+  const qOut = 1 - prog(t0, 2.7, 3.1);
+  [['w1', 0.2], ['w2', 0.6], ['w3', 1.0]].forEach(([id, a]) => {
+    $(id).style.display = 'inline-block';
+    $(id).style.opacity = outCubic(prog(t0, a, a + 0.6)) * qOut;
+  });
   fadeUp($('i2'), t0, 1.7, 0.8);
-  const t = t0 - 0.6;
+  $('i2').style.opacity *= qOut;
+  const bOut = 1 - prog(t0, 5.0, 5.35);
+  [['c1', 3.3], ['c2', 3.55], ['c3', 3.8], ['c4', 4.05]].forEach(([id, a]) => {
+    fadeUp($(id), t0, a, 0.6, 20);
+    $(id).style.opacity *= bOut;
+  });
+  fadeUp($('b2'), t0, 4.4, 0.7, 20);
+  $('b2').style.opacity *= bOut;
+  // 투명도 0인 글자는 아예 숨긴다(남은 레이어가 옅은 네모로 비치지 않게)
+  ['i0', 'w1', 'w2', 'w3', 'i2', 'c1', 'c2', 'c3', 'c4', 'b2'].forEach((id) => {
+    const el = $(id);
+    el.style.visibility = id === 'i0' ? (qOut > 0 ? 'visible' : 'hidden') : +el.style.opacity > 0.001 ? 'visible' : 'hidden';
+  });
+  const t = t0 - 2.6;
   const appIn = outCubic(prog(t, 3.0, 3.8));
   $('view').style.opacity = appIn;
   $('view').style.transform = `translateY(${lerp(30, 0, appIn)}px)`;
@@ -164,7 +188,7 @@ window.render = (t0) => {
   fadeUp($('eLine'), t, 33.1, 0.9, 20);
 
   const live = SCENES.filter((s) => t >= s.a && t < s.b);
-  if (!live.length) return;
+  if (!live.length) { $('cap').style.opacity = 0; $('cur').style.opacity = 0; $('clickRing').style.opacity = 0; return; }
   const s = live[live.length - 1];
   const prev = live.length > 1 ? live[0] : null;
   const k = prev ? ease(prog(t, s.a, prev.b)) : 1;

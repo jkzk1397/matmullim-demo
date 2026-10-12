@@ -1,11 +1,12 @@
-# 소개 영상 배경 음악 합성 (36초, 느린 템포, A단조 → C장조).
+# 소개 영상 배경 음악 합성 (38초, 느린 템포, A단조 → C장조). 아래 시각은 장면 시각표 기준이고 OFF만큼 늦춰 깔린다.
 # 잔잔한 패드로 시작해 장면이 넘어갈 때마다 아르페지오·베이스·부드러운 박자가 하나씩 더해지고,
 # 31초 엔딩에서 C장조로 조용히 풀린다. 효과음과 겹쳐도 시끄럽지 않게 전체를 낮게 둔다. 사용: python3 scripts/intro-music.py video/music.wav
 import sys, wave
 import numpy as np
 
 SR = 44100
-DUR = 36.5
+OFF = 2.6  # 영상 앞의 질문 장면만큼 시각표를 늦춘다
+DUR = 36.5 + OFF
 N = int(SR * DUR)
 t = np.arange(N) / SR
 out = np.zeros((N, 2))
@@ -21,8 +22,8 @@ def env(n, a, d, s, r, sus):
         e[ss:] = e[ss] * np.exp(-np.arange(n - ss) / (r * SR / 4 + 1))
     return e
 
-def add(start, sig, pan=0.0, gain=1.0):
-    i = int(start * SR)
+def add(start, sig, pan=0.0, gain=1.0, raw=False):
+    i = int((start + (0 if raw else OFF)) * SR)
     j = min(N, i + len(sig))
     if j <= i: return
     l = np.cos((pan + 1) * np.pi / 4); r = np.sin((pan + 1) * np.pi / 4)
@@ -86,6 +87,9 @@ for bar in range(14):
         if 20.7 <= st < END and i % 2 == 0: add(st, kick(), gain=0.22)
         if 25.9 <= st < END: add(st + BEAT / 2, hat(), pan=0.2, gain=0.04)
 
+# 질문 장면: 첫 화음을 미리 깔아 둔다
+for m in CH[0]: add(0, pad_note(m, OFF + 0.6), pan=(m % 5 - 2) * 0.15, gain=0.10, raw=True)
+
 # 31초 엔딩: C장조 화음이 조용히 퍼지고 길게 울림
 for m in [48, 55, 60, 64, 67]:
     add(END, pad_note(m, 5.0), pan=(m % 5 - 2) * 0.2, gain=0.12)
@@ -95,7 +99,7 @@ for i, m in enumerate([72, 76, 79, 84]):
 # 전체: 시작 0.8초 페이드 인, 끝 1.5초 페이드 아웃
 fade = np.ones(N)
 fi = int(0.8 * SR); fade[:fi] = np.linspace(0, 1, fi)
-fo0 = int(34.8 * SR); fade[fo0:] = np.linspace(1, 0, N - fo0)
+fo0 = int((34.8 + OFF) * SR); fade[fo0:] = np.linspace(1, 0, N - fo0)
 out *= fade[:, None]
 out = np.tanh(out * 1.2) / np.tanh(1.2)
 out /= max(1e-9, np.abs(out).max()) / 0.8

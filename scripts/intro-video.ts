@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 
 const FPS = 30;
-const DURATION = 36;
+const DURATION = 38;
 const args = process.argv.slice(2);
 const preview = args[0] === '--preview' ? args[1].split(',').map(Number) : null;
 
