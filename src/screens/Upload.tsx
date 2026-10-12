@@ -44,7 +44,7 @@ export default function Upload({ plan, rubric, error, loading, lastRun, fixHint,
 
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0">
-            <button type="button" onClick={() => setHelp(!help)} aria-expanded={help} className="flex items-center gap-1.5 text-help font-bold text-brand-blue hover:underline underline-offset-4">
+            <button type="button" onClick={() => setHelp(!help)} aria-expanded={help} className="flex items-center gap-2 text-help font-bold text-brand-blue hover:underline underline-offset-4">
               {Icon.help()}어떤 표를 읽나요?
             </button>
             {help && (
@@ -52,7 +52,7 @@ export default function Upload({ plan, rubric, error, loading, lastRun, fixHint,
                 {[...HELP.plan, ...HELP.rubric].map((h) => (
                   <li key={h}>{h}</li>
                 ))}
-                <li className="text-ink-3">HWP 파일은 한글에서 ‘다른 이름으로 저장 › 한글 문서(*.hwpx)’로 바꿔 주세요.</li>
+                <li className="text-ink-3">HWP 파일은 한글에서 ‘다른 이름으로 저장 → 한글 문서(*.hwpx)’로 바꿔 주세요.</li>
               </ul>
             )}
           </div>
@@ -60,7 +60,7 @@ export default function Upload({ plan, rubric, error, loading, lastRun, fixHint,
             읽어 낸 값 확인하기 {Icon.arrow()}
           </Button>
         </div>
-        {error && <p className="rounded-lg bg-paper px-4 py-3 text-body font-bold text-sev-red shadow-card">{error}</p>}
+        {error && <p className="rounded-lg bg-paper px-4 py-4 text-body font-bold text-sev-red shadow-card">{error}</p>}
 
         <section className="mt-2">
           <h2 className="mb-2 text-help font-bold text-ink-3">예시 문서로 해 보기</h2>
@@ -71,7 +71,7 @@ export default function Upload({ plan, rubric, error, loading, lastRun, fixHint,
                 type="button"
                 onClick={() => onSample(id)}
                 disabled={!!loading}
-                className="group flex items-center justify-between rounded-xl bg-paper px-5 py-4 text-left shadow-card transition-colors duration-150 hover:bg-brand-blue-50 disabled:opacity-60"
+                className="group flex items-center justify-between rounded-xl bg-paper px-4 py-4 text-left shadow-card transition-colors duration-150 hover:bg-brand-blue-50 disabled:opacity-60"
               >
                 <span>
                   <span className="block text-body font-bold text-ink">{SAMPLES[id].label}</span>
@@ -107,7 +107,7 @@ function DropSlot({ kind, doc, onFile, tall }: { kind: DocKind; doc?: ParsedDocu
         if (f) onFile(kind, f);
       }}
       onClick={() => input.current?.click()}
-      className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-paper px-8 text-center transition-colors duration-150 ${
+      className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed bg-paper px-8 text-center transition-colors duration-150 ${
         tall ? 'h-[312px]' : 'h-[200px]'
       } ${over ? 'border-brand-blue bg-brand-blue-50' : doc ? 'border-brand-green' : 'border-line hover:border-brand-blue'}`}
     >
@@ -142,12 +142,12 @@ function DropSlot({ kind, doc, onFile, tall }: { kind: DocKind; doc?: ParsedDocu
 function LastRunBanner({ run, hint }: { run: Run; hint?: string | null }) {
   const n = countBySeverity(runChecks(run.input).cards);
   return (
-    <Card className="px-5 py-3">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
+    <Card className="px-4 py-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="text-help font-bold text-ink-3">지난 점검</span>
         <span className="text-body font-bold text-ink">{run.label}</span>
         {(['red', 'orange', 'gray', 'yellow'] as Severity[]).map((s) => (
-          <span key={s} className="inline-flex items-center gap-1.5 whitespace-nowrap text-help text-ink-2">
+          <span key={s} className="inline-flex items-center gap-2 whitespace-nowrap text-help text-ink-2">
             <Dot s={s} />
             {SEVERITY[s].label} <b className="font-bold text-ink">{n[s]}</b>
           </span>

@@ -20,7 +20,7 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
   return (
     <header className="shrink-0 border-b border-line bg-paper">
       <div className="mx-auto flex h-14 w-[calc(100%-48px)] max-w-page items-center justify-between">
-        <div className="flex w-[260px] items-center gap-2.5">
+        <div className="flex w-[260px] items-center gap-2">
           <img src={LOGO} alt="" className="h-8 w-8" />
           <span className="text-key font-extrabold tracking-[-0.03em] text-brand-navy">맞물림</span>
         </div>
@@ -35,8 +35,8 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
                 disabled={!enabled[s.id]}
                 onClick={() => onStep(s.id)}
                 aria-current={active ? 'step' : undefined}
-                className={`relative flex items-center gap-2 px-3.5 text-help transition-colors duration-150 disabled:cursor-default ${
-                  active ? 'font-bold text-brand-navy' : done ? 'font-semibold text-ink-2 hover:text-brand-navy' : 'text-ink-3 enabled:hover:text-ink'
+                className={`relative flex items-center gap-2 px-4 text-help transition-colors duration-150 disabled:cursor-default ${
+                  active ? 'font-bold text-brand-navy' : done ? 'font-bold text-ink-2 hover:text-brand-navy' : 'text-ink-3 enabled:hover:text-ink'
                 }`}
               >
                 <span
@@ -52,7 +52,7 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
             );
           })}
         </nav>
-        <div className="flex w-[260px] items-center justify-end gap-1.5 text-help text-ink-3">
+        <div className="flex w-[260px] items-center justify-end gap-2 text-help text-ink-3">
           {Icon.lock('h-4 w-4')}
           브라우저 안에서만 처리
         </div>
@@ -68,7 +68,7 @@ export function Page({ children, className = '' }: { children: ReactNode; classN
 
 export function PageHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex shrink-0 items-end justify-between gap-8 pb-3 pt-5">
+    <div className="flex shrink-0 items-end justify-between gap-8 pb-4 pt-4">
       <div className="min-w-0">
         <h1 className="text-title font-extrabold tracking-[-0.03em] text-ink">{title}</h1>
         {sub && <p className="mt-1 text-body text-ink-3">{sub}</p>}
@@ -122,7 +122,7 @@ export function DocTable({
                     rowSpan={sp?.rowSpan}
                     colSpan={sp?.colSpan}
                     onClick={rec && onCell ? () => onCell(ref) : undefined}
-                    className={`border border-line px-2.5 py-1.5 text-left align-top ${r === 0 ? 'bg-canvas font-bold text-ink-2' : 'text-ink'} ${
+                    className={`border border-line px-2 py-2 text-left align-top ${r === 0 ? 'bg-canvas font-bold text-ink-2' : 'text-ink'} ${
                       /^\[[^\]]+\]$/.test(text.trim()) ? 'whitespace-nowrap' : ''
                     } ${rec ? 'cursor-pointer hover:bg-brand-blue-50' : ''} ${
                       hi ? 'bg-brand-blue-50 font-bold outline-dashed outline-2 -outline-offset-[3px] outline-brand-blue' : ''

@@ -79,7 +79,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                 role="tab"
                 aria-selected={tab === k}
                 onClick={() => setTab(k)}
-                className={`-mb-px flex items-center gap-2 border-b-[3px] px-3 pb-2 pt-1.5 text-help transition-colors duration-150 ${
+                className={`-mb-px flex items-center gap-2 border-b-[3px] px-4 pb-2 pt-2 text-help transition-colors duration-150 ${
                   tab === k ? 'border-brand-navy font-bold text-brand-navy' : 'border-transparent text-ink-3 hover:text-ink'
                 }`}
               >
@@ -87,9 +87,9 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                 {DOC_NAME[k]}
               </button>
             ))}
-            <span className="ml-auto pb-2.5 text-help text-ink-3">{docs[tab].fileName}</span>
+            <span className="ml-auto pb-2 text-help text-ink-3">{docs[tab].fileName}</span>
           </div>
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
             {docs[tab].tables.map((t, i) => (
               <DocTable key={i} table={t} index={i} doc={tab} highlight={focus} recognized={recognized} onCell={(r) => onFocus(r)} />
             ))}
@@ -97,34 +97,34 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
         </Card>
 
         <Card className="flex min-h-0 flex-col">
-          <div className="flex shrink-0 items-center justify-between border-b border-line-2 px-5 py-2.5">
+          <div className="flex shrink-0 items-center justify-between border-b border-line-2 px-4 py-2">
             {allPaired && !editPairs ? (
               <span className="flex items-center gap-2 text-help font-bold text-brand-green">
                 {Icon.check()}
                 {paired}쌍 자동 연결
-                <button type="button" className="ml-1 font-semibold text-brand-blue underline-offset-4 hover:underline" onClick={() => setEditPairs(true)}>
+                <button type="button" className="ml-1 font-bold text-brand-blue underline-offset-4 hover:underline" onClick={() => setEditPairs(true)}>
                   바꾸기
                 </button>
               </span>
             ) : (
               <span className="text-help font-bold text-ink-2">같은 평가끼리 짝지어 주세요</span>
             )}
-            <button type="button" onClick={() => setMore(!more)} className="flex items-center gap-1 text-help font-semibold text-ink-3 hover:text-ink" aria-expanded={more}>
+            <button type="button" onClick={() => setMore(!more)} className="flex items-center gap-1 text-help font-bold text-ink-3 hover:text-ink" aria-expanded={more}>
               {more ? '다른 값 접기' : '다른 값도 보기 (반영비율·채점기준)'}
               <span className={more ? 'rotate-180' : ''}>{Icon.chevron()}</span>
             </button>
           </div>
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
             {(!allPaired || editPairs) && (
               <div className="space-y-2">
                 {ex.rubric.map((r) => (
-                  <label key={r.id} className="flex items-center gap-3 text-body">
+                  <label key={r.id} className="flex items-center gap-4 text-body">
                     <span className="min-w-0 flex-1 truncate font-bold">{r.name}</span>
                     <span className="text-help text-ink-3">= 평가계획의</span>
                     <select
                       value={pairs[r.id] ?? ''}
                       onChange={(e) => onPair(r.id, e.target.value || null)}
-                      className="h-10 w-56 rounded-lg bg-canvas px-3 text-help font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                      className="h-10 w-56 rounded-lg bg-canvas px-4 text-help font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
                     >
                       <option value="">짝 없음</option>
                       {ex.plan.map((p) => (
@@ -176,7 +176,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                     id={`f-${refKey(s.ref)}`}
                     type="button"
                     onClick={() => onFocus(s.ref)}
-                    className={`rounded-md px-2.5 py-1 text-help font-bold transition-colors duration-150 ${
+                    className={`rounded-md px-2 py-1 text-help font-bold transition-colors duration-150 ${
                       sameRef(focus, s.ref) ? 'bg-brand-blue-50 text-brand-blue ring-2 ring-brand-blue' : 'bg-canvas text-ink hover:bg-line-2'
                     }`}
                   >
@@ -186,7 +186,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
               </div>
             </Section>
             {ex.warnings.length > 0 && (
-              <ul className="space-y-1 rounded-lg bg-canvas px-4 py-3 text-help text-ink-2">
+              <ul className="space-y-1 rounded-lg bg-canvas px-4 py-4 text-help text-ink-2">
                 {ex.warnings.map((w) => (
                   <li key={w}>{w}</li>
                 ))}
@@ -281,7 +281,7 @@ type FieldProps = {
 function Field({ id, label, value, suffix, onText, onNum, active, edited, onFocus, strong, quiet, grow, w = '' }: FieldProps) {
   return (
     <label
-      className={`flex h-10 min-w-0 items-center gap-1.5 rounded-md px-2 transition-colors duration-150 ${grow ? 'flex-1' : ''} ${w} ${
+      className={`flex h-10 min-w-0 items-center gap-2 rounded-md px-2 transition-colors duration-150 ${grow ? 'flex-1' : ''} ${w} ${
         active ? 'bg-brand-blue-50 outline-dashed outline-2 -outline-offset-2 outline-brand-blue' : 'hover:bg-canvas'
       }`}
     >

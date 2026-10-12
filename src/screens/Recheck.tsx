@@ -90,7 +90,7 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
           <div className="h-3 overflow-hidden rounded-full bg-line-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
             <div className="h-full rounded-full bg-brand-green" style={{ width: `${pct}%` }} />
           </div>
-          <div className="mt-1.5 flex gap-5 text-help text-ink-2">
+          <div className="mt-2 flex gap-4 text-help text-ink-2">
             <span>
               해결됨 <b className="font-bold text-ink">{d.resolved.length}</b>
             </span>
@@ -109,10 +109,10 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
           <table className="w-full border-collapse">
             <thead className="sticky top-0 bg-paper">
               <tr className="text-left text-help text-ink-3">
-                <th className="w-[120px] border-b border-line py-2.5 pl-6 pr-3 font-bold">상태</th>
-                <th className="w-[168px] border-b border-line px-3 py-2.5 font-bold">종류</th>
-                <th className="border-b border-line px-3 py-2.5 font-bold">지적</th>
-                <th className="w-[500px] border-b border-line px-6 py-2.5 font-bold">바뀐 값</th>
+                <th className="w-[120px] border-b border-line py-2 pl-6 pr-4 font-bold">상태</th>
+                <th className="w-[168px] border-b border-line px-4 py-2 font-bold">종류</th>
+                <th className="border-b border-line px-4 py-2 font-bold">지적</th>
+                <th className="w-[500px] border-b border-line px-6 py-2 font-bold">바뀐 값</th>
               </tr>
             </thead>
             <tbody>
@@ -120,16 +120,16 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
                 const ch = s === 'resolved' ? changeOf(c, prev, curr) : null;
                 return (
                   <tr key={c.key} className="border-b border-line-2 last:border-0">
-                    <td className="py-3.5 pl-6 pr-3 align-top">
+                    <td className="py-2 pl-6 pr-4 align-top">
                       <StatusBadge s={s} />
                     </td>
-                    <td className="px-3 py-3 align-top">
+                    <td className="px-4 py-2 align-top">
                       <SeverityLabel s={c.severity} className={s === 'resolved' ? 'opacity-70' : ''} />
                     </td>
-                    <td className={`px-3 py-3 align-top text-body ${s === 'resolved' ? 'text-ink-3' : 'font-bold text-ink'}`}>
+                    <td className={`px-4 py-2 align-top text-body ${s === 'resolved' ? 'text-ink-3' : 'font-bold text-ink'}`}>
                       <span className="line-clamp-2">{c.title}</span>
                     </td>
-                    <td className="px-6 py-3 align-top text-body">
+                    <td className="px-6 py-2 align-top text-body">
                       {ch ? (
                         <div className="flex items-baseline gap-x-2 whitespace-nowrap">
                           <span className="text-help text-ink-3">{ch.context}</span>

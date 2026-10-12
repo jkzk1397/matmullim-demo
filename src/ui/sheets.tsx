@@ -178,15 +178,15 @@ export function buildSheets(card: Card, docs: Docs, input: CheckInput): SheetPai
 export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col rounded-xl bg-paper shadow-card">
-      <div className="flex items-baseline justify-between gap-3 border-b border-line-2 px-4 py-2">
+      <div className="flex items-baseline justify-between gap-4 border-b border-line-2 px-4 py-2">
         <span className="text-body font-bold text-ink">{model.label}</span>
         {model.sub && <span className="truncate text-help text-ink-3">{model.sub}</span>}
       </div>
-      <div className="space-y-2 px-4 py-2.5">
+      <div className="space-y-2 px-4 py-2">
         {model.parts.map((pt, i) =>
           pt.rows.length === 1 && pt.header.length === 1 && !pt.foot ? (
             // 값 하나짜리 표 조각은 한 줄로: "평가 개요 · 프로그래밍 프로젝트   만점 30점"
-            <div key={i} className="flex items-baseline justify-between gap-3 border-b border-line-2 pb-1.5">
+            <div key={i} className="flex items-baseline justify-between gap-4 border-b border-line-2 pb-2">
               <span className="text-help text-ink-3">{pt.title}</span>
               <span className="whitespace-nowrap">
                 <span className="mr-2 text-help font-bold text-ink-3">{pt.header[0]}</span>
@@ -201,7 +201,7 @@ export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
                 <thead>
                   <tr>
                     {pt.header.map((h, j) => (
-                      <th key={j} className={`border-b border-line px-1.5 pb-1 text-left text-help font-bold text-ink-3 ${j === pt.wide ? 'w-full' : 'whitespace-nowrap'}`}>
+                      <th key={j} className={`border-b border-line px-2 pb-1 text-left text-help font-bold text-ink-3 ${j === pt.wide ? 'w-full' : 'whitespace-nowrap'}`}>
                         {h}
                       </th>
                     ))}
@@ -241,7 +241,7 @@ function SheetValue({ c, s }: { c: SheetCell; s: Severity }) {
 function SheetTd({ c, s, wide, foot }: { c: SheetCell; s: Severity; wide?: boolean; foot?: boolean }) {
   const hit = `font-bold ${SEVERITY[s].text}`;
   return (
-    <td className={`px-1.5 py-0.5 align-top ${wide ? '' : 'whitespace-nowrap'} ${foot && !c.strong ? 'text-help text-ink-3' : ''}`}>
+    <td className={`px-2 py-0.5 align-top ${wide ? '' : 'whitespace-nowrap'} ${foot && !c.strong ? 'text-help text-ink-3' : ''}`}>
       {c.mark ? (
         <span className={hit}>{c.text}</span>
       ) : c.phrases ? (

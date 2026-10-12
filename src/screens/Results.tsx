@@ -70,7 +70,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
 
       {/* 숫자 줄: 확인된 오류만 크게 */}
       <Box className="flex shrink-0 items-center gap-8 px-6 py-2">
-        <button type="button" onClick={() => setFilter(filter === 'red' ? 'all' : 'red')} className="flex items-baseline gap-3" aria-pressed={filter === 'red'}>
+        <button type="button" onClick={() => setFilter(filter === 'red' ? 'all' : 'red')} className="flex items-baseline gap-4" aria-pressed={filter === 'red'}>
           <span className="flex items-center gap-2 text-body font-bold text-sev-red">
             <Dot s="red" />
             확인된 오류
@@ -94,17 +94,17 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
             <b className="font-bold text-ink">{n[s]}</b>
           </button>
         ))}
-        <span className="ml-auto flex items-center gap-1.5 text-help text-ink-3">
+        <span className="ml-auto flex items-center gap-2 text-help text-ink-3">
           <span className="text-brand-green">{Icon.check()}</span>
           통과한 점검 {passed.length}
         </span>
       </Box>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] gap-6 pb-4 pt-3">
-        <nav className="min-h-0 space-y-3 overflow-y-auto" aria-label="지적 목록">
+      <div className="grid min-h-0 flex-1 grid-cols-[340px_minmax(0,1fr)] gap-6 pb-4 pt-4">
+        <nav className="min-h-0 space-y-4 overflow-y-auto" aria-label="지적 목록">
           {groups.map((s) => (
             <div key={s}>
-              <div className="mb-1 flex items-center justify-between px-3">
+              <div className="mb-1 flex items-center justify-between px-4">
                 <SeverityLabel s={s} />
                 <span className="text-help font-bold text-ink-3">{n[s]}</span>
               </div>
@@ -119,7 +119,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
                           type="button"
                           onClick={() => setSel(c.key)}
                           aria-current={active}
-                          className={`flex w-full items-center gap-2 rounded-lg border-l-4 px-3 py-2 text-left transition-colors duration-150 ${
+                          className={`flex w-full items-center gap-2 rounded-lg border-l-4 px-4 py-2 text-left transition-colors duration-150 ${
                             active ? `bg-paper shadow-card ${SEVERITY[s].border}` : 'border-l-transparent hover:bg-paper/70'
                           }`}
                         >
@@ -166,16 +166,16 @@ function CardDetail({
 
   return (
     <article>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4">
         <SeverityLabel s={card.severity} />
         <StrengthBadge s={card.strength} />
         {edited && (
-          <span className="ml-auto flex items-center gap-1.5 text-help font-semibold text-brand-blue">
+          <span className="ml-auto flex items-center gap-2 text-help font-bold text-brand-blue">
             {Icon.pen()}교사가 고친 값으로 점검
           </span>
         )}
       </div>
-      <h2 className="mt-1.5 text-key font-bold tracking-[-0.02em] text-ink">{card.title}</h2>
+      <h2 className="mt-2 text-key font-bold tracking-[-0.02em] text-ink">{card.title}</h2>
       {card.locations[0] && <p className="mt-0.5 truncate text-help text-ink-3">{refPath(run.docs, card.locations[0])}</p>}
 
       <div className="mt-2 flex items-stretch gap-2">
@@ -192,7 +192,7 @@ function CardDetail({
         )}
       </div>
 
-      <div className="mt-3">
+      <div className="mt-4">
         <p className="text-body text-ink">
           <b className="mr-2 font-bold">고치는 법</b>
           {firstSentence(card.fix ?? '판정이 아닌 질문이에요. 수업에서 다루고 있다면 메모하고 넘기세요.')}
@@ -200,7 +200,7 @@ function CardDetail({
       </div>
 
       {memo && !editing && (
-        <div className="mt-3 flex items-center gap-2 rounded-lg bg-brand-blue-50 px-4 py-2 text-body text-brand-blue">
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-brand-blue-50 px-4 py-2 text-body text-brand-blue">
           {Icon.pen()}
           <span className="flex-1 truncate">교사 메모 · {memo}</span>
           <button type="button" className="text-help underline underline-offset-4" onClick={() => onMemo(card.key, null)}>
@@ -210,13 +210,13 @@ function CardDetail({
       )}
 
       {editing ? (
-        <div className="mt-3 flex items-start gap-2">
+        <div className="mt-4 flex items-start gap-2">
           <textarea
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="넘기는 이유를 남겨 두세요"
-            className="h-12 flex-1 resize-none rounded-lg bg-paper px-3 py-2 text-body shadow-[inset_0_0_0_1px_#e3e7ed] focus:outline-none focus:ring-2 focus:ring-brand-blue"
+            className="h-12 flex-1 resize-none rounded-lg bg-paper px-4 py-2 text-body shadow-[inset_0_0_0_1px_#e3e7ed] focus:outline-none focus:ring-2 focus:ring-brand-blue"
           />
           <Button
             variant="primary"
@@ -267,33 +267,33 @@ function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNo
     <Page>
       {head}
       <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto pb-8 pt-2">
-        <Box className="h-fit w-full max-w-[760px] px-10 py-7">
-          <div className="flex items-center gap-5">
+        <Box className="h-fit w-full max-w-[760px] px-10 py-8">
+          <div className="flex items-center gap-4">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-green text-white">{Icon.check('h-9 w-9')}</span>
             <div>
               <div className="text-title font-extrabold text-ink">확인된 오류 0건</div>
               <p className="text-body text-ink-2">아래 {result.passed.length}가지 점검을 모두 통과했어요.</p>
             </div>
           </div>
-          <ul className="mt-5 divide-y divide-line-2 border-y border-line-2">
+          <ul className="mt-4 divide-y divide-line-2 border-y border-line-2">
             {result.passed.map((p: PassedCheck) => (
-              <li key={p.rule} className="flex items-center gap-3 py-2.5">
+              <li key={p.rule} className="flex items-center gap-4 py-2">
                 <span className="text-brand-green">{Icon.check('h-5 w-5')}</span>
                 <span className="w-48 shrink-0 text-body font-bold text-ink">{p.label}</span>
                 <span className="text-body text-ink-2">{p.detail}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-3 space-y-1">
+          <div className="mt-4 space-y-1">
             {suggestions.length > 0 && (
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 py-1.5 text-help font-bold text-ink-2">
+                <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-help font-bold text-ink-2">
                   <span className="transition-transform group-open:rotate-180">{Icon.chevron()}</span>
                   <Dot s="yellow" />
                   제안 {suggestions.length}건 보기
                 </summary>
                 {suggestions.map((c) => (
-                  <div key={c.key} className="flex items-center gap-3 py-2 pl-6 text-body text-ink">
+                  <div key={c.key} className="flex items-center gap-4 py-2 pl-6 text-body text-ink">
                     <span className="flex-1">{c.title}</span>
                     {memos[c.key] ? (
                       <span className="text-help text-brand-blue">메모함</span>
@@ -308,13 +308,13 @@ function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNo
             )}
             {pairsShown.length > 0 && (
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 py-1.5 text-help font-bold text-ink-2">
+                <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-help font-bold text-ink-2">
                   <span className="transition-transform group-open:rotate-180">{Icon.chevron()}</span>
                   서로 맞물린 값 보기
                 </summary>
                 <ul className="pl-6">
                   {pairsShown.map(({ p, total }) => (
-                    <li key={p.id} className="flex gap-4 py-1.5 text-body">
+                    <li key={p.id} className="flex gap-4 py-2 text-body">
                       <b className="w-48 font-bold text-ink">{p.name}</b>
                       <span className="text-ink-2">
                         만점 {p.maxScore ?? '—'}점 = 배점 합계 {total}점

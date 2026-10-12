@@ -1,164 +1,146 @@
 ---
 name: 맞물림
-description: 평가계획서와 채점기준표를 나란히 놓고 형광펜으로 맞지 않는 칸을 칠하는 교사의 책상
+description: 평가계획서와 채점기준표를 나란히 놓고, 다른 값만 색으로 짚어 한 장으로 보여 주는 대조표
 colors:
-  graphite: "#23262b"
-  graphite-raised: "#363a41"
-  graphite-ink: "#c3c7ce"
-  desk: "#e8eaed"
-  desk-light: "#f1f2f4"
+  brand-navy: "#0d2b57"
+  brand-navy-2: "#163d75"
+  brand-blue: "#0b5cad"
+  brand-blue-50: "#eaf2fb"
+  brand-teal: "#08a5b3"
+  brand-green: "#2b8a3e"
+  brand-green-50: "#ebf6ee"
+  sev-red: "#d7263d"
+  sev-orange: "#e8590c"
+  sev-gray: "#868e96"
+  sev-yellow: "#b08800"
+  ink: "#212529"
+  ink-2: "#495057"
+  ink-3: "#5f6670"
+  line: "#e3e7ed"
+  line-2: "#eef1f5"
+  canvas: "#f6f8fa"
   paper: "#ffffff"
-  ink: "#1b1d21"
-  ink-2: "#454a53"
-  ink-3: "#5c626c"
-  line: "#dcdfe4"
-  line-light: "#eceef1"
-  pen: "#2747c0"
-  pen-wash: "#eef1fc"
-  marker-red: "#ffc9c3"
-  marker-orange: "#ffd9a6"
-  marker-yellow: "#fff08a"
-  pencil-gray: "#6b7079"
-  pencil-gray-patch: "#e1e4e9"
-  red-line: "#c8382d"
-  red-wash: "#fdeeec"
-  red-ink: "#9b2a21"
-  orange-wash: "#fdf3e5"
-  orange-ink: "#844506"
-  gray-ink: "#474c55"
-  yellow-wash: "#fcf8da"
-  yellow-ink: "#655300"
 typography:
-  stat:
-    fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
-    fontSize: "28px"
-    fontWeight: 700
-    lineHeight: "32px"
-    fontFeature: "tnum"
-  headline:
-    fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
-    fontSize: "26px"
-    fontWeight: 700
-    lineHeight: "36px"
-    letterSpacing: "-0.025em"
   title:
     fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
-    fontSize: "18px"
+    fontSize: "30px"
+    fontWeight: 800
+    lineHeight: "40px"
+    letterSpacing: "-0.03em"
+  key:
+    fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
+    fontSize: "20px"
     fontWeight: 700
-    lineHeight: "28px"
+    lineHeight: "30px"
     letterSpacing: "-0.02em"
   body:
     fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
-    fontSize: "15px"
-    fontWeight: 400
-    lineHeight: "24px"
+    fontSize: "17px"
+    fontWeight: 500
+    lineHeight: "28px"
     letterSpacing: "-0.01em"
     fontFeature: "tnum"
-  sheet:
+  help:
     fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
     fontSize: "14px"
-    fontWeight: 400
+    fontWeight: 500
     lineHeight: "22px"
     letterSpacing: "-0.01em"
     fontFeature: "tnum"
-  label:
-    fontFamily: "Pretendard Variable, Pretendard, system-ui, sans-serif"
-    fontSize: "13px"
-    fontWeight: 400
-    lineHeight: "20px"
-    letterSpacing: "-0.01em"
 rounded:
-  mark: "3px"
-  sm: "4px"
   md: "6px"
   lg: "8px"
   xl: "12px"
   full: "9999px"
 spacing:
-  xs: "4px"
   sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "24px"
-  gutter: "32px"
+  md: "16px"
+  lg: "24px"
+  xl: "32px"
 components:
-  button-primary:
-    backgroundColor: "{colors.graphite}"
+  header:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.brand-navy}"
+    height: "56px"
+  step-tab-active:
+    backgroundColor: "{colors.brand-navy}"
     textColor: "{colors.paper}"
+    rounded: "{rounded.full}"
+    size: "24px"
+  step-tab-done:
+    backgroundColor: "{colors.brand-green-50}"
+    textColor: "{colors.brand-green}"
+    rounded: "{rounded.full}"
+    size: "24px"
+  button-primary:
+    backgroundColor: "{colors.brand-navy}"
+    textColor: "{colors.paper}"
+    typography: "{typography.help}"
     rounded: "{rounded.lg}"
     padding: "0 16px"
     height: "40px"
   button-primary-hover:
-    backgroundColor: "{colors.graphite-raised}"
+    backgroundColor: "{colors.brand-navy-2}"
   button-primary-lg:
-    backgroundColor: "{colors.graphite}"
+    backgroundColor: "{colors.brand-navy}"
     textColor: "{colors.paper}"
+    typography: "{typography.body}"
     rounded: "{rounded.lg}"
     padding: "0 24px"
     height: "48px"
   button-secondary:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
+    typography: "{typography.help}"
     rounded: "{rounded.lg}"
     padding: "0 16px"
     height: "40px"
   button-secondary-hover:
-    backgroundColor: "{colors.desk-light}"
+    backgroundColor: "{colors.canvas}"
   button-quiet:
-    textColor: "{colors.ink-2}"
+    textColor: "{colors.brand-blue}"
+    typography: "{typography.help}"
     height: "40px"
-  button-quiet-hover:
-    textColor: "{colors.ink}"
-  shell-header:
-    backgroundColor: "{colors.graphite}"
-    textColor: "{colors.graphite-ink}"
-    padding: "0 32px"
-    height: "56px"
-  step-tab-active:
-    textColor: "{colors.paper}"
-  paper:
+  card:
     backgroundColor: "{colors.paper}"
     rounded: "{rounded.xl}"
   comparison-sheet:
     backgroundColor: "{colors.paper}"
-    textColor: "{colors.ink}"
-    typography: "{typography.sheet}"
-    rounded: "{rounded.lg}"
-    padding: "12px 16px"
-  count-filter:
-    backgroundColor: "{colors.paper}"
     textColor: "{colors.ink-2}"
-    padding: "10px 20px"
-  count-filter-active:
-    backgroundColor: "{colors.desk-light}"
-  margin-item:
-    textColor: "{colors.ink}"
+    typography: "{typography.body}"
     rounded: "{rounded.xl}"
-    padding: "10px 16px"
-  margin-item-hover:
-    backgroundColor: "{colors.desk-light}"
-  margin-item-active:
+    padding: "8px 16px"
+  strength-badge:
+    textColor: "{colors.ink-2}"
+    typography: "{typography.help}"
+    rounded: "{rounded.md}"
+    padding: "0 8px"
+  result-item:
+    textColor: "{colors.ink-2}"
+    typography: "{typography.body}"
+    rounded: "{rounded.lg}"
+    padding: "8px 12px"
+  result-item-active:
     backgroundColor: "{colors.paper}"
-  num-chip-red:
-    backgroundColor: "{colors.red-wash}"
-    textColor: "{colors.red-ink}"
-    rounded: "{rounded.full}"
-    size: "24px"
-  num-chip-orange:
-    backgroundColor: "{colors.orange-wash}"
-    textColor: "{colors.orange-ink}"
-    rounded: "{rounded.full}"
-    size: "24px"
-  num-chip-gray:
-    backgroundColor: "{colors.desk-light}"
-    textColor: "{colors.gray-ink}"
-    rounded: "{rounded.full}"
-    size: "24px"
-  num-chip-yellow:
-    backgroundColor: "{colors.yellow-wash}"
-    textColor: "{colors.yellow-ink}"
-    rounded: "{rounded.full}"
-    size: "24px"
+    textColor: "{colors.ink}"
+  status-resolved:
+    backgroundColor: "{colors.brand-green}"
+    textColor: "{colors.paper}"
+    typography: "{typography.help}"
+    rounded: "{rounded.md}"
+    padding: "2px 8px"
+  status-remaining:
+    backgroundColor: "{colors.sev-gray}"
+    textColor: "{colors.paper}"
+    typography: "{typography.help}"
+    rounded: "{rounded.md}"
+    padding: "2px 8px"
+  status-added:
+    backgroundColor: "{colors.sev-red}"
+    textColor: "{colors.paper}"
+    typography: "{typography.help}"
+    rounded: "{rounded.md}"
+    padding: "2px 8px"
   input-field:
     textColor: "{colors.ink}"
     typography: "{typography.body}"
@@ -166,161 +148,164 @@ components:
     padding: "0 8px"
     height: "40px"
   input-field-focus:
-    backgroundColor: "{colors.pen-wash}"
+    backgroundColor: "{colors.brand-blue-50}"
   input-field-edited:
-    textColor: "{colors.pen}"
+    textColor: "{colors.brand-blue}"
   teacher-memo:
-    backgroundColor: "{colors.pen-wash}"
-    textColor: "{colors.pen}"
+    backgroundColor: "{colors.brand-blue-50}"
+    textColor: "{colors.brand-blue}"
     typography: "{typography.body}"
     rounded: "{rounded.lg}"
-    padding: "12px 16px"
+    padding: "8px 16px"
 ---
 
 # Design System: 맞물림
 
 ## Overview
 
-**Creative North Star: "형광펜 대조의 책상"**
+**Creative North Star: "한 장으로 읽히는 대조표"**
 
-인쇄한 두 문서를 나란히 놓고, 맞지 않는 칸에 형광펜을 긋던 교사의 책상이 이 시스템의 전부다. 흑연색 상단 셸 아래 옅은 책상 회색이 깔리고, 그 위에 테두리 없는 흰 종이가 부드러운 그림자로 놓인다. 모든 지적은 "내 문서 한 장 ↔ 대조 문서 한 장"으로 보이고, 지적된 칸은 원문 그대로 칠해진다.
+화면 하나가 발표 슬라이드 한 장으로 읽혀야 한다. 흰 상단바와 아주 옅은 바탕 위에 흰 카드가 놓이고, 화면 제목 한 줄이 그 화면의 결론을 말한다. 지적 하나는 "내 문서 한 장 ↔ 대조 문서 한 장"으로 나란히 보이며, 두 문서에서 서로 다른 값만 카드 색으로 짚고 같은 값은 흐리게 물러난다.
 
-표시를 하는 손은 둘이다. 도구는 형광펜(빨강·주황·노랑 형광 띠, 회색은 연필 점선 밑줄)으로만 말하고, 교사의 판단(메모·연결 지정·고친 값)은 파란 볼펜 잉크로만 남는다. 밀도는 높지만 차분하다. 한 화면이 발표 슬라이드 한 장으로 읽혀야 하므로, 상단 한 줄 제목이 그 화면의 결론을 말한다.
+색은 팀 로고에서 왔다. 남색은 결정(주 행동, 현재 단계), 파랑은 교사의 손과 누를 수 있는 글자, 초록은 통과·해결. 카드 의미 색 네 가지는 언제나 같은 색 글자 라벨과 함께 점 또는 왼쪽 선으로만 나온다. 장식은 없다: 그림자 하나, 글자 크기 네 단계, 8px 단위 간격.
 
-확인된 거부: 회색 SaaS 위에 숫자 타일과 이슈 목록을 늘어놓는 배열, 카드 왼쪽 색 띠.
+확인된 거부: 옅은 분홍·주황 알약 배지, 강도 슬라이더, 화면에 드러나는 개발자식 문구(처리 시간, "같은 표를 넣으면 언제나 같은 결과", 목록 안의 › 경로).
 
 **Key Characteristics:**
-- 흑연 셸 · 책상 회색 바탕 · 테두리 없는 흰 종이
-- 도구의 표시는 형광펜, 교사의 판단은 파란 볼펜
-- 지적 하나 = 종이 두 장의 대조
-- Pretendard 한 가족, 숫자는 tabular
-- 색은 언제나 글자 라벨과 함께
+- 흰 상단바 + 1px 선, 가운데 1240px 화면 폭
+- 로고 색(남색·파랑·초록)과 카드 의미 색 네 가지뿐
+- 글자 크기 네 단계(30 · 20 · 17 · 14), 14px 미만 없음
+- 지적 하나 = 문서 두 장 나란히, 다른 값만 색
+- 색은 언제나 같은 색 글자 라벨과 함께
 
 ## Colors
 
-무채색 책상과 종이 위에, 의미를 가진 형광 세 가지와 연필 회색, 볼펜 파랑 하나만 얹는다.
+차가운 무채색 바탕에 로고 색 셋과, 의미가 고정된 카드 색 넷만 얹는다.
 
 ### Primary
-- **흑연 (Graphite)**: 상단 셸, 주 행동 버튼, 강도 눈금의 채운 구간, 정렬 맵의 연결 점. 화면에서 가장 무거운 색이며 "결정하는 자리"에만 쓴다. 눌렀을 때는 한 단계 밝은 흑연(graphite-raised).
+- **로고 남색 (brand-navy)**: 주 행동 버튼, 현재 단계 원과 밑줄, 워드마크 「맞물림」, 정렬 맵의 연결 표시, "평가 연결하기" 선택 상자. 호버는 한 단계 밝은 남색(brand-navy-2).
 
 ### Secondary
-- **파란 볼펜 (Pen Blue)**: 교사의 손. 메모, 교사가 고친 추출값, 직접 지정한 연결, 포커스 링과 커서. 옅은 볼펜 물(pen-wash)은 메모 상자와 지금 보고 있는 원문 칸의 바탕.
+- **로고 파랑 (brand-blue)**: 교사의 손(메모, 교사가 고친 값과 펜 아이콘, 선생님이 지정한 연결)과 누를 수 있는 글자(조용한 버튼, "어떤 표를 읽나요?"). 포커스 링·커서도 파랑. 옅은 파랑(brand-blue-50)은 메모 상자, 지금 보고 있는 칸, 호버 바탕, 텍스트 선택 바탕.
 
-### Tertiary: 형광펜 네 자루 (카드 종류, 의미 고정)
-- **빨강 형광 (marker-red)**: 확인된 오류. 사실로 확인될 때만. 글자는 red-ink, 칩 바탕은 red-wash, 재점검의 "새로 생김"만 red-line 실선 테두리.
-- **주황 형광 (marker-orange)**: 지침 권고와 다름. 글자 orange-ink, 바탕 orange-wash.
-- **연필 회색 (pencil-gray)**: 연결 확인 필요. 형광 띠가 아니라 점선 밑줄(2px dotted, 밑줄 간격 4px). 견본은 pencil-gray-patch 위 점선. 글자 gray-ink, 바탕은 desk-light.
-- **노랑 형광 (marker-yellow)**: 제안(질문). 글자 yellow-ink, 바탕 yellow-wash. 텍스트 선택 색도 노랑 형광.
+### Tertiary
+- **로고 초록 (brand-green)**: 성공만. "해결됨" 배지, 통과한 점검의 체크, 정상판의 큰 체크 원, 다 올린 파일 칸, 재점검 진행 막대. 옅은 초록(brand-green-50)은 지난 단계의 체크 원 바탕.
+- **로고 청록 (brand-teal)**: 로고 이미지 안에만. 화면 요소에 쓰지 않는다.
+
+### 카드 의미 색 (고정)
+- **빨강 (sev-red)**: 확인된 오류. 다른 값 강조, 성취기준 DB에 없는 코드, "새로 생김" 배지.
+- **주황 (sev-orange)**: 지침 권고와 다름.
+- **회색 (sev-gray)**: 연결 확인 필요. "남음" 배지 바탕, 정렬 맵의 연결 없는 행 왼쪽 선.
+- **노랑 글자 (sev-yellow)**: 제안. 노랑은 바탕이 아니라 글자·점 색으로만.
 
 ### Neutral
-- **책상 (desk / desk-light)**: 앱 바탕과, 그 위의 호버·선택·표 머리 바탕.
-- **종이 (paper)**: 모든 시트와 패널.
-- **먹 세 단계 (ink / ink-2 / ink-3)**: 본문·강조 / 보조 문장 / 메타·경로·캡션. ink-3도 책상 위 5.1:1, 종이 위 6.1:1.
-- **괘선 (line / line-light)**: 표 머리 아래 선과 행 사이 선. 종이 바깥 테두리로는 쓰지 않는다.
-- **흑연 잉크 (graphite-ink)**: 상단 셸 위의 비활성 글자.
+- **먹 세 단계 (ink / ink-2 / ink-3)**: 제목·강조 값 / 본문·보조 문장 / 메타·파일명·같은 값(흐리게).
+- **선 (line / line-2)**: 상단바 아래 1px 선·표 머리 아래 선·보조 버튼 안쪽 선 / 표 행 사이 선, 진행 막대 빈 구간.
+- **바탕 (canvas)**: 앱 바탕, 표 머리, 보조 버튼 호버.
+- **종이 (paper)**: 상단바, 카드, 시트.
 
 ### Named Rules
-**The Two Hands Rule.** 도구가 찾은 것은 형광펜 색으로만, 교사가 정한 것은 파란 볼펜으로만 표시한다. 도구의 출력에 파랑을 쓰거나 교사의 메모에 형광을 쓰지 않는다.
+**The Label-With-Color Rule.** 카드 종류는 네 가지로 고정(확인된 오류 · 지침 권고와 다름 · 연결 확인 필요 · 제안)이고, 의미 색은 10px 원점 또는 4px 왼쪽 선으로만 나오며 언제나 같은 색 글자 라벨이 붙는다. 색만으로 구분하지 않는다.
 
-**The Label-With-Color Rule.** 카드 종류는 네 가지로 고정(확인된 오류 · 지침 권고와 다름 · 연결 확인 필요 · 제안)이며, 색 견본은 언제나 이 글자 라벨과 함께 나온다. 색만으로 구분하지 않는다.
+**The Green-Means-Done Rule.** 초록은 통과·해결에만 쓴다. 남은 것은 회색, 새로 생긴 것은 빨강.
 
-**The Pencil-Not-Marker Rule.** "연결 확인 필요"는 오류로 단정하지 않으므로 형광을 칠하지 않고 연필 점선 밑줄만 긋는다.
+**The Blue-Is-The-Hand Rule.** 도구가 찾은 것은 카드 의미 색으로, 교사가 정하거나 고친 것은 파랑으로 표시한다. 도구의 지적에 파랑을 쓰지 않는다.
 
 ## Typography
 
 **Body Font:** Pretendard Variable (with Pretendard, system-ui, sans-serif)
 
-**Character:** 한 가족, 굵기로만 위계를 만든다. 숫자는 전역 tabular로 세워 표의 점수·배점이 세로로 맞는다. 자간은 전역 -0.01em, 제목은 더 조인다. 한국어 줄바꿈은 어절 단위(keep-all), 제목은 balance.
+**Character:** 한 가족, 네 크기. 위계는 크기와 굵기(800 · 700 · 500)로만 만든다. 숫자는 전역 tabular, 자간 전역 -0.01em. 한국어 줄바꿈은 어절 단위(keep-all), 제목은 balance.
 
 ### Hierarchy
-- **Stat** (700, 28px/32px, tabular): 종류별 개수 막대의 숫자. 단위 "건"은 14px 500 ink-3로 붙인다.
-- **Headline** (700, 26px/36px, -0.025em): 화면마다 한 줄 결론 제목(슬라이드 제목 역할). 화면당 하나.
-- **Title** (700, 18px/28px, -0.02em): 선택한 지적의 제목, 섹션 제목.
-- **Body** (400, 15px/24px): 근거 문장, 고치는 법, 메모. 목록 제목은 15px/22px 600.
-- **Sheet** (400, 14px/22px): 종이 시트와 원문 표의 칸. 칠한 칸은 600 ink.
-- **Label** (400, 13px/20px): 경로, 캡션, "근거"·"고치는 법" 같은 필드 이름, 표 머리(600 ink-3). 대문자 변환이나 넓은 자간 없음.
+- **Title** (800, 30px/40px, -0.03em): 화면마다 한 줄 결론 제목. 개수 막대의 "확인된 오류 n건" 숫자, 정상판 "확인된 오류 0건", 재점검 "n건 중 m건 해결"도 이 크기.
+- **Key** (700, 20px/30px, -0.02em): 선택한 지적의 핵심 문장, 올리기 칸 제목, 관계 기호(≠ ↔ ?, 800). 워드마크 「맞물림」은 800.
+- **Body** (500, 17px/28px): 본문, 목록 항목, 시트의 값, 고치는 법, 메모, 화면 제목 아래 부제(ink-3). 강조는 700.
+- **Help** (500, 14px/22px): 라벨, 단계 탭, 버튼, 배지, 표 머리, 파일명, 근거 줄. 라벨·버튼·배지는 700.
 
 ### Named Rules
-**The One Family Rule.** Pretendard 하나만 쓴다. 디스플레이용 두 번째 서체나 모노 서체를 들이지 않는다. 숫자는 언제나 tabular.
+**The Four Sizes Rule.** 글자 크기는 30 · 20 · 17 · 14 넷뿐이다. 14px 미만은 없고, 다섯 번째 크기를 만들지 않는다. 대문자 변환이나 넓은 자간 없음.
 
 ## Layout
 
-데스크톱 고정 폭 화면(최소 1280px, 기준 캡처 1440×900). 상단 셸 56px 아래 좌우 32px 거터. 결과 화면은 왼쪽 400px 여백 목록 | 오른쪽 대조 보기(간격 24px)의 두 단이며, 대조 보기 안에서 두 종이 시트가 12px 간격으로 나란히 서고 그 사이 28px 원에 관계 기호(≠ 불일치, ↔ 제안, ? 확인 필요)가 놓인다. 시트 아래는 근거 | 고치는 법 | 강도 눈금(236px)의 세 열, 주 행동은 오른쪽 아래. 정렬 맵은 표 | 320px 보조 열.
+데스크톱 화면(기준 캡처 1366×768). 콘텐츠는 최대 1240px 가운데, 좌우 24px 여백. 상단바 56px: 왼쪽 로고 마크(32px, public/brand/logo-mark.png)와 워드마크, 가운데 다섯 단계 탭, 오른쪽 자물쇠 아이콘과 "브라우저 안에서만 처리". 페이지는 뷰포트에 맞추고 긴 영역만 따로 스크롤한다.
 
-리듬은 4px 단위: 8 · 12 · 16 · 24 · 32. 목록 항목 사이 6px, 필드 이름과 값 사이 2px처럼 짝은 조이고 묶음 사이는 16–24px로 띄운다. 긴 영역은 각 단이 따로 스크롤하고 페이지 전체는 뷰포트에 맞춘다.
+결과 화면은 개수 막대(한 줄 카드) 아래 340px 지적 목록 | 대조 보기의 두 단(간격 24px). 대조 보기 안에서 두 시트가 나란히 서고 그 사이 32px 열에 관계 기호가 놓인다. 시트 아래 "고치는 법" 한 문장, 그 아래 근거 줄과 행동 버튼(주 행동은 오른쪽 끝). 확인 화면은 원문 | 읽어 낸 값의 같은 폭 두 단, 올리기는 두 문서 칸 나란히, 정상판은 760px 카드 하나를 가운데.
+
+간격은 8px 배수(8 · 16 · 24 · 32)로 묶음을 나눈다.
 
 ### Named Rules
 **The Two Sheets Rule.** 지적 하나는 "내 문서 한 장 ↔ 대조 문서 한 장"(평가계획서 ↔ 채점기준표, 내 문서 ↔ 성취기준 DB, 채점기준표 ↔ 교육청 지침)으로 보인다. 대조할 상대가 없을 때만 한 장.
 
 ## Elevation & Depth
 
-종이와 책상의 혼합 방식. 바탕은 평평한 책상 회색이고, 종이만 두 겹의 부드러운 그림자로 떠 있다. 선택한 것(여백 목록의 현재 항목, 호버한 예시 문서)은 한 단계 더 떠오른다. 그 밖의 경계는 그림자 대신 1px 안쪽 선(inset)으로 처리한다.
+거의 평평하다. 옅은 바탕 위 흰 카드만 아주 옅은 그림자 하나로 떨어지고, 그 밖의 경계는 1px 선으로 처리한다. 선택한 목록 항목도 같은 그림자를 쓴다(더 떠오르지 않는다).
 
 ### Shadow Vocabulary
-- **Paper** (`box-shadow: 0 1px 2px rgba(20,22,26,0.06), 0 6px 20px -4px rgba(20,22,26,0.10)`): 모든 종이 시트와 패널의 기본.
-- **Lift** (`box-shadow: 0 1px 2px rgba(20,22,26,0.08), 0 10px 28px -6px rgba(20,22,26,0.16)`): 선택된 여백 항목, 호버한 올리기 카드.
-- **Hairline** (`box-shadow: inset 0 0 0 1px #dcdfe4`): 보조 버튼, 표 머리 견본.
-- **Filter underline** (`box-shadow: inset 0 -3px 0 #23262b`): 개수 막대에서 고른 종류.
+- **Card** (`box-shadow: 0 1px 3px rgba(13, 43, 87, 0.08)`): 모든 카드, 시트, 선택한 목록 항목, 예시 문서 버튼.
 
 ### Named Rules
-**The Paper-On-Desk Rule.** 종이는 테두리 없이 그림자로만 책상에서 떨어진다. 종이 안쪽의 표 괘선은 허용하지만, 종이 바깥에 선을 두르지 않는다.
+**The One Shadow Rule.** 그림자는 Card 하나뿐이다. 겹 그림자, 호버 때 떠오르는 그림자를 만들지 않는다.
 
 ## Shapes
 
-부드럽지만 둥글지 않은 모서리. 종이·패널·목록 항목 12px, 대조 시트·버튼·입력 상자·메모 8px, 확인 화면의 칸 입력 6px, 형광 띠 3px. 원형은 번호 칩(24px), 관계 기호(28px), 단계 번호(20px), 강도 눈금의 점에만. 형광 견본은 -12° 기울인 짧은 띠로, 한 번 그은 펜 자국을 흉내 낸다. 올리기 빈 칸만 2px 점선 테두리를 쓴다.
+부드럽지만 둥글지 않은 모서리. 카드·시트·올리기 칸 12px, 버튼·목록 항목·메모·선택 상자 8px, 배지·입력 칸·코드 칩 6px. 원형은 단계 번호(24px), 카드 의미 점(10px), 정렬 맵 표시, 큰 체크 원에만. 올리기 빈 칸만 2px 점선 테두리, 확인 화면의 지금 칸과 대응 원문 칸은 2px 파랑 점선 외곽선.
 
-**The Hatch-Is-Meaning Rule.** 135° 회색 빗금(6px 간격, #eef0f2 / #f8f9fa)은 정렬 맵에서 연결을 찾지 못한 성취기준 행과 그 범례에만 쓴다(원래 요청: "빈 행은 회색 줄무늬"). 일반 질감이나 장식으로 쓰지 않는다.
+**The Left-Line-Is-Scoped Rule.** 4px 왼쪽 선은 사용자가 요청한 두 곳에만 쓴다: 결과 목록에서 선택한 항목(그 카드 의미 색), 정렬 맵에서 연결을 찾지 못한 성취기준 행(sev-gray). 다른 카드나 목록에 두르지 않는다.
 
 ## Components
 
 ### Buttons
-도구가 아니라 책상 위 연필꽂이처럼 조용하다.
-- **Shape:** 부드러운 모서리 (8px), 높이 40px(큰 크기 48px), 600 굵기.
-- **Primary:** 흑연 바탕 흰 글자. 화면당 하나, 대조 보기 오른쪽 아래.
-- **Secondary:** 종이 바탕 + 안쪽 1px 괘선, 호버 시 desk-light.
-- **Quiet:** 바탕 없는 밑줄 글자(ink-2, 괘선색 밑줄 4px 간격). "원문 값 다시 확인", "해결 보기" 같은 곁가지 행동.
-- **Hover / Focus:** 색만 150ms로 바뀐다. 포커스는 모든 요소에 2px 볼펜 파랑 외곽선, 2px 띄움. 비활성은 40% 불투명.
+조용하고 단단하다.
+- **Shape:** 8px 모서리, 높이 40px(큰 크기 48px, 17px 글자), 700 굵기.
+- **Primary:** 남색 바탕 흰 글자. 한 줄의 행동 묶음에서 하나.
+- **Secondary:** 흰 바탕 + 안쪽 1px line 선, 호버 시 canvas.
+- **Quiet:** 바탕 없는 파랑 글자, 호버 시 밑줄. "추출값이 틀렸나요?", "지난 점검과 비교" 같은 곁가지 행동.
+- **Hover / Focus:** 색만 150ms로 바뀐다. 포커스는 2px 파랑 외곽선, 2px 띄움. 비활성 40% 불투명.
 
 ### Chips
-- **번호 칩:** 24px 원, 종류별 wash 바탕 + ink 글자 12px 700. 시트의 칠한 칸과 여백 목록을 잇는다.
-- **종류 라벨:** 형광 견본(16×12px 기울인 띠, 회색은 점선 견본) + 13px 600 종류 ink 글자.
+- **종류 라벨:** 10px 의미 색 원점 + 같은 색 14px 700 글자.
+- **강도 배지:** 하나만. "사실 확인" / "의무" / "권고" / "제안", 1px line 테두리 6px 모서리, ink-2 14px. 슬라이더나 눈금을 쓰지 않는다.
+- **상태 배지 (재점검):** 꽉 찬 바탕 흰 글자 — 해결됨(초록 + 체크), 남음(회색), 새로 생김(빨강).
 
 ### Cards / Containers
-- **Corner Style:** 12px (종이), 8px (대조 시트).
-- **Background:** 종이 흰색. 책상 위에만 놓인다.
-- **Shadow Strategy:** Paper, 선택 시 Lift (Elevation 참조).
-- **Border:** 없음. 시트 머리 아래만 line-light 괘선.
-- **Internal Padding:** 시트 12px 16px, 패널 16px 20px, 빈 결과 패널 32px 36px.
+- **Corner Style:** 12px.
+- **Background:** paper, canvas 바탕 위에만.
+- **Shadow Strategy:** Card (Elevation 참조).
+- **Border:** 없음. 안쪽 구분은 line-2 선.
+- **Internal Padding:** 8px 배수 기준(시트 16px, 큰 카드 24–40px).
 
 ### Inputs / Fields
-- **Style:** 테두리 없는 칸. 확인 화면의 값 칸은 투명 바탕 40px 높이, 호버 시 desk-light. 짝짓기 선택 상자는 desk-light 바탕.
-- **Focus:** 볼펜 물(pen-wash) 바탕 + 2px 볼펜 링. 지금 칸에 대응하는 원문 칸도 같은 볼펜 실선으로 표시.
-- **Edited:** 교사가 고친 값은 볼펜 파랑 글자와 펜 아이콘. 인식된 원문 칸은 볼펜 40% 점선.
+- **Style:** 테두리 없는 40px 칸, 투명 바탕, 호버 시 canvas. 짝짓기 선택 상자는 canvas 바탕 8px 모서리.
+- **Focus:** 옅은 파랑 바탕 + 2px 파랑 점선 외곽선. 대응하는 원문 칸도 같은 표시.
+- **Edited:** 교사가 고친 값은 파랑 글자와 펜 아이콘.
 
 ### Navigation
-흑연 셸 56px: 왼쪽 「맞물림」 워드마크(19px 700 흰색)와 13px 부제, 가운데 다섯 단계 탭(14px, 20px 원 번호, 지난 단계는 체크), 오른쪽 자물쇠 아이콘과 "브라우저 안에서만 처리 · 서버 전송 없음"(상시). 현재 단계는 흰 글자 600 + 2px 흰 밑줄, 비활성은 graphite-ink, 잠긴 단계는 50% 불투명.
+흰 상단바 56px, 아래 1px line. 단계 탭은 14px: 현재 단계는 남색 원 번호 + 700 남색 글자 + 3px 남색 밑줄, 지난 단계는 옅은 초록 원 안 초록 체크, 앞 단계는 canvas 원 ink-3.
 
 ### Comparison Sheet (signature)
-종이 한 장에 원문 표 조각만 옮긴다: 시트 머리(문서 이름 14px 600 | 파일명 13px ink-3), 표 조각 제목(label), 머리 행(label 600 ink-3, 아래 괘선), 행(line-light 구분). 지적된 칸은 형광 띠로 칠한다. 띠는 글자 줄의 12–92% 높이에만 칠하고(줄 사이는 비움), 좌우 3px 여유, 3px 모서리. 카드를 고르면 띠가 왼쪽에서 오른쪽으로 한 번 그어진다(520ms, cubic-bezier(0.16,1,0.3,1)); 동작 줄이기 설정에서는 그냥 칠해져 있다. 맞물림이 계산한 합계는 시트 아래 바닥 행으로 붙인다.
+문서 한 장을 흰 시트로: 머리(문서 이름 17px 700 | 파일명 14px ink-3, 아래 line-2 선), 표 조각 제목(14px ink-3), 표 머리(14px 700 ink-3, 아래 line 선), 17px 행. 두 문서에서 서로 다른 값만 카드 의미 색 700으로, 같은 값은 ink-3로 흐리게. 맞물림이 계산한 합계는 바닥 행 "합계 (맞물림 계산)". 두 시트 사이에 의미 색 관계 기호(≠ 불일치, ↔ 제안, ? 확인 필요). 아래 "고치는 법"은 첫 문장 하나만.
 
-### Strength Scale
-근거의 강도 눈금(사실 > 의무 > 권고 > 제안). 괘선 위 네 점, 현재 강도까지 흑연으로 채우고 현재 점만 1.5배. 아래 네 글자 중 현재만 700 ink, 그 아래 한 줄 풀이. 누르는 컨트롤이 아니다.
+### Clean Result
+정상판: 64px 초록 원 안 흰 체크 + "확인된 오류 0건"(Title) + 통과한 점검 목록(줄마다 초록 체크). 제안과 맞물린 값은 접어 둔다.
+
+### Alignment Map
+성취기준 × 평가 표. 평가계획서 연결은 남색 원점, 채점기준표에만 있는 연결은 남색 테두리 원, 선생님이 지정한 연결은 24px 파랑 원 체크. 연결 없는 행은 4px 회색 왼쪽 선과 남색 "평가 연결하기" 선택 상자.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** 지적 하나를 종이 두 장(내 문서 ↔ 대조 문서)으로 보이고, 지적된 칸을 원문 그대로 형광 띠로 칠한다.
-- **Do** 형광 견본 옆에 고정된 종류 라벨(확인된 오류 · 지침 권고와 다름 · 연결 확인 필요 · 제안)을 함께 단다.
-- **Do** 교사의 메모·고친 값·지정한 연결은 파란 볼펜(#2747c0)과 볼펜 물 바탕으로 표시한다.
-- **Do** 종이는 Paper 그림자로 띄우고, 선택한 하나만 Lift로 올린다.
-- **Do** 숫자는 tabular, 글자 대비는 4.5:1 이상(ink-3가 가장 옅은 본문 색).
-- **Do** 화면마다 한 줄 결론 제목(26px 700)을 둔다.
+- **Do** 지적 하나를 문서 두 장으로 나란히 보이고, 서로 다른 값만 카드 의미 색으로, 같은 값은 흐리게 둔다.
+- **Do** 의미 색 옆에 고정된 종류 라벨(확인된 오류 · 지침 권고와 다름 · 연결 확인 필요 · 제안)을 같은 색으로 단다.
+- **Do** 강도는 배지 하나("사실 확인" / "권고" / "제안")로, 고치는 법은 한 문장으로 보인다.
+- **Do** 통과·해결은 초록, 남은 것은 회색 배지로 표시한다.
+- **Do** 화면마다 한 줄 결론 제목(30px 800)을 둔다.
+- **Do** 간격은 8px 배수로, 그림자는 Card 하나만 쓴다.
 
 ### Don't:
-- **Don't** 회색 SaaS 바탕 위에 숫자 타일과 이슈 목록을 늘어놓지 않는다. 개수는 필터를 겸한 한 줄 막대로만.
-- **Don't** 카드나 목록 항목 왼쪽에 색 띠를 두르지 않는다.
-- **Don't** 종이 바깥에 테두리를 두르지 않는다.
-- **Don't** "연결 확인 필요"에 형광을 칠하거나 빨강을 쓰지 않는다. 연필 점선 밑줄만.
-- **Don't** 도구의 출력에 파란 볼펜 색을 쓰지 않는다.
-- **Don't** 빗금 패턴을 정렬 맵의 연결 없는 행 밖에서 쓰지 않는다.
+- **Don't** 옅은 분홍·주황 알약 배지나 바탕 칠로 카드 종류를 나타내지 않는다.
+- **Don't** 14px보다 작은 글자나 네 단계 밖의 글자 크기를 쓰지 않는다.
+- **Don't** 4px 왼쪽 선을 결과 목록의 선택 항목과 정렬 맵의 연결 없는 행 밖에서 쓰지 않는다.
+- **Don't** 처리 시간, "같은 표를 넣으면 언제나 같은 결과", 목록 안의 › 경로 같은 개발자식 문구를 화면에 두지 않는다. 원문 위치 경로는 상세 화면 제목 아래 한 줄로만 쓴다.
+- **Don't** 도구의 지적에 파랑을, 성공이 아닌 곳에 초록을 쓰지 않는다.
 - **Don't** Pretendard 외의 서체를 들이지 않는다.

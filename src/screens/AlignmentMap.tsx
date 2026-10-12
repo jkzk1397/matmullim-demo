@@ -26,7 +26,7 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
         right={<Button onClick={onResults}>결과로 돌아가기</Button>}
       />
 
-      <div className="flex shrink-0 items-center gap-6 pb-3 text-help text-ink-2">
+      <div className="flex shrink-0 items-center gap-6 pb-4 text-help text-ink-2">
         {used.has('plan') && (
           <span className="flex items-center gap-2">
             <Mark via="plan" /> 평가계획서에 적힌 연결
@@ -44,7 +44,7 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
           <Dot s="gray" /> 연결을 찾지 못한 성취기준
         </span>
         {!missing.length && lastLinked && (
-          <span className="ml-auto flex items-center gap-1.5 font-bold text-brand-green">
+          <span className="ml-auto flex items-center gap-2 font-bold text-brand-green">
             {Icon.check()}
             {lastLinked.code}를 ‘{lastLinked.name}’에 연결했어요
           </span>
@@ -56,9 +56,9 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
           <table className="w-full border-collapse text-body">
             <thead className="sticky top-0 z-10 bg-paper">
               <tr>
-                <th className="border-b border-line py-2.5 pl-6 pr-4 text-left text-help font-bold text-ink-3">성취기준</th>
+                <th className="border-b border-line py-2 pl-6 pr-4 text-left text-help font-bold text-ink-3">성취기준</th>
                 {input.plan.map((a) => (
-                  <th key={a.id} className="w-[168px] border-b border-l border-line-2 border-b-line px-3 py-2.5 text-center align-bottom">
+                  <th key={a.id} className="w-[168px] border-b border-l border-line-2 border-b-line px-4 py-2 text-center align-bottom">
                     <div className="text-help font-bold text-ink">{a.name}</div>
                     <div className="text-help font-medium text-ink-3">
                       {a.method}
@@ -83,7 +83,7 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
 function Row({ row, input, onToggle }: { row: AlignmentRow; input: CheckInput; onToggle: Props['onToggle'] }) {
   return (
     <tr className="border-b border-line-2 last:border-0">
-      <td className={`border-l-4 py-2 pl-5 pr-4 ${row.linked ? 'border-l-transparent' : 'border-l-sev-gray'}`}>
+      <td className={`border-l-4 py-2 pl-4 pr-4 ${row.linked ? 'border-l-transparent' : 'border-l-sev-gray'}`}>
         <div className="flex items-center gap-4">
           <span className={`w-[104px] shrink-0 font-bold ${row.inDb ? 'text-ink' : 'text-sev-red'}`}>{row.code}</span>
           <span className="line-clamp-1 flex-1 text-ink-2" title={row.text}>
@@ -95,7 +95,7 @@ function Row({ row, input, onToggle }: { row: AlignmentRow; input: CheckInput; o
               <select
                 value=""
                 onChange={(e) => e.target.value && onToggle(row.code, e.target.value)}
-                className="h-10 cursor-pointer appearance-none rounded-lg bg-brand-navy pl-4 pr-9 text-help font-bold text-white hover:bg-brand-navy-2 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                className="h-10 cursor-pointer appearance-none rounded-lg bg-brand-navy pl-4 pr-8 text-help font-bold text-white hover:bg-brand-navy-2 focus:outline-none focus:ring-2 focus:ring-brand-blue"
               >
                 <option value="">평가 연결하기</option>
                 {input.plan.map((a) => (

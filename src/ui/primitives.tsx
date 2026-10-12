@@ -19,7 +19,7 @@ export function Dot({ s }: { s: Severity }) {
 /** 강도 배지 하나: "사실 확인" / "권고" / "제안" */
 export function StrengthBadge({ s }: { s: Strength }) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-md border border-line px-2 text-help font-semibold text-ink-2" title={STRENGTH_HINT[s]}>
+    <span className="inline-flex shrink-0 items-center rounded-md border border-line px-2 text-help font-bold text-ink-2" title={STRENGTH_HINT[s]}>
       {STRENGTH_BADGE[s]}
     </span>
   );
