@@ -1,0 +1,15 @@
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-white text-ink font-sans text-body antialiased;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+}
+.stripes {
+  background-image: repeating-linear-gradient(135deg, #f1f2f4 0 6px, #fafafb 6px 12px);
+}
+.scroll-thin { scrollbar-width: thin; scrollbar-color: #d4d7dd transparent; }
