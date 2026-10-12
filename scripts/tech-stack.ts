@@ -6,6 +6,7 @@ import { chromium } from 'playwright';
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 2 });
 await page.goto(pathToFileURL(resolve('docs/tech-stack/index.html')).href);
+await page.waitForSelector('body[data-ready]');
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(300);
 await page.screenshot({ path: 'docs/tech-stack.png' });
