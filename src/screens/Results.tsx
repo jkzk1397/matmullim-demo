@@ -51,7 +51,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHead
         title={headline(cards)}
-        sub={`${run.label}을 교사 확인(${formatDuration(run.confirmMs)}) 뒤 규칙과 성취기준 DB로 점검했어요. 같은 표를 넣으면 언제나 같은 결과가 나와요.`}
+        sub={`${run.label} · 선생님이 ${formatDuration(run.confirmMs)} 동안 확인한 값으로 점검했어요. 같은 표를 넣으면 언제나 같은 결과가 나와요.`}
         right={
           <>
             {diff && (

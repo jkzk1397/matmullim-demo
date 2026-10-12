@@ -112,7 +112,7 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
         if (f) onFile(kind, f);
       }}
       onClick={() => input.current?.click()}
-      className={`flex flex-1 cursor-pointer flex-col justify-between rounded-xl bg-paper px-7 py-6 shadow-paper transition-shadow duration-150 hover:shadow-lift ${
+      className={`flex flex-1 cursor-pointer flex-col rounded-xl bg-paper px-7 py-6 shadow-paper transition-shadow duration-150 hover:shadow-lift ${
         tall ? 'min-h-[300px]' : 'min-h-[236px]'
       } ${over ? 'ring-2 ring-pen' : ''}`}
     >
@@ -132,7 +132,7 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
         <p className="mt-1 text-meta text-ink-3">{hint}</p>
       </div>
       {!doc && tall && (
-        <div className="my-4 space-y-2" aria-label="읽는 표 머리글">
+        <div className="mb-4 mt-5 space-y-2" aria-label="읽는 표 머리글">
           <div className="text-meta text-ink-3">이런 머리글의 표를 읽어요</div>
           {(kind === 'plan'
             ? [
@@ -152,7 +152,7 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
         </div>
       )}
       {doc ? (
-        <div className="flex items-center gap-3 rounded-lg bg-pen-50 px-4 py-3">
+        <div className="mt-auto flex items-center gap-3 rounded-lg bg-pen-50 px-4 py-3">
           <span className="text-pen">{Icon.check('h-5 w-5')}</span>
           <div className="min-w-0">
             <div className="truncate text-body font-semibold text-ink">{doc.fileName}</div>
@@ -160,7 +160,7 @@ function DropSlot({ kind, doc, onFile, hint, tall }: { kind: DocKind; doc?: Pars
           </div>
         </div>
       ) : (
-        <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-line px-4 py-3.5 text-body text-ink-3">
+        <div className="mt-auto flex items-center gap-3 rounded-lg border-2 border-dashed border-line px-4 py-3.5 text-body text-ink-3">
           {Icon.upload()}
           <span>
             HWPX 파일을 끌어 놓거나 <span className="font-semibold text-ink">눌러서 고르기</span>

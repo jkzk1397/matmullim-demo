@@ -26,14 +26,24 @@ GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-s
 
 | # | 화면 | 파일 |
 |---|---|---|
-| 1 | 올리기: HWPX 두 칸, 예시 불러오기(오류판·수정판·정상판) | `screenshots/01-upload.png` |
-| 2 | 추출 확인: 왼쪽 원문 표, 오른쪽 추출값. 값을 누르면 원문 칸 하이라이트. 평가 짝짓기 드롭다운, 확인 시간 기록 | `screenshots/02-confirm.png` |
-| 3 | 결과: 카드 종류별 개수, 빨강→주황→회색→노랑. J12 카드는 두 문서를 나란히, 다른 값만 강조 | `screenshots/03-results.png`, `03b-results-guideline.png` |
-| 4 | 정렬 맵: 성취기준 × 평가. 연결 없는 행은 회색 줄무늬. 칸을 눌러 연결 지정 → 카드 사라짐 | `screenshots/04-alignment.png`, `04b-alignment-linked.png` |
-| 5 | 재점검: 이전 실행과 비교해 해결됨 / 남음 / 새로 생김 | `screenshots/05a-reupload.png`, `05-recheck.png` |
-| + | 정상판 결과: 확인된 오류 0건 | `screenshots/06-normal-results.png` |
+| 1 | 올리기: 두 문서를 나란히 놓는 종이 두 장, 읽는 표 머리글 안내, 예시(오류판·수정판·정상판) | `screenshots/01-upload.png` |
+| 2 | 확인: 왼쪽 원문 표(읽어 낸 칸은 점선), 오른쪽 추출값. 서로 누르면 이어짐. 평가 짝짓기, 고친 값은 ‘교사 수정’ | `screenshots/02-confirm.png` |
+| 3 | 결과: 종류별 개수(필터 겸용) → 지적마다 **내 문서 한 장 ↔ 대조 문서 한 장**, 맞지 않는 칸에 형광펜. 근거·고치는 법·강도 눈금 | `screenshots/03-results.png`, `03b-results-guideline.png` |
+| 4 | 정렬 맵: 성취기준 × 평가. 연결 없는 행은 회색 줄무늬, 칸을 눌러 연결 지정(파란 볼펜) → 카드 사라짐 | `screenshots/04-alignment.png`, `04b-alignment-linked.png` |
+| 5 | 재점검: 한 목록에 해결됨·남음·새로 생김, 문서에서 바뀐 값(전 → 후) | `screenshots/05a-reupload.png`, `05-recheck.png` |
+| + | 정상판 결과: 확인된 오류 0건, 통과한 점검과 서로 맞물린 값 | `screenshots/06-normal-results.png` |
 
 스크린샷은 1440×900, deviceScaleFactor 2(실제 2880×1800)입니다.
+
+## 디자인
+
+[impeccable](https://github.com/pbakaus/impeccable) 스킬(`.claude/skills/impeccable`)로 비평 → 방향 선택 → 재설계 → 마감 리뷰 → 문서화를 거쳤습니다.
+
+- 제품 맥락: `PRODUCT.md` · 방향 계약: `.impeccable/surfaces/src-app-tsx.md` · 디자인 시스템: `DESIGN.md`, `.impeccable/design.json`
+- 방향 **「형광펜 대조」**: 인쇄한 두 문서를 책상에 나란히 놓고 형광펜으로 맞지 않는 칸을 칠하던 장면. 흑연색 상단바, 책상 회색 바탕 위 흰 종이, 도구의 표시는 형광펜(회색은 연필 점선), 교사의 판단(메모·연결 지정)은 파란 볼펜 색으로만 씁니다.
+- 결과 화면은 지적마다 내 문서와 대조 문서(다른 문서·성취기준 DB·교육청 지침)를 나란히 보여 주고, 칠한 칸이 곧 원문 위치입니다.
+- ‘고치기’는 앱 안에서 값을 바꾸는 게 아니라 문서를 고쳐 다시 올리는 흐름입니다. 확인 화면에서 바꾼 값은 결과에 ‘교사가 고친 추출값으로 점검했어요’로 표시됩니다.
+- 참고 레퍼런스 중 채택: Acrobat식 원문↔값 연결, 차이만 칠하는 나란히 보기, Lighthouse식 통과 목록, 상태 배지 목록. 제외: 0~100 점수 게이지(교사를 채점하는 느낌), 버튼 하나로 무시(이유를 남기는 ‘메모하고 넘기기’ 유지), 기여 그래프식 진하기(연결은 양이 아니라 범주).
 
 ## 범위
 
@@ -49,7 +59,7 @@ GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-s
 | 노랑 제안 1개 | S5 학생 성찰 기회: 채점기준표에 성찰·자기평가·동료평가 요소가 없으면 질문으로 제안 |
 | 재점검 비교 | 카드의 안정 키로 이전 실행과 비교 |
 
-모든 카드에는 **원문 위치(문서·표·행·열과 머리글)**, **근거(규칙 출처와 원문 문장)**, **강도(사실·의무·권고·제안)**, **교사 행동(고치기·메모하고 넘기기·연결 지정)**이 들어갑니다.
+모든 카드에는 **원문 위치(문서 › 표 › 평가 › 칸 경로와 칠한 원문 칸)**, **근거(규칙 출처와 원문 문장)**, **강도(사실·의무·권고·제안)**, **교사 행동(고치기·메모하고 넘기기·연결 지정)**이 들어갑니다.
 
 ### 예시 데이터에서 나오는 카드
 
