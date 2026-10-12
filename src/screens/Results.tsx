@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { countBySeverity, diffRuns, runChecks } from '../domain/rules';
 import type { Action, Card, CheckResult, PassedCheck, Severity } from '../domain/types';
-import { SEVERITY, refPath, sameRef, type Run } from '../ui/helpers';
+import { SEVERITY, sameRef, type Run } from '../ui/helpers';
 import { Page, PageHead } from '../ui/layout';
 import { Button, Card as Box, Dot, Icon, SeverityLabel, StrengthBadge } from '../ui/primitives';
 import { Sheet, buildSheets } from '../ui/sheets';
@@ -20,7 +20,7 @@ type Props = {
 };
 
 const ORDER: Severity[] = ['red', 'orange', 'gray', 'yellow'];
-const ACTION_LABEL: Record<Action, string> = { fix: '고치기 · 고친 문서 올리기', memo: '메모하고 넘기기', link: '연결 지정' };
+const ACTION_LABEL: Record<Action, string> = { fix: '고치고 다시 올리기', memo: '메모하고 넘기기', link: '연결 지정' };
 
 export function headline(cards: Card[]): string {
   const n = countBySeverity(cards);
@@ -47,7 +47,6 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
   const head = (
     <PageHead
       title={headline(cards)}
-      sub={`${run.label} · 평가계획서와 채점기준표, 교육청 지침을 서로 대조했어요`}
       right={
         <>
           {diff && (
@@ -62,7 +61,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
     />
   );
 
-  if (clean) return <CleanResult head={head} run={run} result={result} memos={memos} onMemo={onMemo} />;
+  if (clean) return <CleanResult head={head} result={result} memos={memos} onMemo={onMemo} />;
 
   return (
     <Page>
@@ -94,7 +93,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
             <b className="font-bold text-ink">{n[s]}</b>
           </button>
         ))}
-        <span className="ml-auto flex items-center gap-2 text-help text-ink-3">
+        <span className="ml-auto flex items-center gap-2 text-body text-ink-2">
           <span className="text-brand-green">{Icon.check()}</span>
           통과한 점검 {passed.length}
         </span>
@@ -106,7 +105,7 @@ export default function Results({ run, prevRun, result, memos, onMemo, onAction,
             <div key={s}>
               <div className="mb-1 flex items-center justify-between px-4">
                 <SeverityLabel s={s} />
-                <span className="text-help font-bold text-ink-3">{n[s]}</span>
+                <span className="text-body font-bold text-ink-2">{n[s]}</span>
               </div>
               <ul>
                 {cards
@@ -176,7 +175,6 @@ function CardDetail({
         )}
       </div>
       <h2 className="mt-2 text-key font-bold tracking-[-0.02em] text-ink">{card.title}</h2>
-      {card.locations[0] && <p className="mt-0.5 truncate text-help text-ink-3">{refPath(run.docs, card.locations[0])}</p>}
 
       <div className="mt-2 flex items-stretch gap-2">
         <Sheet model={sheets.left} s={card.severity} />
@@ -192,10 +190,11 @@ function CardDetail({
         )}
       </div>
 
-      <div className="mt-4">
-        <p className="text-body text-ink">
-          <b className="mr-2 font-bold">고치는 법</b>
+      <div className="mt-4 flex items-baseline gap-4 rounded-xl bg-brand-blue-50 px-6 py-4">
+        <b className="shrink-0 text-body font-bold text-brand-navy">고치는 법</b>
+        <p className="text-body font-bold text-ink">
           {firstSentence(card.fix ?? '판정이 아닌 질문이에요. 수업에서 다루고 있다면 메모하고 넘기세요.')}
+          {card.note && <span className="ml-2 font-medium text-ink-2">{card.note}</span>}
         </p>
       </div>
 
@@ -230,17 +229,13 @@ function CardDetail({
           <Button onClick={() => setEditing(false)}>취소</Button>
         </div>
       ) : (
-        <div className="mt-2 flex items-center gap-2">
-          <p className="min-w-0 flex-1 truncate text-help text-ink-3" title={`${card.basis.source} ${card.basis.page ?? ''} ${card.note ?? ''}`}>
-            근거 · {card.basis.source}
-            {card.basis.page ? ` · ${card.basis.page}` : ''}
-            {card.note ? ` · ${card.note}` : ''}
-          </p>
+        <div className="mt-4 flex items-center gap-2">
           {card.rule !== 'S5' && card.rule !== 'J6' && (
-            <Button variant="quiet" onClick={() => onReviewValue(card)}>
-              추출값이 틀렸나요?
+            <Button variant="quiet" className="text-body" onClick={() => onReviewValue(card)}>
+              원문 값 다시 보기
             </Button>
           )}
+          <span className="ml-auto" />
           {[...card.actions].reverse().map((a) => (
             <Button key={a} variant={a === card.actions[0] ? 'primary' : 'secondary'} onClick={() => (a === 'memo' ? setEditing(true) : onAction(a, card))}>
               {ACTION_LABEL[a]}
@@ -256,13 +251,8 @@ function CardDetail({
 const firstSentence = (t: string) => t.split(/(?<=요\.)\s+/)[0];
 
 /** 정상판: 가운데 큰 초록 체크 + 통과 목록. 제안과 맞물린 값은 접어 둔다 */
-function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNode; run: Run; result: CheckResult; memos: Record<string, string>; onMemo: Props['onMemo'] }) {
-  const { plan, rubric, pairs } = run.input;
+function CleanResult({ head, result, memos, onMemo }: { head: React.ReactNode; result: CheckResult; memos: Record<string, string>; onMemo: Props['onMemo'] }) {
   const suggestions = result.cards.filter((c) => c.severity === 'yellow');
-  const pairsShown = rubric.flatMap((r) => {
-    const p = plan.find((x) => x.id === pairs[r.id]);
-    return p ? [{ p, total: r.elements.reduce((n, e) => n + (e.points ?? 0), 0) }] : [];
-  });
   return (
     <Page>
       {head}
@@ -272,7 +262,7 @@ function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNo
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-green text-white">{Icon.check('h-9 w-9')}</span>
             <div>
               <div className="text-title font-extrabold text-ink">확인된 오류 0건</div>
-              <p className="text-body text-ink-2">아래 {result.passed.length}가지 점검을 모두 통과했어요.</p>
+              <p className="text-key font-bold text-brand-green">점검 {result.passed.length}가지 모두 통과</p>
             </div>
           </div>
           <ul className="mt-4 divide-y divide-line-2 border-y border-line-2">
@@ -287,7 +277,7 @@ function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNo
           <div className="mt-4 space-y-1">
             {suggestions.length > 0 && (
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-help font-bold text-ink-2">
+                <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-body font-bold text-ink-2">
                   <span className="transition-transform group-open:rotate-180">{Icon.chevron()}</span>
                   <Dot s="yellow" />
                   제안 {suggestions.length}건 보기
@@ -304,24 +294,6 @@ function CleanResult({ head, run, result, memos, onMemo }: { head: React.ReactNo
                     )}
                   </div>
                 ))}
-              </details>
-            )}
-            {pairsShown.length > 0 && (
-              <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-help font-bold text-ink-2">
-                  <span className="transition-transform group-open:rotate-180">{Icon.chevron()}</span>
-                  서로 맞물린 값 보기
-                </summary>
-                <ul className="pl-6">
-                  {pairsShown.map(({ p, total }) => (
-                    <li key={p.id} className="flex gap-4 py-2 text-body">
-                      <b className="w-48 font-bold text-ink">{p.name}</b>
-                      <span className="text-ink-2">
-                        만점 {p.maxScore ?? '—'}점 = 배점 합계 {total}점
-                      </span>
-                    </li>
-                  ))}
-                </ul>
               </details>
             )}
           </div>

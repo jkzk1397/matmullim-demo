@@ -41,13 +41,14 @@ async function shot(page: Page, name: string) {
 }
 
 async function loadSample(page: Page, label: string) {
-  await page.getByRole('button', { name: new RegExp(`^${label}`) }).click();
-  await page.getByRole('heading', { name: '읽어 낸 값을 원문과 맞춰 보세요' }).waitFor();
+  await page.getByRole('button', { name: '샘플 문서 열기' }).click();
+  await page.getByRole('menuitem', { name: label }).click();
+  await page.getByRole('heading', { name: '읽어 낸 값을 확인해 주세요' }).waitFor();
 }
 
 async function confirmAndCheck(page: Page, waitMs = 0) {
   if (waitMs) await page.waitForTimeout(waitMs);
-  await page.getByRole('button', { name: /확인하고 점검/ }).click();
+  await page.getByRole('button', { name: /점검하기/ }).click();
   await page.getByRole('button', { name: '정렬 맵', exact: true }).waitFor();
 }
 

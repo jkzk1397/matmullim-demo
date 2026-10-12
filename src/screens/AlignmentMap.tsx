@@ -22,11 +22,10 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
     <Page>
       <PageHead
         title={title}
-        sub="연결이 교육적으로 타당한지는 판정하지 않아요. 문서에서 연결을 찾지 못한 곳만 보여 드려요."
         right={<Button onClick={onResults}>결과로 돌아가기</Button>}
       />
 
-      <div className="flex shrink-0 items-center gap-6 pb-4 text-help text-ink-2">
+      <div className="flex shrink-0 items-center gap-6 pb-4 text-body text-ink-2">
         {used.has('plan') && (
           <span className="flex items-center gap-2">
             <Mark via="plan" /> 평가계획서에 적힌 연결
@@ -59,11 +58,7 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
                 <th className="border-b border-line py-2 pl-6 pr-4 text-left text-help font-bold text-ink-3">성취기준</th>
                 {input.plan.map((a) => (
                   <th key={a.id} className="w-[168px] border-b border-l border-line-2 border-b-line px-4 py-2 text-center align-bottom">
-                    <div className="text-help font-bold text-ink">{a.name}</div>
-                    <div className="text-help font-medium text-ink-3">
-                      {a.method}
-                      {a.weightPercent !== undefined && ` · ${a.weightPercent}%`}
-                    </div>
+                    <div className="text-body font-bold text-ink">{a.name}</div>
                   </th>
                 ))}
               </tr>
@@ -95,7 +90,7 @@ function Row({ row, input, onToggle }: { row: AlignmentRow; input: CheckInput; o
               <select
                 value=""
                 onChange={(e) => e.target.value && onToggle(row.code, e.target.value)}
-                className="h-10 cursor-pointer appearance-none rounded-lg bg-brand-navy pl-4 pr-8 text-help font-bold text-white hover:bg-brand-navy-2 focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                className="h-10 cursor-pointer appearance-none rounded-lg bg-brand-navy pl-4 pr-8 text-body font-bold text-white hover:bg-brand-navy-2 focus:outline-none focus:ring-2 focus:ring-brand-blue"
               >
                 <option value="">평가 연결하기</option>
                 {input.plan.map((a) => (

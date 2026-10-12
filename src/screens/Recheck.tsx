@@ -45,7 +45,7 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
   if (!prev || !curr)
     return (
       <Page>
-        <PageHead title="고친 문서를 다시 올리면 지난 점검과 비교해 드려요" sub="해결된 것, 남은 것, 새로 생긴 것을 한 목록에서 보여 줘요." />
+        <PageHead title="고친 문서를 올리면 지난 점검과 비교해 드려요" />
         <div>
           <Button variant="primary" size="lg" onClick={onUpload}>
             고친 문서 다시 올리기
@@ -69,7 +69,6 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
     <Page>
       <PageHead
         title={resolvedRed ? `확인된 오류 ${resolvedRed}건이 모두 해결됐어요` : '지난 점검과 비교했어요'}
-        sub={`${prev.label} → ${curr.label}`}
         right={
           <>
             <Button onClick={onResults}>지금 결과 보기</Button>
@@ -90,7 +89,7 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
           <div className="h-3 overflow-hidden rounded-full bg-line-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
             <div className="h-full rounded-full bg-brand-green" style={{ width: `${pct}%` }} />
           </div>
-          <div className="mt-2 flex gap-4 text-help text-ink-2">
+          <div className="mt-2 flex gap-6 text-body text-ink-2">
             <span>
               해결됨 <b className="font-bold text-ink">{d.resolved.length}</b>
             </span>
@@ -132,14 +131,15 @@ export default function Recheck({ prev, curr, onUpload, onResults }: Props) {
                     <td className="px-6 py-2 align-top text-body">
                       {ch ? (
                         <div className="flex items-baseline gap-x-2 whitespace-nowrap">
-                          <span className="text-help text-ink-3">{ch.context}</span>
-                          <span className="text-ink-2">{ch.label}</span>
+                          <span className="text-ink-2">
+                            {ch.context} {ch.label}
+                          </span>
                           <span className="text-ink-3 line-through">{ch.from}</span>
                           <span className="text-ink-3">→</span>
                           <b className="font-bold text-ink">{ch.to}</b>
                         </div>
                       ) : (
-                        <span className="text-help text-ink-3">{s === 'remaining' ? '그대로예요' : s === 'added' ? '이번에 처음 나왔어요' : '—'}</span>
+                        <span className="text-ink-3">{s === 'added' ? '새 지적' : '변경 없음'}</span>
                       )}
                     </td>
                   </tr>

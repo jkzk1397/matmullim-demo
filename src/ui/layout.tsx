@@ -52,10 +52,7 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
             );
           })}
         </nav>
-        <div className="flex w-[260px] items-center justify-end gap-2 text-help text-ink-3">
-          {Icon.lock('h-4 w-4')}
-          브라우저 안에서만 처리
-        </div>
+        <div className="w-[260px]" aria-hidden />
       </div>
     </header>
   );

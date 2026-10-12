@@ -68,7 +68,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
 
   return (
     <Page>
-      <PageHead title="읽어 낸 값을 원문과 맞춰 보세요" sub="값을 누르면 원문의 같은 칸이 표시돼요. 틀린 값은 바로 고칠 수 있어요." />
+      <PageHead title="읽어 낸 값을 확인해 주세요" />
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6">
         <Card className="flex min-h-0 flex-col">
           <div className="flex shrink-0 items-end gap-1 border-b border-line-2 px-4 pt-2" role="tablist">
@@ -79,7 +79,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                 role="tab"
                 aria-selected={tab === k}
                 onClick={() => setTab(k)}
-                className={`-mb-px flex items-center gap-2 border-b-[3px] px-4 pb-2 pt-2 text-help transition-colors duration-150 ${
+                className={`-mb-px flex items-center gap-2 border-b-[3px] px-4 pb-2 pt-2 text-body transition-colors duration-150 ${
                   tab === k ? 'border-brand-navy font-bold text-brand-navy' : 'border-transparent text-ink-3 hover:text-ink'
                 }`}
               >
@@ -87,7 +87,6 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                 {DOC_NAME[k]}
               </button>
             ))}
-            <span className="ml-auto pb-2 text-help text-ink-3">{docs[tab].fileName}</span>
           </div>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4">
             {docs[tab].tables.map((t, i) => (
@@ -99,7 +98,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
         <Card className="flex min-h-0 flex-col">
           <div className="flex shrink-0 items-center justify-between border-b border-line-2 px-4 py-2">
             {allPaired && !editPairs ? (
-              <span className="flex items-center gap-2 text-help font-bold text-brand-green">
+              <span className="flex items-center gap-2 text-body font-bold text-brand-green">
                 {Icon.check()}
                 {paired}쌍 자동 연결
                 <button type="button" className="ml-1 font-bold text-brand-blue underline-offset-4 hover:underline" onClick={() => setEditPairs(true)}>
@@ -107,10 +106,10 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                 </button>
               </span>
             ) : (
-              <span className="text-help font-bold text-ink-2">같은 평가끼리 짝지어 주세요</span>
+              <span className="text-body font-bold text-ink">같은 평가끼리 짝지어 주세요</span>
             )}
-            <button type="button" onClick={() => setMore(!more)} className="flex items-center gap-1 text-help font-bold text-ink-3 hover:text-ink" aria-expanded={more}>
-              {more ? '다른 값 접기' : '다른 값도 보기 (반영비율·채점기준)'}
+            <button type="button" onClick={() => setMore(!more)} className="flex items-center gap-1 text-body font-bold text-ink-2 hover:text-ink" aria-expanded={more}>
+              {more ? '접기' : '전체 보기'}
               <span className={more ? 'rotate-180' : ''}>{Icon.chevron()}</span>
             </button>
           </div>
@@ -196,13 +195,9 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
         </Card>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between py-4">
-        <p className="flex items-center gap-2 text-help text-ink-3">
-          <span className="text-brand-blue">{Icon.pen()}</span>
-          여기서 고친 값은 ‘교사 수정’으로 표시돼요.
-        </p>
+      <div className="flex shrink-0 items-center justify-end py-4">
         <Button variant="primary" size="lg" onClick={onSubmit}>
-          확인하고 점검 {Icon.arrow()}
+          점검하기 {Icon.arrow()}
         </Button>
       </div>
     </Page>
@@ -212,7 +207,7 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1 text-help font-bold text-ink-3">{title}</h2>
+      <h2 className="mb-1 text-key font-bold text-ink">{title}</h2>
       <div className="divide-y divide-line-2">{children}</div>
     </section>
   );

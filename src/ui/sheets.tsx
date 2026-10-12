@@ -41,7 +41,7 @@ function docParts(docs: Docs, refs: CellRef[], emphasis: CellRef[], phrases: str
       const names = [...new Set(rows.map((r) => g[r][nameCol]))];
       if (names.length === 1) {
         cols = cols.filter((c) => c !== nameCol);
-        title = `${title} · ${names[0]}`;
+        // 평가명은 카드 제목에 이미 있으므로 표 이름만 남긴다
       }
     }
     parts.push({
@@ -90,7 +90,7 @@ export function buildSheets(card: Card, docs: Docs, input: CheckInput): SheetPai
     const pSum = (p?.elements ?? []).reduce((n, e) => n + (e.points ?? 0), 0);
     const rSum = (r?.elements ?? []).reduce((n, e) => n + (e.points ?? 0), 0);
     left.parts = left.parts.map((pt) => (pt.header.some((h) => /배점/.test(h)) ? sumFoot(pt, '합계', `${pSum}`, false) : pt));
-    right.parts = right.parts.map((pt) => sumFoot(pt, '합계 (맞물림 계산)', `${rSum}`, rSum !== p?.maxScore));
+    right.parts = right.parts.map((pt) => sumFoot(pt, '합계', `${rSum}`, rSum !== p?.maxScore));
     return { left, right, joint };
   }
 
@@ -99,7 +99,7 @@ export function buildSheets(card: Card, docs: Docs, input: CheckInput): SheetPai
   if (card.key === 'J12-weight-sum') {
     const left = doc('plan');
     const total = input.plan.reduce((n, a) => n + (a.weightPercent ?? 0), 0);
-    left.parts = left.parts.map((pt) => ({ ...pt, foot: pt.header.map((h, i) => (/반영/.test(h) ? { text: `${total}%`, mark: true, strong: true } : { text: i === 0 ? '합계 (맞물림 계산)' : '' })) }));
+    left.parts = left.parts.map((pt) => ({ ...pt, foot: pt.header.map((h, i) => (/반영/.test(h) ? { text: `${total}%`, mark: true, strong: true } : { text: i === 0 ? '합계' : '' })) }));
     return { left, joint };
   }
 
@@ -180,14 +180,14 @@ export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
     <div className="flex min-w-0 flex-1 flex-col rounded-xl bg-paper shadow-card">
       <div className="flex items-baseline justify-between gap-4 border-b border-line-2 px-4 py-2">
         <span className="text-body font-bold text-ink">{model.label}</span>
-        {model.sub && <span className="truncate text-help text-ink-3">{model.sub}</span>}
+        {model.sub && !/\.hwpx$/i.test(model.sub) && <span className="truncate text-help text-ink-3">{model.sub}</span>}
       </div>
       <div className="space-y-2 px-4 py-2">
         {model.parts.map((pt, i) =>
           pt.rows.length === 1 && pt.header.length === 1 && !pt.foot ? (
             // 값 하나짜리 표 조각은 한 줄로: "평가 개요 · 프로그래밍 프로젝트   만점 30점"
             <div key={i} className="flex items-baseline justify-between gap-4 border-b border-line-2 pb-2">
-              <span className="text-help text-ink-3">{pt.title}</span>
+              <span className="text-body font-bold text-ink-2">{pt.title}</span>
               <span className="whitespace-nowrap">
                 <span className="mr-2 text-help font-bold text-ink-3">{pt.header[0]}</span>
                 <SheetValue c={pt.rows[0][0]} s={s} />
@@ -195,7 +195,7 @@ export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
             </div>
           ) : (
           <div key={i}>
-            <div className="mb-1 text-help text-ink-3">{pt.title}</div>
+            <div className="mb-1 text-body font-bold text-ink-2">{pt.title}</div>
             <table className="w-full border-collapse text-body leading-[26px]">
               {pt.header.length > 0 && (
                 <thead>
@@ -228,7 +228,7 @@ export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
           </div>
           ),
         )}
-        {model.note && <p className="text-help text-ink-3">{model.note}</p>}
+        {model.note && <p className="text-body text-ink-2">{model.note}</p>}
       </div>
     </div>
   );
