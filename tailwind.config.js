@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// 형광펜 대조: 흑연 셸 · 책상 회색 바탕 · 흰 종이 · 형광펜(도구의 표시) · 파란 볼펜(교사의 판단)
+// 발표 스크린샷용 정리: 로고 색(남색·파랑·초록) + 카드 의미 색 4개, 글자 크기 4단계
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
@@ -8,30 +8,24 @@ export default {
         sans: ['"Pretendard Variable"', 'Pretendard', 'system-ui', 'sans-serif'],
       },
       colors: {
-        ink: { DEFAULT: '#1b1d21', 2: '#454a53', 3: '#5c626c' },
-        line: { DEFAULT: '#dcdfe4', 2: '#eceef1' },
-        desk: { DEFAULT: '#e8eaed', 2: '#f1f2f4' },
+        ink: { DEFAULT: '#212529', 2: '#495057', 3: '#5f6670' },
+        line: { DEFAULT: '#e3e7ed', 2: '#eef1f5' },
+        canvas: '#f6f8fa',
         paper: '#ffffff',
-        graphite: { DEFAULT: '#23262b', 2: '#363a41', ink: '#c3c7ce' },
-        pen: { DEFAULT: '#2747c0', 50: '#eef1fc', 100: '#dce3fa' },
-        sev: {
-          red: '#c8382d', 'red-mark': '#ffc9c3', 'red-bg': '#fdeeec', 'red-ink': '#9b2a21',
-          orange: '#c46f10', 'orange-mark': '#ffd9a6', 'orange-bg': '#fdf3e5', 'orange-ink': '#844506',
-          gray: '#6b7079', 'gray-mark': '#e1e4e9', 'gray-bg': '#f1f2f4', 'gray-ink': '#474c55',
-          yellow: '#b39200', 'yellow-mark': '#fff08a', 'yellow-bg': '#fcf8da', 'yellow-ink': '#655300',
-        },
+        brand: { navy: '#0d2b57', 'navy-2': '#163d75', blue: '#0b5cad', 'blue-50': '#eaf2fb', teal: '#08a5b3', green: '#2b8a3e', 'green-50': '#ebf6ee' },
+        sev: { red: '#d7263d', orange: '#e8590c', gray: '#868e96', yellow: '#b08800' },
       },
       fontSize: {
-        meta: ['13px', '20px'],
-        body: ['15px', '24px'],
-        h2: ['18px', '28px'],
-        h1: ['26px', '36px'],
-        stat: ['28px', '32px'],
+        // 4단계만: 보조 14 · 본문 17 · 핵심 문장 20 · 화면 제목 30
+        help: ['14px', '22px'],
+        body: ['17px', '28px'],
+        key: ['20px', '30px'],
+        title: ['30px', '40px'],
       },
       boxShadow: {
-        paper: '0 1px 2px rgba(20,22,26,0.06), 0 6px 20px -4px rgba(20,22,26,0.10)',
-        lift: '0 1px 2px rgba(20,22,26,0.08), 0 10px 28px -6px rgba(20,22,26,0.16)',
+        card: '0 1px 3px rgba(13, 43, 87, 0.08)',
       },
+      maxWidth: { page: '1240px' },
     },
   },
   plugins: [],

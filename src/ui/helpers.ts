@@ -16,12 +16,15 @@ export type Run = {
 
 export const DOC_NAME = { plan: '평가계획서', rubric: '채점기준표' } as const;
 
-export const SEVERITY: Record<Severity, { label: string; dot: string; bg: string; ink: string; mark: string; swatch: string }> = {
-  red: { label: '확인된 오류', dot: 'bg-sev-red', bg: 'bg-sev-red-bg', ink: 'text-sev-red-ink', mark: 'mark-red', swatch: 'bg-sev-red-mark' },
-  orange: { label: '지침 권고와 다름', dot: 'bg-sev-orange', bg: 'bg-sev-orange-bg', ink: 'text-sev-orange-ink', mark: 'mark-orange', swatch: 'bg-sev-orange-mark' },
-  gray: { label: '연결 확인 필요', dot: 'bg-sev-gray', bg: 'bg-sev-gray-bg', ink: 'text-sev-gray-ink', mark: 'mark-gray', swatch: 'bg-sev-gray-mark' },
-  yellow: { label: '제안', dot: 'bg-sev-yellow', bg: 'bg-sev-yellow-bg', ink: 'text-sev-yellow-ink', mark: 'mark-yellow', swatch: 'bg-sev-yellow-mark' },
+export const SEVERITY: Record<Severity, { label: string; dot: string; text: string; border: string }> = {
+  red: { label: '확인된 오류', dot: 'bg-sev-red', text: 'text-sev-red', border: 'border-l-sev-red' },
+  orange: { label: '지침 권고와 다름', dot: 'bg-sev-orange', text: 'text-sev-orange', border: 'border-l-sev-orange' },
+  gray: { label: '연결 확인 필요', dot: 'bg-sev-gray', text: 'text-sev-gray', border: 'border-l-sev-gray' },
+  yellow: { label: '제안', dot: 'bg-sev-yellow', text: 'text-sev-yellow', border: 'border-l-sev-yellow' },
 };
+
+/** 강도 배지 문구 */
+export const STRENGTH_BADGE: Record<Strength, string> = { 사실: '사실 확인', 의무: '의무', 권고: '권고', 제안: '제안' };
 
 export const STRENGTHS: Strength[] = ['사실', '의무', '권고', '제안'];
 export const STRENGTH_HINT: Record<Strength, string> = {

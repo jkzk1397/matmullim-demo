@@ -1,4 +1,4 @@
-// 발표용 스크린샷 자동 캡처: 1440×900, deviceScaleFactor 2.
+// 발표용 스크린샷 자동 캡처: 1366×768, deviceScaleFactor 2. 화면 6개.
 // 사용법: npm run build && npm run screenshots
 // 이미 떠 있는 서버를 쓰려면 SHOT_URL=http://localhost:5173 npm run screenshots
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -33,6 +33,7 @@ function stop(p: ChildProcess) {
 }
 
 async function shot(page: Page, name: string) {
+  await page.mouse.move(2, 760);
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(800); // 형광펜이 그어지는 동작(520ms)이 끝난 뒤
   await page.screenshot({ path: `${OUT}/${name}.png` });
@@ -41,7 +42,7 @@ async function shot(page: Page, name: string) {
 
 async function loadSample(page: Page, label: string) {
   await page.getByRole('button', { name: new RegExp(`^${label}`) }).click();
-  await page.getByRole('heading', { name: '읽어 낸 값을 원문과 맞춰 보고 확인해 주세요' }).waitFor();
+  await page.getByRole('heading', { name: '읽어 낸 값을 원문과 맞춰 보세요' }).waitFor();
 }
 
 async function confirmAndCheck(page: Page, waitMs = 0) {
@@ -54,58 +55,42 @@ async function main() {
   mkdirSync(OUT, { recursive: true });
   const server = await startServer();
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, locale: 'ko-KR' });
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 }, deviceScaleFactor: 2, locale: 'ko-KR' });
   ctx.setDefaultTimeout(15000);
   try {
-    // 1~5: 오류판 → 수정판 흐름
+    // 1 올리기 → 2 확인 → 3 결과(오류) → 5 정렬 맵 → 6 재점검 (오류판 → 수정판)
     const page = await ctx.newPage();
     await page.goto(URL);
     await shot(page, '01-upload');
 
     await loadSample(page, '오류판');
-    // 프로그래밍 프로젝트의 만점 칸(표2 3행 5열)을 눌러 원문 하이라이트
+    // 프로그래밍 프로젝트의 만점 칸(표2 3행 5열)을 눌러 원문과 값을 함께 표시
     await page.locator('#cell-plan-1-2-4').click();
     await page.waitForTimeout(600);
     await shot(page, '02-confirm');
 
-    await confirmAndCheck(page, 1500);
+    await confirmAndCheck(page, 800);
     await shot(page, '03-results');
 
-    await page.getByRole('button', { name: /채점기준을 분량/ }).click();
-    await shot(page, '03b-results-guideline');
-
-    await page.getByRole('button', { name: '정렬 맵' }).first().click();
+    await page.getByRole('button', { name: '정렬 맵', exact: true }).click();
     await page.getByRole('heading', { name: /성취기준 \d+개/ }).waitFor();
-    await shot(page, '04-alignment');
+    await shot(page, '05-alignment');
 
     await page.getByRole('button', { name: '결과로 돌아가기' }).click();
-    await page.getByRole('button', { name: /만점은 30점인데/ }).click();
-    await page.getByRole('button', { name: /^고치기/ }).click();
-    await shot(page, '05a-reupload');
+    await page.getByRole('button', { name: '고친 문서 다시 올리기' }).click();
     await loadSample(page, '수정판');
-    await confirmAndCheck(page, 1200);
-    await page.getByRole('button', { name: /이전 점검 대비/ }).click();
-    await page.getByRole('heading', { name: /해결됐어요|해결된 지적이 없어요/ }).waitFor();
-    await shot(page, '05-recheck');
+    await confirmAndCheck(page, 600);
+    await page.getByRole('button', { name: /지난 점검과 비교/ }).click();
+    await page.getByRole('heading', { name: /해결됐어요|비교했어요/ }).waitFor();
+    await shot(page, '06-recheck');
     await page.close();
 
-    // 정렬 맵: 교사가 연결을 지정하면 회색 카드가 사라짐
-    const p2 = await ctx.newPage();
-    await p2.goto(URL);
-    await loadSample(p2, '오류판');
-    await confirmAndCheck(p2);
-    await p2.getByRole('button', { name: '정렬 맵' }).first().click();
-    await p2.getByRole('button', { name: '[9정05-03] – 프로그래밍 프로젝트' }).click();
-    await p2.getByRole('heading', { name: /모두 평가와 연결/ }).waitFor();
-    await shot(p2, '04b-alignment-linked');
-    await p2.close();
-
-    // 정상판 결과
+    // 4 결과(정상)
     const p3 = await ctx.newPage();
     await p3.goto(URL);
     await loadSample(p3, '정상판');
-    await confirmAndCheck(p3, 1000);
-    await shot(p3, '06-normal-results');
+    await confirmAndCheck(p3, 600);
+    await shot(p3, '04-results-normal');
     await p3.close();
   } finally {
     await browser.close();

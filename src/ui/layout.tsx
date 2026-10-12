@@ -12,58 +12,65 @@ export const STEPS: { id: Step; label: string }[] = [
   { id: 'recheck', label: '재점검' },
 ];
 
-/** 흑연색 상단바. 지금 단계는 형광펜 밑줄로 표시 */
+const LOGO = `${import.meta.env.BASE_URL}brand/logo-mark.png`;
+
+/** 흰 상단바 + 아래 1px 선 */
 export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<Step, boolean>; onStep: (s: Step) => void }) {
   const idx = STEPS.findIndex((s) => s.id === step);
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between bg-graphite px-8 text-graphite-ink">
-      <div className="flex w-[260px] items-baseline gap-3">
-        <span className="text-[19px] font-bold tracking-[-0.02em] text-white">「맞물림」</span>
-        <span className="text-meta">교·수·평 사전 점검</span>
-      </div>
-      <nav className="flex h-full items-stretch gap-1" aria-label="단계">
-        {STEPS.map((s, i) => {
-          const active = s.id === step;
-          const done = i < idx;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              disabled={!enabled[s.id]}
-              onClick={() => onStep(s.id)}
-              aria-current={active ? 'step' : undefined}
-              className={`group flex items-center gap-2 px-3.5 text-[14px] transition-colors duration-150 disabled:cursor-default disabled:opacity-50 ${
-                active ? 'text-white' : 'enabled:hover:text-white'
-              }`}
-            >
-              <span
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold ${
-                  active ? 'bg-white text-graphite' : done ? 'bg-graphite-2 text-white' : 'bg-graphite-2 text-graphite-ink'
+    <header className="shrink-0 border-b border-line bg-paper">
+      <div className="mx-auto flex h-14 w-[calc(100%-48px)] max-w-page items-center justify-between">
+        <div className="flex w-[260px] items-center gap-2.5">
+          <img src={LOGO} alt="" className="h-8 w-8" />
+          <span className="text-key font-extrabold tracking-[-0.03em] text-brand-navy">맞물림</span>
+        </div>
+        <nav className="flex h-full items-stretch" aria-label="단계">
+          {STEPS.map((s, i) => {
+            const active = s.id === step;
+            const done = i < idx;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                disabled={!enabled[s.id]}
+                onClick={() => onStep(s.id)}
+                aria-current={active ? 'step' : undefined}
+                className={`relative flex items-center gap-2 px-3.5 text-help transition-colors duration-150 disabled:cursor-default ${
+                  active ? 'font-bold text-brand-navy' : done ? 'font-semibold text-ink-2 hover:text-brand-navy' : 'text-ink-3 enabled:hover:text-ink'
                 }`}
               >
-                {done ? Icon.check('h-3 w-3') : i + 1}
-              </span>
-              <span className={`relative ${active ? 'font-semibold' : ''}`}>
+                <span
+                  className={`flex h-6 w-6 items-center justify-center rounded-full text-help font-bold ${
+                    active ? 'bg-brand-navy text-white' : done ? 'bg-brand-green-50 text-brand-green' : 'bg-canvas text-ink-3'
+                  }`}
+                >
+                  {done ? Icon.check('h-3.5 w-3.5') : i + 1}
+                </span>
                 {s.label}
-                {active && <span className="absolute -bottom-1.5 left-0 right-0 h-[2px] rounded-sm bg-white" aria-hidden />}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-      <div className="flex w-[260px] items-center justify-end gap-2 text-meta">
-        {Icon.lock('h-4 w-4 text-white')}
-        브라우저 안에서만 처리 · 서버 전송 없음
+                {active && <span className="absolute bottom-0 left-3 right-3 h-[3px] rounded-t bg-brand-navy" aria-hidden />}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="flex w-[260px] items-center justify-end gap-1.5 text-help text-ink-3">
+          {Icon.lock('h-4 w-4')}
+          브라우저 안에서만 처리
+        </div>
       </div>
     </header>
   );
 }
 
+/** 화면 폭: 최대 1240px 가운데 */
+export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <div className={`mx-auto flex min-h-0 w-[calc(100%-48px)] max-w-page flex-1 flex-col ${className}`}>{children}</div>;
+}
+
 export function PageHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex shrink-0 items-end justify-between gap-8 px-8 pb-4 pt-5">
+    <div className="flex shrink-0 items-end justify-between gap-8 pb-3 pt-5">
       <div className="min-w-0">
-        <h1 className="text-h1 font-bold tracking-[-0.025em] text-ink">{title}</h1>
+        <h1 className="text-title font-extrabold tracking-[-0.03em] text-ink">{title}</h1>
         {sub && <p className="mt-1 text-body text-ink-3">{sub}</p>}
       </div>
       {right && <div className="flex shrink-0 items-center gap-2">{right}</div>}
@@ -71,12 +78,7 @@ export function PageHead({ title, sub, right }: { title: ReactNode; sub?: ReactN
   );
 }
 
-/** 흰 종이 한 장 */
-export function Paper({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-xl bg-paper shadow-paper ${className}`}>{children}</section>;
-}
-
-/** 원문 표 렌더링 (확인 화면). 인식한 칸은 볼펜 점선, 지금 칸은 볼펜 실선 */
+/** 원문 표 (확인 화면). 선택한 칸에만 점선 테두리 */
 export function DocTable({
   table,
   index,
@@ -101,8 +103,8 @@ export function DocTable({
   }
   return (
     <div>
-      <h3 className="mb-2 text-[14px] font-semibold text-ink-2">{table.title}</h3>
-      <table className="w-full border-collapse text-[13px] leading-5">
+      <h3 className="mb-2 text-help font-bold text-ink-2">{table.title}</h3>
+      <table className="w-full border-collapse text-help">
         <tbody>
           {table.rows.map((row, r) => (
             <tr key={r}>
@@ -120,10 +122,10 @@ export function DocTable({
                     rowSpan={sp?.rowSpan}
                     colSpan={sp?.colSpan}
                     onClick={rec && onCell ? () => onCell(ref) : undefined}
-                    className={`relative border border-line px-2.5 py-1.5 text-left align-top ${r === 0 ? 'bg-desk-2 font-semibold text-ink-2' : 'text-ink'} ${
+                    className={`border border-line px-2.5 py-1.5 text-left align-top ${r === 0 ? 'bg-canvas font-bold text-ink-2' : 'text-ink'} ${
                       /^\[[^\]]+\]$/.test(text.trim()) ? 'whitespace-nowrap' : ''
-                    } ${rec ? 'cursor-pointer hover:bg-pen-50' : ''} ${
-                      hi ? 'bg-pen-50 outline outline-2 -outline-offset-2 outline-pen' : rec ? 'outline-dashed outline-1 -outline-offset-[3px] outline-pen/40' : ''
+                    } ${rec ? 'cursor-pointer hover:bg-brand-blue-50' : ''} ${
+                      hi ? 'bg-brand-blue-50 font-bold outline-dashed outline-2 -outline-offset-[3px] outline-brand-blue' : ''
                     }`}
                   >
                     {text}

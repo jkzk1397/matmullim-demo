@@ -15,7 +15,7 @@ npm run dev          # http://localhost:5173
 npm test             # vitest (규칙·파서 테스트 21개)
 npm run build        # dist/
 npm run samples      # src/fixtures → public/samples/*.hwpx 다시 만들기
-npm run build && npm run screenshots   # screenshots/*.png 다시 찍기 (Playwright, Chromium)
+npm run build && npm run screenshots   # screenshots/*.png 6장 다시 찍기 (1366×768 @2x, Playwright)
 ```
 
 GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-skev7t` 푸시 때 테스트 → 빌드 → 배포합니다.
@@ -26,24 +26,23 @@ GitHub Pages: `.github/workflows/pages.yml`이 `main`과 `claude/demo-creation-s
 
 | # | 화면 | 파일 |
 |---|---|---|
-| 1 | 올리기: 두 문서를 나란히 놓는 종이 두 장, 읽는 표 머리글 안내, 예시(오류판·수정판·정상판) | `screenshots/01-upload.png` |
-| 2 | 확인: 왼쪽 원문 표(읽어 낸 칸은 점선), 오른쪽 추출값. 서로 누르면 이어짐. 평가 짝짓기, 고친 값은 ‘교사 수정’ | `screenshots/02-confirm.png` |
-| 3 | 결과: 종류별 개수(필터 겸용) → 지적마다 **내 문서 한 장 ↔ 대조 문서 한 장**, 맞지 않는 칸에 형광펜. 근거·고치는 법·강도 눈금 | `screenshots/03-results.png`, `03b-results-guideline.png` |
-| 4 | 정렬 맵: 성취기준 × 평가. 연결 없는 행은 회색 줄무늬, 칸을 눌러 연결 지정(파란 볼펜) → 카드 사라짐 | `screenshots/04-alignment.png`, `04b-alignment-linked.png` |
-| 5 | 재점검: 한 목록에 해결됨·남음·새로 생김, 문서에서 바뀐 값(전 → 후) | `screenshots/05a-reupload.png`, `05-recheck.png` |
-| + | 정상판 결과: 확인된 오류 0건, 통과한 점검과 서로 맞물린 값 | `screenshots/06-normal-results.png` |
+| 1 | 올리기: 큰 업로드 칸 두 개, “어떤 표를 읽나요?” 도움말, 예시(오류판·수정판·정상판) | `screenshots/01-upload.png` |
+| 2 | 확인: 왼쪽 원문 표, 오른쪽 추출값. 선택한 칸만 점선. 만점·배점·성취기준 코드는 굵게, 반영비율·채점기준은 접기. “2쌍 자동 연결” | `screenshots/02-confirm.png` |
+| 3 | 결과(오류판): 확인된 오류 개수를 크게, 왼쪽은 색별 목록, 오른쪽은 두 문서를 나란히 놓고 다른 값만 빨강. 고치는 법 한 문장 | `screenshots/03-results.png` |
+| 4 | 결과(정상판): 큰 초록 체크와 “확인된 오류 0건”, 통과한 점검 5줄 | `screenshots/04-results-normal.png` |
+| 5 | 정렬 맵: 성취기준 × 평가, 범례 한 줄, 연결 없는 줄은 왼쪽 회색 테두리 + “평가 연결하기” | `screenshots/05-alignment.png` |
+| 6 | 재점검: “6건 중 4건 해결”과 진행 막대, 해결됨·남음 배지, “배점 5점 → 10점”처럼 단위가 붙은 바뀐 값 | `screenshots/06-recheck.png` |
 
-스크린샷은 1440×900, deviceScaleFactor 2(실제 2880×1800)입니다.
+스크린샷은 1366×768, deviceScaleFactor 2(실제 2732×1536)입니다. `npm run build && npm run screenshots`로 다시 찍을 수 있어요.
 
 ## 디자인
 
-[impeccable](https://github.com/pbakaus/impeccable) 스킬(`.claude/skills/impeccable`)로 비평 → 방향 선택 → 재설계 → 마감 리뷰 → 문서화를 거쳤습니다.
-
-- 제품 맥락: `PRODUCT.md` · 방향 계약: `.impeccable/surfaces/src-app-tsx.md` · 디자인 시스템: `DESIGN.md`, `.impeccable/design.json`
-- 방향 **「형광펜 대조」**: 인쇄한 두 문서를 책상에 나란히 놓고 형광펜으로 맞지 않는 칸을 칠하던 장면. 흑연색 상단바, 책상 회색 바탕 위 흰 종이, 도구의 표시는 형광펜(회색은 연필 점선), 교사의 판단(메모·연결 지정)은 파란 볼펜 색으로만 씁니다.
-- 결과 화면은 지적마다 내 문서와 대조 문서(다른 문서·성취기준 DB·교육청 지침)를 나란히 보여 주고, 칠한 칸이 곧 원문 위치입니다.
-- ‘고치기’는 앱 안에서 값을 바꾸는 게 아니라 문서를 고쳐 다시 올리는 흐름입니다. 확인 화면에서 바꾼 값은 결과에 ‘교사가 고친 추출값으로 점검했어요’로 표시됩니다.
-- 참고 레퍼런스 중 채택: Acrobat식 원문↔값 연결, 차이만 칠하는 나란히 보기, Lighthouse식 통과 목록, 상태 배지 목록. 제외: 0~100 점수 게이지(교사를 채점하는 느낌), 버튼 하나로 무시(이유를 남기는 ‘메모하고 넘기기’ 유지), 기여 그래프식 진하기(연결은 양이 아니라 범주).
+- 로고: `public/brand/`(마크·전체 로고·파비콘). 상단 바 왼쪽에 마크와 “맞물림”을 두고, 로고의 남색을 주 버튼·현재 단계에, 초록을 “해결됨”·통과 표시에 씁니다.
+- 발표 스크린샷 기준: 내용 최대 폭 1240px, 흰 상단 바, 글자 크기 4단계(30·20·17·14px), 옅은 그림자 하나, 8px 간격.
+- 카드 색은 진한 점이나 왼쪽 4px 테두리와 같은 색 글자 라벨로만 씁니다: 빨강 확인된 오류, 주황 지침 권고와 다름, 회색 연결 확인 필요, 노랑 제안.
+- 결과 화면은 지적마다 내 문서와 대조 문서(다른 문서·성취기준 DB·교육청 지침)를 나란히 보여 주고, 다른 값만 강조합니다.
+- ‘고치기’는 앱 안에서 값을 바꾸는 게 아니라 문서를 고쳐 다시 올리는 흐름입니다. 확인 화면에서 바꾼 값은 결과에 ‘교사가 고친 값으로 점검’으로 표시됩니다.
+- 디자인 과정은 [impeccable](https://github.com/pbakaus/impeccable) 스킬(`.claude/skills/impeccable`)로 진행했고, 기록은 `PRODUCT.md`, `DESIGN.md`, `.impeccable/`에 있습니다.
 
 ## 범위
 

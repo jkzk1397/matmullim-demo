@@ -6,6 +6,7 @@ import { STANDARDS_DB } from '../domain/standards';
 import type { Card, CellRef, CheckInput, DocKind, Severity } from '../domain/types';
 import { DOC_NAME, cleanTitle, sameRef, type Docs } from './helpers';
 import { Marked } from './primitives';
+import { SEVERITY } from './helpers';
 
 type SheetCell = { text: string; mark?: boolean; phrases?: string[]; strong?: boolean };
 type SheetPart = { title: string; header: string[]; rows: SheetCell[][]; foot?: SheetCell[]; wide?: number };
@@ -38,7 +39,7 @@ function docParts(docs: Docs, refs: CellRef[], emphasis: CellRef[], phrases: str
     const nameCol = header.findIndex((h) => /평가명/.test(h));
     if (nameCol >= 0 && !locs.some((l) => l.col === nameCol)) {
       const names = [...new Set(rows.map((r) => g[r][nameCol]))];
-      if (names.length === 1 && rows.length > 1) {
+      if (names.length === 1) {
         cols = cols.filter((c) => c !== nameCol);
         title = `${title} · ${names[0]}`;
       }
@@ -173,24 +174,34 @@ export function buildSheets(card: Card, docs: Docs, input: CheckInput): SheetPai
   return { left: doc(d), joint };
 }
 
-/** 종이 한 장: 표 조각들과 형광펜 */
+/** 문서 한 장: 다른 값만 카드 색으로 굵게, 같은 값은 흐리게 */
 export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col rounded-lg bg-paper shadow-paper">
-      <div className="flex items-baseline justify-between gap-3 border-b border-line-2 px-4 py-2.5">
-        <span className="text-[14px] font-semibold text-ink">{model.label}</span>
-        {model.sub && <span className="truncate text-meta text-ink-3">{model.sub}</span>}
+    <div className="flex min-w-0 flex-1 flex-col rounded-xl bg-paper shadow-card">
+      <div className="flex items-baseline justify-between gap-3 border-b border-line-2 px-4 py-2">
+        <span className="text-body font-bold text-ink">{model.label}</span>
+        {model.sub && <span className="truncate text-help text-ink-3">{model.sub}</span>}
       </div>
-      <div className="space-y-3 px-4 py-3">
-        {model.parts.map((pt, i) => (
+      <div className="space-y-2 px-4 py-2.5">
+        {model.parts.map((pt, i) =>
+          pt.rows.length === 1 && pt.header.length === 1 && !pt.foot ? (
+            // 값 하나짜리 표 조각은 한 줄로: "평가 개요 · 프로그래밍 프로젝트   만점 30점"
+            <div key={i} className="flex items-baseline justify-between gap-3 border-b border-line-2 pb-1.5">
+              <span className="text-help text-ink-3">{pt.title}</span>
+              <span className="whitespace-nowrap">
+                <span className="mr-2 text-help font-bold text-ink-3">{pt.header[0]}</span>
+                <SheetValue c={pt.rows[0][0]} s={s} />
+              </span>
+            </div>
+          ) : (
           <div key={i}>
-            <div className="mb-1 text-meta text-ink-3">{pt.title}</div>
-            <table className="w-full border-collapse text-[14px] leading-[22px]">
+            <div className="mb-1 text-help text-ink-3">{pt.title}</div>
+            <table className="w-full border-collapse text-body leading-[26px]">
               {pt.header.length > 0 && (
                 <thead>
                   <tr>
                     {pt.header.map((h, j) => (
-                      <th key={j} className={`border-b border-line px-1.5 py-1 text-left text-meta font-semibold text-ink-3 ${j === pt.wide ? 'w-full' : 'whitespace-nowrap'}`}>
+                      <th key={j} className={`border-b border-line px-1.5 pb-1 text-left text-help font-bold text-ink-3 ${j === pt.wide ? 'w-full' : 'whitespace-nowrap'}`}>
                         {h}
                       </th>
                     ))}
@@ -215,22 +226,30 @@ export function Sheet({ model, s }: { model: SheetModel; s: Severity }) {
               </tbody>
             </table>
           </div>
-        ))}
-        {model.note && <p className="text-meta text-ink-3">{model.note}</p>}
+          ),
+        )}
+        {model.note && <p className="text-help text-ink-3">{model.note}</p>}
       </div>
     </div>
   );
 }
 
+function SheetValue({ c, s }: { c: SheetCell; s: Severity }) {
+  return c.mark ? <span className={`font-bold ${SEVERITY[s].text}`}>{c.text}</span> : <span className="text-ink-3">{c.text}</span>;
+}
+
 function SheetTd({ c, s, wide, foot }: { c: SheetCell; s: Severity; wide?: boolean; foot?: boolean }) {
+  const hit = `font-bold ${SEVERITY[s].text}`;
   return (
-    <td className={`px-1.5 py-1 align-top ${wide ? '' : 'whitespace-nowrap'} ${foot ? 'text-meta text-ink-3' : c.strong ? 'text-ink' : 'text-ink-2'}`}>
+    <td className={`px-1.5 py-0.5 align-top ${wide ? '' : 'whitespace-nowrap'} ${foot && !c.strong ? 'text-help text-ink-3' : ''}`}>
       {c.mark ? (
-        <mark className={`mark ${s === 'gray' ? 'mark-gray' : `mark-${s}`} bg-transparent text-[14px] font-semibold text-ink`}>{c.text}</mark>
+        <span className={hit}>{c.text}</span>
       ) : c.phrases ? (
-        <Marked text={c.text} marks={c.phrases} s={s} />
+        <span className="text-ink-2">
+          <Marked text={c.text} marks={c.phrases} className={hit} />
+        </span>
       ) : (
-        <span className={foot && c.strong ? 'text-[14px] font-semibold text-ink' : ''}>{c.text}</span>
+        <span className={c.strong ? 'text-ink-3' : foot ? '' : 'text-ink-2'}>{c.text}</span>
       )}
     </td>
   );

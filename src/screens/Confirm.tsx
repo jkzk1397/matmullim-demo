@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { extractCodes } from '../domain/standards';
 import type { Assessment, CellRef, DocKind, Element, Extraction } from '../domain/types';
 import { DOC_NAME, refKey, sameRef, type Docs } from '../ui/helpers';
-import { DocTable, PageHead, Paper } from '../ui/layout';
-import { Button, Icon } from '../ui/primitives';
+import { DocTable, Page, PageHead } from '../ui/layout';
+import { Button, Card, Icon } from '../ui/primitives';
 
 type Props = {
   docs: Docs;
@@ -17,7 +17,7 @@ type Props = {
   onSubmit: () => void;
 };
 
-/** 추출값이 나온 원문 칸 전부 (원문 표에 '읽어 낸 칸'으로 표시) */
+/** 추출값이 나온 원문 칸 전부 (누르면 오른쪽 값으로 이어짐) */
 function recognizedRefs(ex: Extraction): CellRef[] {
   const out: (CellRef | undefined)[] = [];
   for (const a of [...ex.plan, ...ex.rubric]) {
@@ -28,17 +28,29 @@ function recognizedRefs(ex: Extraction): CellRef[] {
   return out.filter((x): x is CellRef => !!x);
 }
 
+/** 접어 두는 값의 원문 칸 (반영비율·평가 방법·채점기준) */
+function foldedRefs(ex: Extraction): Set<string> {
+  const out: CellRef[] = [];
+  for (const a of ex.plan) out.push(...[a.refs?.weightPercent, a.refs?.method].filter((x): x is CellRef => !!x));
+  for (const a of ex.rubric) for (const e of a.elements) if (e.refs?.rubricText) out.push(e.refs.rubricText);
+  return new Set(out.map(refKey));
+}
+
 export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onChange, onPair, onSubmit }: Props) {
   const [tab, setTab] = useState<DocKind>(focus?.doc ?? 'plan');
+  const [more, setMore] = useState(false);
+  const [editPairs, setEditPairs] = useState(false);
   const recognized = useMemo(() => new Set(recognizedRefs(ex).map(refKey)), [ex]);
+  const folded = useMemo(() => foldedRefs(ex), [ex]);
   useEffect(() => {
     if (!focus) return;
     setTab(focus.doc);
+    if (folded.has(refKey(focus))) setMore(true);
     requestAnimationFrame(() => {
       document.getElementById(`cell-${refKey(focus)}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       document.getElementById(`f-${refKey(focus)}`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     });
-  }, [focus]);
+  }, [focus, folded]);
 
   const update = (kind: 'plan' | 'rubric', i: number, patch: Partial<Assessment>) =>
     onChange({ ...ex, [kind]: ex[kind].map((a, k) => (k === i ? { ...a, ...patch } : a)) });
@@ -51,14 +63,15 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
     edited: JSON.stringify(now) !== JSON.stringify(was),
     onFocus: () => onFocus(ref ?? null),
   });
-  const counts = `평가계획 평가 ${ex.plan.length}개, 채점기준표 평가 ${ex.rubric.length}개, 학기 성취기준 ${ex.planStandards.length}개`;
+  const paired = ex.rubric.filter((r) => pairs[r.id]).length;
+  const allPaired = paired === ex.rubric.length && paired > 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <PageHead title="읽어 낸 값을 원문과 맞춰 보고 확인해 주세요" sub={`${counts}를 읽었어요. 점선 칸이 읽어 낸 칸이고, 누르면 오른쪽 값과 이어져요.`} />
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] gap-6 px-8">
-        <Paper className="flex min-h-0 flex-col">
-          <div className="flex shrink-0 items-end gap-1 border-b border-line-2 px-4 pt-3" role="tablist">
+    <Page>
+      <PageHead title="읽어 낸 값을 원문과 맞춰 보세요" sub="값을 누르면 원문의 같은 칸이 표시돼요. 틀린 값은 바로 고칠 수 있어요." />
+      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-6">
+        <Card className="flex min-h-0 flex-col">
+          <div className="flex shrink-0 items-end gap-1 border-b border-line-2 px-4 pt-2" role="tablist">
             {(['plan', 'rubric'] as const).map((k) => (
               <button
                 key={k}
@@ -66,83 +79,96 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                 role="tab"
                 aria-selected={tab === k}
                 onClick={() => setTab(k)}
-                className={`-mb-px flex items-center gap-2 border-b-2 px-3 pb-2.5 pt-1 text-[14px] transition-colors duration-150 ${
-                  tab === k ? 'border-graphite font-semibold text-ink' : 'border-transparent text-ink-3 hover:text-ink'
+                className={`-mb-px flex items-center gap-2 border-b-[3px] px-3 pb-2 pt-1.5 text-help transition-colors duration-150 ${
+                  tab === k ? 'border-brand-navy font-bold text-brand-navy' : 'border-transparent text-ink-3 hover:text-ink'
                 }`}
               >
                 {Icon.file('h-4 w-4')}
                 {DOC_NAME[k]}
-                <span className="text-meta font-normal text-ink-3">{docs[k].fileName}</span>
               </button>
             ))}
-            <span className="ml-auto pb-2.5 text-meta text-ink-3">원문</span>
+            <span className="ml-auto pb-2.5 text-help text-ink-3">{docs[tab].fileName}</span>
           </div>
-          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5">
-            <div className="text-[14px] font-semibold text-ink">{docs[tab].title}</div>
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
             {docs[tab].tables.map((t, i) => (
               <DocTable key={i} table={t} index={i} doc={tab} highlight={focus} recognized={recognized} onCell={(r) => onFocus(r)} />
             ))}
           </div>
-        </Paper>
+        </Card>
 
-        <Paper className="flex min-h-0 flex-col overflow-y-auto">
-          <div className="space-y-7 px-6 py-5">
-            <Section title="같은 평가 짝짓기" aside="두 문서에서 같은 평가끼리 묶어야 배점을 비교해요">
-              {ex.rubric.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 border-b border-line-2 py-2 last:border-0">
-                  <span className="w-[84px] shrink-0 text-meta text-ink-3">채점기준표</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold">{r.name}</span>
-                  <span className="text-ink-3">{Icon.swap()}</span>
-                  <label className="sr-only" htmlFor={`pair-${r.id}`}>
-                    {r.name}과 같은 평가계획의 평가
+        <Card className="flex min-h-0 flex-col">
+          <div className="flex shrink-0 items-center justify-between border-b border-line-2 px-5 py-2.5">
+            {allPaired && !editPairs ? (
+              <span className="flex items-center gap-2 text-help font-bold text-brand-green">
+                {Icon.check()}
+                {paired}쌍 자동 연결
+                <button type="button" className="ml-1 font-semibold text-brand-blue underline-offset-4 hover:underline" onClick={() => setEditPairs(true)}>
+                  바꾸기
+                </button>
+              </span>
+            ) : (
+              <span className="text-help font-bold text-ink-2">같은 평가끼리 짝지어 주세요</span>
+            )}
+            <button type="button" onClick={() => setMore(!more)} className="flex items-center gap-1 text-help font-semibold text-ink-3 hover:text-ink" aria-expanded={more}>
+              {more ? '다른 값 접기' : '다른 값도 보기 (반영비율·채점기준)'}
+              <span className={more ? 'rotate-180' : ''}>{Icon.chevron()}</span>
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
+            {(!allPaired || editPairs) && (
+              <div className="space-y-2">
+                {ex.rubric.map((r) => (
+                  <label key={r.id} className="flex items-center gap-3 text-body">
+                    <span className="min-w-0 flex-1 truncate font-bold">{r.name}</span>
+                    <span className="text-help text-ink-3">= 평가계획의</span>
+                    <select
+                      value={pairs[r.id] ?? ''}
+                      onChange={(e) => onPair(r.id, e.target.value || null)}
+                      className="h-10 w-56 rounded-lg bg-canvas px-3 text-help font-bold text-ink focus:outline-none focus:ring-2 focus:ring-brand-blue"
+                    >
+                      <option value="">짝 없음</option>
+                      {ex.plan.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
                   </label>
-                  <select
-                    id={`pair-${r.id}`}
-                    value={pairs[r.id] ?? ''}
-                    onChange={(e) => onPair(r.id, e.target.value || null)}
-                    className="h-10 w-64 rounded-lg bg-desk-2 px-3 text-[14px] font-semibold text-ink focus:outline-none focus:ring-2 focus:ring-pen"
-                  >
-                    <option value="">짝 없음</option>
-                    {ex.plan.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        평가계획 · {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ))}
-            </Section>
+                ))}
+              </div>
+            )}
 
-            <Section title="평가계획서" aside="만점·배점·반영비율은 따로 읽어요">
+            <Section title="평가계획서">
               {ex.plan.map((a, i) => {
                 const o = original.plan[i];
                 return (
-                  <div key={a.id} className="border-b border-line-2 pb-3 pt-1 last:border-0">
-                    <div className="grid grid-cols-[1fr_52px_136px_136px] items-center gap-2">
-                      <Field label="평가명" value={a.name} onText={(v) => update('plan', i, { name: v })} strong {...fp(a.source, a.name, o?.name)} />
-                      <span className="text-center text-meta text-ink-3">{a.method}</span>
-                      <Field label="반영비율" suffix="%" value={a.weightPercent} onNum={(v) => update('plan', i, { weightPercent: v })} {...fp(a.refs?.weightPercent, a.weightPercent, o?.weightPercent)} />
-                      <Field label="만점" suffix="점" value={a.maxScore} onNum={(v) => update('plan', i, { maxScore: v })} {...fp(a.refs?.maxScore, a.maxScore, o?.maxScore)} />
+                  <Block key={a.id}>
+                    <div className="flex items-center gap-2">
+                      <Field value={a.name} onText={(v) => update('plan', i, { name: v })} grow {...fp(a.source, a.name, o?.name)} />
+                      {more && (
+                        <Field label="반영비율" suffix="%" value={a.weightPercent} onNum={(v) => update('plan', i, { weightPercent: v })} w="w-40" {...fp(a.refs?.weightPercent, a.weightPercent, o?.weightPercent)} />
+                      )}
+                      <Field label="만점" suffix="점" value={a.maxScore} onNum={(v) => update('plan', i, { maxScore: v })} strong w="w-32" {...fp(a.refs?.maxScore, a.maxScore, o?.maxScore)} />
                     </div>
-                    <ElementRows kind="plan" a={a} o={o} i={i} updateEl={updateEl} fp={fp} />
-                  </div>
+                    <ElementRows kind="plan" a={a} o={o} i={i} updateEl={updateEl} fp={fp} more={more} />
+                  </Block>
                 );
               })}
             </Section>
 
-            <Section title="채점기준표" aside="채점기준 문장은 지침 표현 점검에 써요">
+            <Section title="채점기준표">
               {ex.rubric.map((a, i) => {
                 const o = original.rubric[i];
                 return (
-                  <div key={a.id} className="border-b border-line-2 pb-3 pt-1 last:border-0">
-                    <Field label="평가명" value={a.name} onText={(v) => update('rubric', i, { name: v })} strong {...fp(a.source, a.name, o?.name)} />
-                    <ElementRows kind="rubric" a={a} o={o} i={i} updateEl={updateEl} fp={fp} />
-                  </div>
+                  <Block key={a.id}>
+                    <Field value={a.name} onText={(v) => update('rubric', i, { name: v })} grow {...fp(a.source, a.name, o?.name)} />
+                    <ElementRows kind="rubric" a={a} o={o} i={i} updateEl={updateEl} fp={fp} more={more} />
+                  </Block>
                 );
               })}
             </Section>
 
-            <Section title="학기 성취기준" aside="정렬 맵의 행이 돼요">
+            <Section title="학기 성취기준">
               <div className="flex flex-wrap gap-2">
                 {ex.planStandards.map((s) => (
                   <button
@@ -150,8 +176,8 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
                     id={`f-${refKey(s.ref)}`}
                     type="button"
                     onClick={() => onFocus(s.ref)}
-                    className={`rounded-md px-2.5 py-1 text-[14px] font-semibold transition-colors duration-150 ${
-                      sameRef(focus, s.ref) ? 'bg-pen-50 text-pen ring-2 ring-pen' : 'bg-desk-2 text-ink-2 hover:bg-desk'
+                    className={`rounded-md px-2.5 py-1 text-help font-bold transition-colors duration-150 ${
+                      sameRef(focus, s.ref) ? 'bg-brand-blue-50 text-brand-blue ring-2 ring-brand-blue' : 'bg-canvas text-ink hover:bg-line-2'
                     }`}
                   >
                     {s.code}
@@ -160,39 +186,40 @@ export default function Confirm({ docs, ex, original, pairs, focus, onFocus, onC
               </div>
             </Section>
             {ex.warnings.length > 0 && (
-              <ul className="space-y-1 rounded-lg bg-desk-2 px-4 py-3 text-meta text-ink-2">
+              <ul className="space-y-1 rounded-lg bg-canvas px-4 py-3 text-help text-ink-2">
                 {ex.warnings.map((w) => (
                   <li key={w}>{w}</li>
                 ))}
               </ul>
             )}
           </div>
-        </Paper>
+        </Card>
       </div>
 
-      <div className="mt-5 flex h-[72px] shrink-0 items-center justify-between bg-paper px-8 shadow-[0_-1px_0_#dcdfe4]">
-        <p className="flex items-center gap-2 text-meta text-ink-3">
-          <span className="text-pen">{Icon.pen('h-4 w-4')}</span>
-          여기서 고친 값은 ‘교사 수정’으로 표시돼요. 문서 자체를 고쳤다면 결과를 본 뒤 고친 파일을 다시 올려 주세요.
+      <div className="flex shrink-0 items-center justify-between py-4">
+        <p className="flex items-center gap-2 text-help text-ink-3">
+          <span className="text-brand-blue">{Icon.pen()}</span>
+          여기서 고친 값은 ‘교사 수정’으로 표시돼요.
         </p>
         <Button variant="primary" size="lg" onClick={onSubmit}>
           확인하고 점검 {Icon.arrow()}
         </Button>
       </div>
-    </div>
+    </Page>
   );
 }
 
-function Section({ title, aside, children }: { title: string; aside?: string; children: ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <div className="mb-2 flex items-baseline justify-between gap-4">
-        <h2 className="text-[15px] font-bold text-ink">{title}</h2>
-        {aside && <span className="text-meta text-ink-3">{aside}</span>}
-      </div>
-      {children}
+      <h2 className="mb-1 text-help font-bold text-ink-3">{title}</h2>
+      <div className="divide-y divide-line-2">{children}</div>
     </section>
   );
+}
+
+function Block({ children }: { children: ReactNode }) {
+  return <div className="py-2">{children}</div>;
 }
 
 type FP = (ref: CellRef | undefined, now: unknown, was: unknown) => { id?: string; active: boolean; edited: boolean; onFocus: () => void };
@@ -204,6 +231,7 @@ function ElementRows({
   i,
   updateEl,
   fp,
+  more,
 }: {
   kind: 'plan' | 'rubric';
   a: Assessment;
@@ -211,24 +239,22 @@ function ElementRows({
   i: number;
   updateEl: (k: 'plan' | 'rubric', i: number, j: number, p: Partial<Element>) => void;
   fp: FP;
+  more: boolean;
 }) {
-  const cols = kind === 'plan' ? 'grid-cols-[1fr_96px_1fr]' : 'grid-cols-[1fr_96px_0.9fr_1.4fr]';
   return (
-    <div className="mt-1 pl-3">
-      <div className={`grid ${cols} gap-2 px-2 pb-0.5 text-meta text-ink-3`}>
-        <span>평가요소</span>
-        <span>배점</span>
-        <span>성취기준 코드</span>
-        {kind === 'rubric' && <span>채점기준</span>}
-      </div>
+    <div className="mt-0.5 pl-4">
       {a.elements.map((e, j) => {
         const oe = o?.elements[j];
         return (
-          <div key={j} className={`grid ${cols} items-start gap-2`}>
-            <Field value={e.name} onText={(v) => updateEl(kind, i, j, { name: v })} {...fp(e.refs?.name, e.name, oe?.name)} />
-            <Field suffix="점" value={e.points} onNum={(v) => updateEl(kind, i, j, { points: v })} {...fp(e.refs?.points, e.points, oe?.points)} />
-            <CodesField codes={e.standards} onCodes={(c) => updateEl(kind, i, j, { standards: c })} {...fp(e.refs?.standards, e.standards, oe?.standards)} />
-            {kind === 'rubric' && <Field value={e.rubricText ?? ''} onText={(v) => updateEl(kind, i, j, { rubricText: v })} {...fp(e.refs?.rubricText, e.rubricText, oe?.rubricText)} />}
+          <div key={j}>
+            <div className="grid grid-cols-[minmax(0,1fr)_104px_minmax(0,0.9fr)] items-center gap-2">
+              <Field value={e.name} onText={(v) => updateEl(kind, i, j, { name: v })} quiet {...fp(e.refs?.name, e.name, oe?.name)} />
+              <Field suffix="점" value={e.points} onNum={(v) => updateEl(kind, i, j, { points: v })} strong {...fp(e.refs?.points, e.points, oe?.points)} />
+              <CodesField codes={e.standards} onCodes={(c) => updateEl(kind, i, j, { standards: c })} {...fp(e.refs?.standards, e.standards, oe?.standards)} />
+            </div>
+            {more && kind === 'rubric' && (
+              <Field label="채점기준" value={e.rubricText ?? ''} onText={(v) => updateEl(kind, i, j, { rubricText: v })} quiet {...fp(e.refs?.rubricText, e.rubricText, oe?.rubricText)} />
+            )}
           </div>
         );
       })}
@@ -247,12 +273,19 @@ type FieldProps = {
   edited: boolean;
   onFocus: () => void;
   strong?: boolean;
+  quiet?: boolean;
+  grow?: boolean;
+  w?: string;
 };
 
-function Field({ id, label, value, suffix, onText, onNum, active, edited, onFocus, strong }: FieldProps) {
+function Field({ id, label, value, suffix, onText, onNum, active, edited, onFocus, strong, quiet, grow, w = '' }: FieldProps) {
   return (
-    <label className={`flex h-10 min-w-0 items-center gap-1.5 rounded-md px-2 transition-colors duration-150 ${active ? 'bg-pen-50 ring-2 ring-pen' : 'hover:bg-desk-2'}`}>
-      {label && <span className="shrink-0 text-meta text-ink-3">{label}</span>}
+    <label
+      className={`flex h-10 min-w-0 items-center gap-1.5 rounded-md px-2 transition-colors duration-150 ${grow ? 'flex-1' : ''} ${w} ${
+        active ? 'bg-brand-blue-50 outline-dashed outline-2 -outline-offset-2 outline-brand-blue' : 'hover:bg-canvas'
+      }`}
+    >
+      {label && <span className="shrink-0 text-help text-ink-3">{label}</span>}
       <input
         id={id}
         value={value ?? ''}
@@ -264,12 +297,14 @@ function Field({ id, label, value, suffix, onText, onNum, active, edited, onFocu
             onNum(v === '' ? undefined : Number(v));
           } else onText?.(e.target.value);
         }}
-        className={`min-w-0 flex-1 truncate bg-transparent text-[15px] outline-none ${onNum ? 'text-right' : ''} ${strong ? 'font-semibold' : ''} ${edited ? 'text-pen' : 'text-ink'}`}
+        className={`min-w-0 flex-1 truncate bg-transparent text-body outline-none ${onNum ? 'text-right' : ''} ${
+          strong ? 'font-extrabold' : quiet ? 'text-ink-2' : 'font-bold'
+        } ${edited ? 'text-brand-blue' : quiet ? '' : 'text-ink'}`}
       />
-      {suffix && <span className="shrink-0 text-meta text-ink-3">{suffix}</span>}
+      {suffix && <span className="shrink-0 text-help text-ink-3">{suffix}</span>}
       {edited && (
-        <span className="shrink-0 text-pen" title="교사 수정">
-          {Icon.pen('h-3.5 w-3.5')}
+        <span className="shrink-0 text-brand-blue" title="교사 수정">
+          {Icon.pen('h-4 w-4')}
         </span>
       )}
     </label>
@@ -286,7 +321,7 @@ function CodesField({ codes, onCodes, ...rest }: { codes: string[]; onCodes: (c:
         setDraft(null);
       }}
     >
-      <Field value={draft ?? codes.join(' ')} onText={setDraft} {...rest} />
+      <Field value={draft ?? codes.join(' ')} onText={setDraft} strong {...rest} />
     </div>
   );
 }
