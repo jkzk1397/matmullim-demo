@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { extract, suggestPairs } from './domain/extract';
+import { extractPublic, isPublicFormat, suggestPublicPairs } from './domain/extract-public';
 import { parseHwpx } from './domain/hwpx';
 import { runChecks } from './domain/rules';
 import type { Action, Card, CellRef, DocKind, Extraction, ParsedDocument } from './domain/types';
@@ -46,10 +47,12 @@ export default function App() {
   const result = useMemo(() => (run ? runChecks(run.input) : null), [run]);
 
   const prepare = (plan: ParsedDocument, rubric: ParsedDocument) => {
-    const e = extract(plan, rubric);
+    // 학교알리미 공시 양식처럼 한 파일에 요약표와 세부기준이 함께 있는 경우
+    const pub = plan === rubric || (plan.fileName === rubric.fileName && isPublicFormat(plan));
+    const e: Extraction = pub ? { ...extractPublic(plan), format: 'public' } : { ...extract(plan, rubric), format: 'pair' };
     setEx(e);
     setOriginal(e);
-    setPairs(suggestPairs(e.plan, e.rubric));
+    setPairs(pub ? suggestPublicPairs(e.plan, e.rubric) : suggestPairs(e.plan, e.rubric));
     setFocus(e.plan[0]?.source ?? null);
     setConfirmStart(Date.now());
     setStep('confirm');
@@ -68,8 +71,16 @@ export default function App() {
     setError(undefined);
     try {
       if (!/\.hwpx$/i.test(file.name)) throw new Error('HWPX 파일만 읽을 수 있어요. 한글에서 “다른 이름으로 저장 → HWPX”로 바꿔 주세요.');
-      const doc = await parseHwpx(await file.arrayBuffer(), file.name, kind);
+      const buf = await file.arrayBuffer();
+      const doc = await parseHwpx(buf, file.name, kind);
       if (!doc.tables.length) throw new Error(`${file.name}에서 표를 찾지 못했어요.`);
+      if (isPublicFormat(doc)) {
+        // 공시용 계획서 한 파일 = 평가계획(요약표) + 채점기준(세부기준). 두 칸을 같은 문서로 채운다.
+        const plan = kind === 'plan' ? doc : await parseHwpx(buf, file.name, 'plan');
+        const rubric = kind === 'rubric' ? doc : await parseHwpx(buf, file.name, 'rubric');
+        setSlots({ plan, rubric, label: file.name });
+        return;
+      }
       setSlots((s) => {
         const next = { ...s, [kind]: doc };
         return { ...next, label: [next.plan?.fileName, next.rubric?.fileName].filter(Boolean).join(' + ') };
@@ -86,7 +97,7 @@ export default function App() {
       label: slots.label ?? '업로드한 문서',
       at: new Date(),
       docs: { plan: slots.plan, rubric: slots.rubric },
-      input: { plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, pairs, links: [] },
+      input: { plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, format: ex.format, pairs, links: [] },
       confirmMs: Date.now() - confirmStart,
       editedRefs: editedRefs(original, ex),
     };

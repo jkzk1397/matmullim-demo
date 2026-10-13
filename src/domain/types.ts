@@ -63,12 +63,19 @@ export type ParsedDocument = {
   tables: ParsedTable[];
 };
 
+/** 문서 안에 "[코드] 문장" 꼴로 적힌 성취기준 문구 한 곳 */
+export type CodeText = { code: string; text: string; ref: CellRef };
+
 /** 추출 결과 = 교사 확인 화면에서 고치는 대상 */
 export type Extraction = {
   plan: Assessment[];
   rubric: Assessment[];
   planStandards: PlanStandard[];
   warnings: string[];
+  /** (추가 필드) 성취기준 문구가 적힌 모든 곳 */
+  codeTexts?: CodeText[];
+  /** (추가 필드) 'public' = 학교알리미 공시 양식 한 파일 */
+  format?: 'pair' | 'public';
 };
 
 // ---------- 점검 결과 ----------
@@ -76,7 +83,7 @@ export type Extraction = {
 export type Severity = 'red' | 'orange' | 'gray' | 'yellow';
 export type Strength = '사실' | '의무' | '권고' | '제안';
 export type Action = 'fix' | 'memo' | 'link';
-export type RuleId = 'J4' | 'J7' | 'J12' | 'J6' | 'S5';
+export type RuleId = 'J4' | 'J5' | 'J7' | 'J12' | 'J6' | 'S5';
 
 export type Basis = {
   /** 규칙 출처 (문서명) */
@@ -125,6 +132,10 @@ export type CheckInput = {
   /** rubric 평가 id → plan 평가 id (null이면 짝 없음) */
   pairs: Record<string, string | null>;
   links: ManualLink[];
+  /** (추가 필드) 성취기준 문구가 적힌 모든 곳 — J5 문구 대조에 쓴다 */
+  codeTexts?: CodeText[];
+  /** (추가 필드) 'public'이면 한 파일 안 요약표 ↔ 세부기준을 대조한다 */
+  format?: 'pair' | 'public';
 };
 
 export type PassedCheck = { rule: RuleId | 'J12-weight'; label: string; detail: string };

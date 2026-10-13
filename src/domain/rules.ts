@@ -57,25 +57,35 @@ const isWritten = (a: Assessment) => /지필/.test(a.method ?? '');
 function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   const { plan, rubric, pairs } = input;
 
-  // (1) 반영비율 합계 — 평가계획 안에서만 본다.
-  const weighted = plan.filter((a) => a.weightPercent !== undefined);
-  if (weighted.length) {
+  // (1) 반영비율 합계 — 평가계획 안에서만 본다. 공시 양식은 요약표(학년·학기)마다 따로 본다.
+  const groups = new Map<number | 'all', Assessment[]>();
+  for (const a of plan) {
+    const k = input.format === 'public' ? a.source.table : 'all';
+    groups.set(k, [...(groups.get(k) ?? []), a]);
+  }
+  for (const [gk, group] of groups) {
+    const weighted = group.filter((a) => a.weightPercent !== undefined);
+    if (!weighted.length) continue;
+    // 공시 양식에서 반영비율이 빠진 칸(정기시험 비율을 다른 줄에 적은 표 등)이 있으면 합계를 판정하지 않는다.
+    if (input.format === 'public' && weighted.length !== group.length) continue;
     const total = sum(weighted.map((a) => a.weightPercent));
     if (Math.abs(total - 100) > 1e-9) {
       cards.push({
-        key: 'J12-weight-sum',
+        key: gk === 'all' ? 'J12-weight-sum' : `J12-weight-sum:${gk}`,
         rule: 'J12',
         severity: 'red',
         strength: '사실',
         title: `반영비율 합계가 ${total}%예요 (100%가 아님)`,
         locations: weighted.map((a) => a.refs?.weightPercent ?? a.source),
         quote: weighted.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' + ') + ` = ${total}%`,
-        basis: { source: '두 문서 대조 · 사실 확인', text: '평가계획의 학기 반영비율은 모두 더해 100%여야 합니다.' },
+        basis: { source: input.format === 'public' ? '같은 문서 안 대조 · 사실 확인' : '두 문서 대조 · 사실 확인', text: '평가계획의 학기 반영비율은 모두 더해 100%여야 합니다.' },
         actions: ['fix', 'memo'],
         fix: `반영비율을 더해 100%가 되게 고치세요. 지금은 ${total - 100 > 0 ? `${total - 100}%p 많아요` : `${100 - total}%p 모자라요`}.`,
       });
     } else passed.push({ rule: 'J12-weight', label: '반영비율 합계', detail: `${weighted.length}개 평가 합계 100%` });
   }
+
+  if (input.format === 'public') return j12Public(input, cards, passed);
 
   // (2) 짝지은 평가: 만점 vs 채점기준표 배점 합계
   let okPairs = 0;
@@ -190,6 +200,61 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   if (okPairs) passed.push({ rule: 'J12', label: '만점 = 배점 합계', detail: `짝지은 ${okPairs}개 평가 일치` });
 }
 
+/**
+ * 공시 양식(한 파일): 요약표의 영역 만점과 수행평가 세부기준의 영역 만점을 대조한다.
+ * 요약표에서 한 영역을 두 칸으로 나눈 경우(예: 프로그램 논술 20 + 프로그램 작성 20 = 40)는 이름이 같은 칸을 더한다.
+ */
+function j12Public(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  let ok = 0;
+  const perf = input.plan.filter((a) => a.method !== '지필');
+  for (const r of input.rubric) {
+    if (r.maxScore === undefined || !r.name) continue;
+    const rn = normalizeName(r.name);
+    if (rn.length < 2) continue;
+    const exact = perf.filter((p) => normalizeName(p.name) === rn);
+    const parts = exact.length ? exact : perf.filter((p) => normalizeName(p.name).startsWith(rn));
+    if (!parts.length || parts.some((p) => p.maxScore === undefined)) continue;
+    const total = sum(parts.map((p) => p.maxScore));
+    if (total === r.maxScore) { ok++; continue; }
+    cards.push({
+      key: `J12-public-max:${rn}`,
+      rule: 'J12',
+      severity: 'red',
+      strength: '사실',
+      title: `‘${r.name}’ 영역 만점이 요약표 ${total}점, 세부기준 ${r.maxScore}점으로 달라요`,
+      locations: [...parts.map((p) => p.refs?.maxScore ?? p.source), r.refs?.maxScore ?? r.source],
+      quote: `평가 요약표: ${parts.map((p) => `${p.name} ${fmt(p.maxScore, '점')}`).join(' + ')}\n수행평가 세부기준: ${r.name} 영역 만점 ${r.maxScore}점`,
+      basis: { source: '같은 문서 안 대조 · 사실 확인', text: '한 계획서 안에서 같은 평가 영역의 만점은 요약표와 세부기준이 같아야 합니다.' },
+      actions: ['fix', 'memo'],
+      fix: `요약표와 세부기준 중 한쪽을 고쳐 ${r.name}의 만점을 맞추세요.`,
+    });
+  }
+  // 만점과 반영비율이 1:1로 쓰인 표에서 한 칸만 어긋난 경우 (예: 30점(20%))
+  const byTable = new Map<number, Assessment[]>();
+  for (const a of input.plan) byTable.set(a.source.table, [...(byTable.get(a.source.table) ?? []), a]);
+  for (const [, as] of byTable) {
+    const both = as.filter((a) => a.method !== '지필' && a.maxScore !== undefined && a.weightPercent !== undefined);
+    if (both.length < 3) continue;
+    const same = both.filter((a) => a.maxScore === a.weightPercent);
+    const off = both.filter((a) => a.maxScore !== a.weightPercent);
+    if (off.length !== 1 || same.length < 2) continue;
+    const a = off[0];
+    cards.push({
+      key: `J12-public-ratio:${normalizeName(a.name)}`,
+      rule: 'J12',
+      severity: 'red',
+      strength: '사실',
+      title: `‘${a.name}’만 만점 ${a.maxScore}점과 반영비율 ${a.weightPercent}%가 달라요`,
+      locations: [a.refs?.maxScore ?? a.source],
+      quote: both.map((x) => `${x.name} ${fmt(x.maxScore, '점')}(${fmt(x.weightPercent, '%')})`).join(' · '),
+      basis: { source: '같은 문서 안 대조 · 사실 확인', text: '같은 표의 다른 영역은 모두 만점과 반영비율이 같게 적혀 있습니다. 한 칸만 다르면 숫자를 옮겨 적다 생긴 차이일 수 있습니다.' },
+      actions: ['fix', 'memo'],
+      fix: `${a.name}의 만점과 반영비율 중 맞는 값을 확인해 고치세요.`,
+    });
+  }
+  if (ok) passed.push({ rule: 'J12', label: '요약표 만점 = 세부기준 만점', detail: `${ok}개 영역 일치` });
+}
+
 /** 두 문서를 나란히 비교할 줄. 다른 값만 differs=true. */
 function compareRows(p: Assessment, r: Assessment): CompareRow[] {
   const rows: CompareRow[] = [];
@@ -211,6 +276,19 @@ function compareRows(p: Assessment, r: Assessment): CompareRow[] {
   return rows;
 }
 
+/** 다른 교과 코드에 쓰이지 않는 글자 하나가 '정' 자리에 들어갔거나, 학년 앞에 0이 붙은 경우 */
+const SUBJECT_CODES = new Set(['국', '수', '영', '과', '사', '도', '역', '음', '미', '체', '기가', '한', '정', '진', '보', '환', '중', '일', '프', '독', '스', '러', '아', '베']);
+export function typoOf(code: string): string | null {
+  const m = code.match(/^\[(0?9)([가-힣]{1,2})(\d{2})-(\d{2})\]$/);
+  if (!m) return null;
+  const [, grade, subj, a, b] = m;
+  const fixed = `[9정${a}-${b}]`;
+  if (!lookupStandard(fixed)) return null;
+  if (grade === '09' && subj === '정') return fixed;
+  if (grade === '9' && subj.length === 1 && subj !== '정' && !SUBJECT_CODES.has(subj)) return fixed;
+  return null;
+}
+
 function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   const where = new Map<string, CellRef[]>();
   const add = (code: string, at?: CellRef) => {
@@ -218,6 +296,7 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     if (at) where.get(code)!.push(at);
   };
   input.planStandards.forEach((s) => add(s.code, s.ref));
+  (input.codeTexts ?? []).forEach((s) => add(s.code, s.ref));
   for (const a of [...input.plan, ...input.rubric]) for (const e of a.elements) for (const c of e.standards) add(c, e.refs?.standards);
 
   let valid = 0;
@@ -225,6 +304,22 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     const st = classifyCode(code);
     if (st === 'valid') {
       valid++;
+      continue;
+    }
+    const typo = typoOf(code);
+    if (typo) {
+      cards.push({
+        key: `J4-typo:${code}`,
+        rule: 'J4',
+        severity: 'red',
+        strength: '사실',
+        title: `${code}는 ${typo}를 잘못 적은 것 같아요`,
+        locations: locs,
+        quote: `문서에 적힌 코드: ${code}\n가까운 코드: ${typo} ${lookupStandard(typo)?.text ?? ''}`,
+        basis: { source: DB_SOURCE, text: `${code}라는 코드는 없습니다. 숫자가 같은 ${typo}가 2022 개정 중학교 정보 성취기준에 있습니다.` },
+        actions: ['fix', 'memo'],
+        fix: `${typo}로 고치세요.`,
+      });
       continue;
     }
     if (st === 'not-in-db') {
@@ -248,6 +343,8 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         fix: siblings.length ? `같은 영역 코드(${siblings[0]}~${siblings[siblings.length - 1]}) 중 이 평가가 다루는 코드로 고치세요.` : '2022 개정 중학교 정보 성취기준 코드로 고치세요.',
       });
     } else {
+      // 공시 문서에는 다른 교과·학교자율시간 과목 코드가 함께 있어 회색 카드가 쏟아지므로 띄우지 않는다.
+      if (input.format === 'public') continue;
       cards.push({
         key: `J4-scope:${code}`,
         rule: 'J4',
@@ -267,18 +364,26 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
 }
 
 const J7_PATTERNS: { label: string; re: RegExp }[] = [
-  { label: '과제 수행률', re: /(?:수행률|완성률|달성률|\d+(?:\.\d+)?\s*%\s*(?:이상|이하|미만|초과)?)/ },
-  { label: '분량', re: /(?:분량|(?:A4\s*)?\d+\s*(?:쪽|장|매|페이지|글자|자|줄|문단)\s*(?:이상|이내|이하|미만)?)/ },
+  // 수행률: '수행률·완성률' 낱말이나, %가 도달·완성·작성 같은 수행 정도를 나타낼 때만 (문제 지문의 '50% 할인' 등은 제외)
+  { label: '과제 수행률', re: /(?:수행률|완성률|달성률|과제\s*수행\s*정도|\d+(?:\.\d+)?\s*%\s*(?:이상|이하|미만|초과|정도|가량)?\s*(?:을|를|만큼)?\s*(?:도달|완성|수행|작성|해결|달성|구현|제출|정확))/ },
+  { label: '분량', re: /(?:분량|(?:A4\s*)?\d+\s*(?:쪽|장|매|페이지|글자|자|줄|문단)\s*(?:이상|이내|이하|미만))/ },
   { label: '감점', re: /감점/ },
   { label: '지적 횟수', re: /(?:지적\s*(?:횟수|\d+\s*회)|\d+\s*회\s*(?:이상\s*)?지적)/ },
-  { label: '출석률', re: /출석(?:률)?/ },
+  { label: '출석률', re: /출석률|출석\s*(?:일수|횟수|여부)/ },
 ];
+
+/** 채점기준이 아니라 학생이 만들 프로그램·문제 지문을 설명하는 문장 (예: "점수 변수 감점 알고리즘을 구현") */
+const TASK_CONTEXT = /(변수|연산|알고리즘|프로그램|코드|함수|조건문|반복문|게임|캐릭터|스프라이트|<조건>|할인|요금)/;
 
 export function findDiscouraged(text: string): { label: string; match: string }[] {
   const out: { label: string; match: string }[] = [];
-  for (const p of J7_PATTERNS) {
-    const m = text.match(p.re);
-    if (m) out.push({ label: p.label, match: m[0].trim() });
+  for (const line of text.split('\n')) {
+    for (const p of J7_PATTERNS) {
+      const m = line.match(p.re);
+      if (!m) continue;
+      if ((p.label === '감점' || p.label === '과제 수행률') && TASK_CONTEXT.test(line) && !/(도달|완성|수행률|완성률|달성률)/.test(m[0])) continue;
+      if (!out.some((o) => o.label === p.label)) out.push({ label: p.label, match: m[0].trim() });
+    }
   }
   return out;
 }
@@ -334,6 +439,53 @@ function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     passed.push({ rule: 'J6', label: '성취기준–평가 연결', detail: `성취기준 ${rows.length}개 모두 평가와 연결` });
 }
 
+/** 두 문장이 얼마나 같은지 (글자 두 개씩 묶어 겹치는 비율, 0~1) */
+export function similarity(a: string, b: string): number {
+  const clean = (s: string) => s.replace(/[\s⋅·ㆍ‧∙・･․,.\-()「」'"]/g, '');
+  const grams = (s: string) => { const g = new Map<string, number>(); for (let i = 0; i < s.length - 1; i++) { const k = s.slice(i, i + 2); g.set(k, (g.get(k) ?? 0) + 1); } return g; };
+  const A = grams(clean(a)), B = grams(clean(b));
+  let inter = 0, na = 0, nb = 0;
+  A.forEach((v, k) => { na += v; inter += Math.min(v, B.get(k) ?? 0); });
+  B.forEach((v) => { nb += v; });
+  return na + nb ? (2 * inter) / (na + nb) : 0;
+}
+
+/**
+ * J5 같은 코드 다른 문구: 한 문서 안에서 같은 성취기준 코드를 고시 원문과 다른 문장으로도 적었을 때.
+ * 고시 원문과 같은 문장이 한 번이라도 있어야 띄운다(다른 교육과정 문서를 오류로 보지 않게).
+ */
+function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const by = new Map<string, { text: string; ref: CellRef }[]>();
+  for (const ct of input.codeTexts ?? []) {
+    if (classifyCode(ct.code) !== 'valid') continue;
+    by.set(ct.code, [...(by.get(ct.code) ?? []), ct]);
+  }
+  let checked = 0;
+  for (const [code, items] of by) {
+    const official = lookupStandard(code)!.text;
+    const sims = items.map((it) => ({ ...it, sim: similarity(it.text, official), prefix: it.text.replace(/\s/g, '').startsWith(official.replace(/\s/g, '').slice(0, 25)) }));
+    checked++;
+    const match = sims.filter((x) => x.sim >= 0.92);
+    const differ = sims.filter((x) => x.sim < 0.85 && !x.prefix);
+    if (!match.length || !differ.length) continue;
+    const variants = [...new Map(differ.map((d) => [d.text.replace(/\s/g, ''), d])).values()];
+    cards.push({
+      key: `J5:${code}`,
+      rule: 'J5',
+      severity: 'gray',
+      strength: '사실',
+      title: `${code}를 고시 원문과 다른 문장으로도 적었어요`,
+      locations: [...match.map((m) => m.ref), ...variants.map((v) => v.ref)],
+      emphasis: variants.map((v) => v.ref),
+      quote: `고시 원문: ${official}\n다르게 적은 곳: ${variants.map((v) => v.text).join(' / ')}`,
+      basis: { source: DB_SOURCE, text: '같은 문서 안에서 같은 코드가 서로 다른 문장으로 적혀 있습니다. 이전 교육과정 문구가 남았거나 다른 코드의 문장을 옮겨 적었을 수 있습니다.' },
+      actions: ['fix', 'memo'],
+      fix: `${code} 문장을 고시 원문으로 맞추세요. 의도한 재구성이라면 메모하고 넘기세요.`,
+    });
+  }
+  if (checked && !cards.some((c) => c.rule === 'J5')) passed.push({ rule: 'J5', label: '성취기준 문구', detail: `코드 ${checked}개 문구가 고시 원문과 일치` });
+}
+
 /** 노랑 제안은 이번 데모에서 1개만: S5 학생 성찰 기회 */
 function s5(input: CheckInput, cards: Card[]) {
   const perf = input.rubric;
@@ -354,13 +506,14 @@ function s5(input: CheckInput, cards: Card[]) {
 }
 
 const ORDER: Record<Severity, number> = { red: 0, orange: 1, gray: 2, yellow: 3 };
-const RULE_ORDER = ['J12', 'J4', 'J7', 'J6', 'S5'];
+const RULE_ORDER = ['J12', 'J4', 'J5', 'J7', 'J6', 'S5'];
 
 export function runChecks(input: CheckInput): CheckResult {
   const cards: Card[] = [];
   const passed: PassedCheck[] = [];
   j12(input, cards, passed);
   j4(input, cards, passed);
+  j5(input, cards, passed);
   j7(input, cards, passed);
   j6(input, cards, passed);
   s5(input, cards);
