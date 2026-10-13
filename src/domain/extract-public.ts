@@ -256,6 +256,13 @@ export function extractPublic(raw: ParsedDocument): Extraction & { subjectRanges
   // 요약표 성취기준 칸에만 있는 코드도 정렬 맵에 넣는다
   for (const a of plan) for (const e of a.elements) for (const code of e.standards)
     if (infoCode(code) && !planStandards.some((s) => s.code === code)) planStandards.push({ code, text: '', ref: e.refs?.standards ?? a.source });
+  // 표를 읽지 못한 문서(PDF 등): 본문 어디에든 적힌 정보과 코드(오타 모양 포함)를 모아 코드 점검만이라도 한다
+  if (!plan.length)
+    for (const [ti, t] of doc.tables.entries())
+      for (const [ri, row] of t.rows.entries())
+        for (const [ci, cell] of row.entries())
+          for (const m of (cell ?? '').matchAll(/\[0?9[자-짛]\d{2}-\d{2}\]/g))
+            if (!planStandards.some((s) => s.code === m[0])) planStandards.push({ code: m[0], text: '', ref: ref('plan', ti, ri, ci) });
   const warnings: string[] = [];
   if (!plan.length) warnings.push('공시 양식의 평가 요약표(영역 만점·반영비율)를 찾지 못했어요.');
   // 같은 이름의 평가가 요약표에 두 번 이상 나오면(학년별 반복) 이름 뒤에 표 번호를 붙인다
