@@ -14,7 +14,7 @@ const PLAN_TITLE = /(학년|학기).{0,30}(교수|평가).{0,30}계획/;
 /** '정보공시', '개인정보' 같은 낱말 때문에 교과명 '정보'를 잘못 찾지 않게 지운다. */
 const scrub = (s: string) => s.replace(/정보\s*공시|정보\s*고시|개인\s*정보|정보\s*통신/g, '');
 
-const isMaxRow = (label: string) => /^(영역)?만점(반영비율|점)?$/.test(norm(label));
+const isMaxRow = (label: string) => /^(영역)?만점(비율)?(반영비율|점|%)?$/.test(norm(label));
 
 /** 요약표(첫 열에 '영역 만점(반영비율)' 행이 있는 표)가 있으면 공시 양식으로 본다. */
 export function isPublicFormat(doc: ParsedDocument): boolean {
@@ -92,10 +92,15 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
   const elRow = find(/평가요소|평가내용|세부내용/, maxRow + 1);
   const out: Assessment[] = [];
   const width = g[0]?.length ?? 0;
+  let incomplete = false;
   for (let c = 1; c < width; c++) {
     if (isCont(t, maxRow, c)) continue;
+    const noteCol = /※|변경될 수|일정에 따라/.test((nameRow >= 0 ? g[nameRow][c] : '') + (g[maxRow][c] ?? ''));
+    if (noteCol) continue;
     const head = typeRow >= 0 ? g[typeRow][c] ?? '' : '';
-    if (/^(합계|계|총계|총점)$/.test(norm(head))) continue;
+    const nameAt = nameRow >= 0 ? (g[nameRow][c] ?? '').trim() : '';
+    // 머리 행의 '합계' 칸이 옆 영역까지 덮은 표가 있어, 영역 이름이 따로 적힌 칸은 합계로 보지 않는다
+    if (/^(합계|계|총계|총점)$/.test(norm(head)) && (!nameAt || /^[-‒·.∙ㆍ]$/.test(nameAt) || c === width - 1)) continue;
     const cell = g[maxRow][c] ?? '';
     let { max, weight } = readScoreCell(cell);
     const plain = (x: string) => (/^\s*\d+(?:\.\d+)?\s*$/.test(x ?? '') ? Number(x) : undefined);
@@ -105,9 +110,21 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
       const w = readScoreCell(wc).weight ?? (/%/.test(wc) ? Number(wc.match(/\d+(?:\.\d+)?/)?.[0]) : plain(wc));
       if (w !== undefined && !Number.isNaN(w)) weight = w;
     }
-    if (max === undefined && weight === undefined) continue;
+    if (max === undefined && weight === undefined) {
+      if ((g[maxRow][c] ?? '').trim() && !/^[-‒·.∙ㆍ]$/.test((g[maxRow][c] ?? '').trim())) incomplete = true;
+      else if (/정기|지필/.test(head)) incomplete = true;
+      continue;
+    }
     // 맨 끝 합계 칸("100%", "100점(100%)")은 건너뛴다.
-    const nameCell = nameRow >= 0 ? (g[nameRow][c] ?? '').trim() : '';
+    let nameCell = nameRow >= 0 ? (g[nameRow][c] ?? '').trim() : '';
+    // 줄마다 칸 병합이 엇갈린 표: 영역 칸은 왼쪽 병합의 연속인데, 점수 칸이 오른쪽으로 넓게 병합되어 그 안에 다른 영역 이름이 있으면 그 이름을 쓴다
+    if (nameRow >= 0 && isCont(t, nameRow, c)) {
+      const sp = t.spans.find((s) => s.row === maxRow && s.col === c);
+      for (let k = c + 1; sp && k < c + sp.colSpan; k++) {
+        const raw = (t.rows[nameRow]?.[k] ?? '').trim();
+        if (raw && !isCont(t, nameRow, k)) { nameCell = raw; break; }
+      }
+    }
     if (c === width - 1 && (!nameCell || /^[-‒·.]?$/.test(nameCell)) && (weight === 100 || max === 100)) continue;
     if (/^(합계|계|총계|총점)$/.test(norm(nameCell))) continue;
     let name = nameCell || head || `평가 ${out.length + 1}`;
@@ -126,7 +143,7 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
       standards,
       refs: { name: ref('plan', ti, elRow >= 0 ? elRow : maxRow, c), standards: stdRow >= 0 ? ref('plan', ti, stdRow, c) : undefined },
     }));
-    const written = /정기|지필|선택형/.test(head + name);
+    const written = /정기|지필|선택형/.test(head + name) || /^(논술형|서술형)(\s*\(\d+\))?$/.test(name.trim());
     out.push({
       id: `plan-${ti}-${c}`,
       name,
@@ -138,6 +155,12 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
       refs: { maxScore: ref('plan', ti, maxRow, c), weightPercent: ref('plan', ti, wRow >= 0 ? wRow : maxRow, c), method: typeRow >= 0 ? ref('plan', ti, typeRow, c) : undefined },
     });
   }
+  // 합계 칸(다른 칸 비율의 합과 같은 100%)이 맨 끝이 아닌 곳에 있어도 뺀다
+  const ws = out.map((a) => a.weightPercent ?? 0);
+  const total = ws.reduce((x, y) => x + y, 0);
+  const dropIdx = out.findIndex((a, i) => a.weightPercent === 100 && Math.abs(total - ws[i] - 100) < 1e-9);
+  if (dropIdx >= 0 && out.length > 2) out.splice(dropIdx, 1);
+  if (incomplete) for (const a of out) a.incomplete = true;
   return out;
 }
 
@@ -152,8 +175,13 @@ function readRubrics(doc: ParsedDocument): Assessment[] {
       if (/^평가영역(명)?\d*$/.test(norm(row[0] ?? '')) || /^평가영역명?\d*$/.test(norm(row[0] ?? ''))) {
         const mc = row.findIndex((x, j) => j > 0 && /만점/.test(norm(x)));
         if (mc > 0) {
+          // 성취기준 코드가 있는데 정보과 코드가 하나도 없으면 다른 교과의 세부기준이다
+          const codes = extractCodes(g.flat().join(' '));
+          if (codes.length && !codes.some((c) => /^\[9정/.test(c))) { cur = null; continue; }
           const name = (row[1] ?? '').trim();
-          const mv = readScoreCell(row.slice(mc + 1).find((x) => /\d/.test(x)) ?? '');
+          const mcell = row.slice(mc + 1).find((x) => /\d/.test(x)) ?? '';
+          const mv = readScoreCell(mcell);
+          if (mv.max === undefined && /^\s*\d+(?:\.\d+)?\s*$/.test(mcell)) mv.max = Number(mcell);
           cur = { id: `rubric-${ti}-${r}`, name, maxScore: mv.max, elements: [], source: ref('rubric', ti, r, 1), refs: { maxScore: ref('rubric', ti, r, mc + 1) } };
           out.push(cur);
         }
@@ -208,7 +236,13 @@ function readCodeTexts(doc: ParsedDocument, kind: DocKind): CodeText[] {
 export function extractPublic(raw: ParsedDocument): Extraction & { subjectRanges: [number, number][] } {
   const { doc, ranges } = selectSubject(raw);
   const plan: Assessment[] = [];
-  doc.tables.forEach((t, ti) => plan.push(...readSummary(t, ti)));
+  doc.tables.forEach((t, ti) => {
+    const items = readSummary(t, ti);
+    // 요약표 성취기준 칸에 다른 교과 코드만 있으면 정보과 표가 아니다
+    const codes = items.flatMap((a) => a.elements.flatMap((e) => e.standards));
+    if (codes.length && !codes.some((c) => /^\[9정/.test(c))) return;
+    plan.push(...items);
+  });
   const rubric = readRubrics(doc);
   // 학기 성취기준: 성취기준별 성취수준 표 등에서 코드와 문장
   const codeTexts = readCodeTexts(doc, 'plan');
@@ -226,8 +260,12 @@ export function extractPublic(raw: ParsedDocument): Extraction & { subjectRanges
   if (!plan.length) warnings.push('공시 양식의 평가 요약표(영역 만점·반영비율)를 찾지 못했어요.');
   // 같은 이름의 평가가 요약표에 두 번 이상 나오면(학년별 반복) 이름 뒤에 표 번호를 붙인다
   const seen = new Map<string, number>();
+  const firstTable = new Map<string, number>();
   for (const a of plan) {
-    const k = normalizeName(a.name);
+    const k0 = normalizeName(a.name);
+    if (!firstTable.has(k0)) firstTable.set(k0, a.source.table);
+    if (firstTable.get(k0) === a.source.table) continue;
+    const k = k0;
     const n = (seen.get(k) ?? 0) + 1;
     seen.set(k, n);
     if (n > 1) a.name = `${a.name} (${n})`;

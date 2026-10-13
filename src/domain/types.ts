@@ -33,6 +33,8 @@ export type Assessment = {
   rubricText?: string;
   /** 원문 위치 (평가명 칸) */
   source: CellRef;
+  /** (추가 필드) 공시 양식 요약표에서 읽지 못한 칸이 있으면 true (합계 판정을 하지 않는다) */
+  incomplete?: boolean;
   /** (추가 필드) 평가 방법: "지필" | "수행" 등 원문 그대로 */
   method?: string;
   /** (추가 필드) 각 값이 나온 원문 칸 */

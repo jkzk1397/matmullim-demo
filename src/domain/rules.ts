@@ -67,7 +67,7 @@ function j12(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     const weighted = group.filter((a) => a.weightPercent !== undefined);
     if (!weighted.length) continue;
     // 공시 양식에서 반영비율이 빠진 칸(정기시험 비율을 다른 줄에 적은 표 등)이 있으면 합계를 판정하지 않는다.
-    if (input.format === 'public' && weighted.length !== group.length) continue;
+    if (input.format === 'public' && (weighted.length !== group.length || weighted.length < 2 || group.some((a) => a.incomplete))) continue;
     const total = sum(weighted.map((a) => a.weightPercent));
     if (Math.abs(total - 100) > 1e-9) {
       cards.push({
@@ -211,11 +211,18 @@ function j12Public(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     if (r.maxScore === undefined || !r.name) continue;
     const rn = normalizeName(r.name);
     if (rn.length < 2) continue;
-    const exact = perf.filter((p) => normalizeName(p.name) === rn);
-    const parts = exact.length ? exact : perf.filter((p) => normalizeName(p.name).startsWith(rn));
-    if (!parts.length || parts.some((p) => p.maxScore === undefined)) continue;
+    const base = (n: string) => normalizeName(n.replace(/\s*\(\d+\)$/, ''));
+    const exact = perf.filter((p) => base(p.name) === rn);
+    const all = exact.length ? exact : perf.filter((p) => base(p.name).startsWith(rn));
+    if (!all.length || all.some((p) => p.maxScore === undefined)) continue;
+    // 학년별 요약표가 여러 개면 같은 이름이 표마다 있을 수 있다: 어느 한 표에서라도 맞으면 통과
+    const byT = new Map<number, Assessment[]>();
+    for (const p of all) byT.set(p.source.table, [...(byT.get(p.source.table) ?? []), p]);
+    if ([...byT.values()].some((g) => sum(g.map((p) => p.maxScore)) === r.maxScore)) { ok++; continue; }
+    const parts = [...byT.values()][0];
+    // 요약표가 모든 영역을 100점 척도로 쓰고 반영비율로 환산하는 양식이면 비교하지 않는다
+    if (parts.every((p) => p.maxScore === 100) && perf.filter((p) => p.source.table === parts[0].source.table).every((p) => p.maxScore === 100)) continue;
     const total = sum(parts.map((p) => p.maxScore));
-    if (total === r.maxScore) { ok++; continue; }
     cards.push({
       key: `J12-public-max:${rn}`,
       rule: 'J12',
@@ -233,6 +240,7 @@ function j12Public(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   const byTable = new Map<number, Assessment[]>();
   for (const a of input.plan) byTable.set(a.source.table, [...(byTable.get(a.source.table) ?? []), a]);
   for (const [, as] of byTable) {
+    if (as.some((a) => a.incomplete)) continue;
     const both = as.filter((a) => a.method !== '지필' && a.maxScore !== undefined && a.weightPercent !== undefined);
     if (both.length < 3) continue;
     const same = both.filter((a) => a.maxScore === a.weightPercent);
@@ -285,8 +293,22 @@ export function typoOf(code: string): string | null {
   const fixed = `[9정${a}-${b}]`;
   if (!lookupStandard(fixed)) return null;
   if (grade === '09' && subj === '정') return fixed;
-  if (grade === '9' && subj.length === 1 && subj !== '정' && !SUBJECT_CODES.has(subj)) return fixed;
+  // '정'과 자판·모양이 비슷한 글자(장·점·전·졍 등: 첫소리 ㅈ + 가운데 ㅏ/ㅓ/ㅕ)만 오자로 본다.
+  // '인', '문', '피'처럼 학교자율시간 과목 약칭일 수 있는 글자는 오자로 보지 않는다.
+  if (grade === '9' && subj.length === 1 && subj !== '정' && !SUBJECT_CODES.has(subj)) {
+    const c = subj.charCodeAt(0) - 0xac00;
+    const initial = Math.floor(c / 588), medial = Math.floor((c % 588) / 28);
+    if (initial === 12 && [0, 4, 6].includes(medial)) return fixed;
+  }
   return null;
+}
+
+/** 문서의 성취기준 문구 대부분이 2022 개정 원문과 다르면(예: 2015 개정 문서) 2022 기준 판정을 하지 않는다. */
+function otherCurriculum(input: CheckInput): boolean {
+  const items = (input.codeTexts ?? []).filter((ct) => classifyCode(ct.code) === 'valid');
+  if (items.length < 3) return false;
+  const match = items.filter((ct) => similarity(ct.text, lookupStandard(ct.code)!.text) >= 0.92).length;
+  return match / items.length < 0.3;
 }
 
 function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
@@ -322,6 +344,7 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       });
       continue;
     }
+    if (st === 'not-in-db' && otherCurriculum(input)) continue;
     if (st === 'not-in-db') {
       const domainNo = code.slice(3, 5);
       const siblings = STANDARDS_DB.standards.filter((s) => s.code.startsWith(`[9정${domainNo}-`)).map((s) => s.code);
@@ -416,6 +439,8 @@ function j7(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
 }
 
 function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  // 표를 읽지 못한 문서(PDF 등)는 평가 목록이 비어 있어 연결을 따질 수 없다
+  if (input.format === 'public' && !input.plan.length) return;
   const rows = buildAlignment(input);
   for (const row of rows) {
     if (row.linked) continue;

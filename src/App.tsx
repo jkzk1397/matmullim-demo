@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { extract, suggestPairs } from './domain/extract';
 import { extractPublic, isPublicFormat, suggestPublicPairs } from './domain/extract-public';
 import { parseHwpx } from './domain/hwpx';
+import { isHwp5, parseHwp5 } from './domain/hwp5';
+import { isPdf, parsePdf } from './domain/pdf-text';
 import { runChecks } from './domain/rules';
 import type { Action, Card, CellRef, DocKind, Extraction, ParsedDocument } from './domain/types';
 import { SAMPLES, type SampleId } from './fixtures';
@@ -70,14 +72,23 @@ export default function App() {
   const onFile = async (kind: DocKind, file: File) => {
     setError(undefined);
     try {
-      if (!/\.hwpx$/i.test(file.name)) throw new Error('HWPX 파일만 읽을 수 있어요. 한글에서 “다른 이름으로 저장 → HWPX”로 바꿔 주세요.');
       const buf = await file.arrayBuffer();
-      const doc = await parseHwpx(buf, file.name, kind);
-      if (!doc.tables.length) throw new Error(`${file.name}에서 표를 찾지 못했어요.`);
+      const head = new Uint8Array(buf.slice(0, 8));
+      // HWPX(zip) · 구형 HWP(OLE) · PDF를 파일 머리로 구분한다. PDF는 표 구조가 없어 성취기준 코드·문구만 점검한다.
+      const read = async (k: DocKind) =>
+        isPdf(head) ? parsePdf(buf, file.name, k) : isHwp5(head) ? parseHwp5(buf, file.name, k) : parseHwpx(buf, file.name, k);
+      if (!/\.(hwpx|hwp|pdf)$/i.test(file.name)) throw new Error('HWPX·HWP·PDF 파일을 올려 주세요.');
+      const doc = await read(kind);
+      if (!doc.tables.length) throw new Error(`${file.name}에서 표나 글자를 찾지 못했어요. 스캔한 PDF는 글자를 읽을 수 없어요.`);
+      if (isPdf(head)) {
+        // PDF 한 파일 = 공시용 계획서. 같은 문서로 두 칸을 채워 공시 양식 점검(코드·문구)을 돌린다.
+        setSlots({ plan: doc, rubric: doc, label: file.name });
+        return;
+      }
       if (isPublicFormat(doc)) {
         // 공시용 계획서 한 파일 = 평가계획(요약표) + 채점기준(세부기준). 두 칸을 같은 문서로 채운다.
-        const plan = kind === 'plan' ? doc : await parseHwpx(buf, file.name, 'plan');
-        const rubric = kind === 'rubric' ? doc : await parseHwpx(buf, file.name, 'rubric');
+        const plan = kind === 'plan' ? doc : await read('plan');
+        const rubric = kind === 'rubric' ? doc : await read('rubric');
         setSlots({ plan, rubric, label: file.name });
         return;
       }

@@ -125,7 +125,7 @@ function DropSlot({ kind, doc, onFile }: { kind: DocKind; doc?: ParsedDocument; 
       <input
         ref={input}
         type="file"
-        accept=".hwpx"
+        accept=".hwpx,.hwp,.pdf"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -140,7 +140,7 @@ function DropSlot({ kind, doc, onFile }: { kind: DocKind; doc?: ParsedDocument; 
       {doc ? (
         <p className="text-key font-bold text-brand-green">{doc.fileName}</p>
       ) : (
-        <span className="rounded-lg bg-brand-navy px-6 py-2 text-body font-bold text-white">HWPX 파일 선택</span>
+        <span className="rounded-lg bg-brand-navy px-6 py-2 text-body font-bold text-white">HWPX·HWP·PDF 파일 선택</span>
       )}
     </div>
   );
