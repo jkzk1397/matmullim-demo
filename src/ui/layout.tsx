@@ -53,16 +53,10 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
           })}
         </nav>
         <div className="flex w-[260px] items-center justify-end gap-2">
-          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-2 hover:bg-canvas" aria-label="도움말">
-            {Icon.help('h-5 w-5')}
-          </button>
-          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-2 hover:bg-canvas" aria-label="설정">
-            {Icon.gear('h-5 w-5')}
-          </button>
-          <button type="button" className="ml-2 flex items-center gap-2 rounded-lg py-1 pl-1 pr-2 hover:bg-canvas" aria-label="내 계정">
+          <div className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-navy text-help font-bold text-white">정</span>
             <span className="text-help font-bold text-ink">○○중 정보과</span>
-          </button>
+          </div>
         </div>
       </div>
     </header>

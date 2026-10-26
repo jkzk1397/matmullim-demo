@@ -10,18 +10,56 @@ import AlignmentMap from './screens/AlignmentMap';
 import Home, { type SampleEntry } from './screens/Home';
 import Overview from './screens/Overview';
 import Report from './screens/Report';
-import ReviewScreen, { locLabel } from './screens/Review';
+import ReviewScreen from './screens/Review';
+import { locLabel } from './screens/locLabel';
 
 let seq = 0;
 
+/** 읽지 못한 이유 (교사에게 보이는 말) */
+class ReadFail extends Error {}
+
 async function readSource(name: string, buf: ArrayBuffer): Promise<Source> {
   const head = new Uint8Array(buf.slice(0, 8));
+  if (!/\.(hwpx|hwp|pdf)$/i.test(name)) throw new ReadFail('HWP·HWPX·PDF 파일이 아니에요');
+  if (!buf.byteLength) throw new ReadFail('빈 파일이에요');
   const kind: SourceKind = isPdf(head) ? 'pdf' : isHwp5(head) ? 'hwp' : 'hwpx';
-  if (!/\.(hwpx|hwp|pdf)$/i.test(name)) throw new Error(`${name}: HWP·HWPX·PDF 파일을 올려 주세요.`);
-  const doc = kind === 'pdf' ? await parsePdf(buf, name, 'plan') : kind === 'hwp' ? parseHwp5(buf, name, 'plan') : await parseHwpx(buf, name, 'plan');
-  if (!doc.tables.length) throw new Error(`${name}에서 표나 글자를 찾지 못했어요. 스캔한 PDF는 글자를 읽을 수 없어요.`);
+  const isZip = head[0] === 0x50 && head[1] === 0x4b;
+  if (kind === 'hwpx' && !isZip) throw new ReadFail(/\.pdf$/i.test(name) ? 'PDF 형식이 아니에요' : /\.hwp$/i.test(name) ? 'HWP 형식이 아니에요' : 'HWPX 형식이 아니에요');
+  let doc;
+  try {
+    doc = kind === 'pdf' ? await parsePdf(buf, name, 'plan') : kind === 'hwp' ? parseHwp5(buf, name, 'plan') : await parseHwpx(buf, name, 'plan');
+  } catch {
+    throw new ReadFail(kind === 'pdf' ? 'PDF를 열지 못했어요' : kind === 'hwp' ? 'HWP 파일을 열지 못했어요 (암호가 걸려 있는지 확인해 주세요)' : 'HWPX 형식이 아니에요');
+  }
+  if (!doc.tables.length) throw new ReadFail(kind === 'pdf' ? '표를 찾지 못했어요 (스캔한 PDF는 글자를 읽을 수 없어요)' : '표를 찾지 못했어요');
   return { id: `f${++seq}`, name, kind, bytes: buf, doc };
 }
+
+/** 같은 파일 판별: 크기 + 앞 4KB */
+function fingerprint(buf: ArrayBuffer): string {
+  const b = new Uint8Array(buf, 0, Math.min(4096, buf.byteLength));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < b.length; i++) h = Math.imul(h ^ b[i], 0x01000193) >>> 0;
+  return `${buf.byteLength}:${h.toString(16)}`;
+}
+
+const sevScore = (r: Review) => {
+  const n = counts(r);
+  return n.red * 10000 + n.orange * 100 + n.gray + (r.ex.plan.length ? 0 : 50);
+};
+
+/** 처음 읽었을 때 한 번만 심각한 순으로 줄 세운다 (파일끼리, 파일 안 교과끼리) */
+function orderOf(rs: Review[]): string[] {
+  const byFile = new Map<string, Review[]>();
+  for (const r of rs) byFile.set(r.source.id, [...(byFile.get(r.source.id) ?? []), r]);
+  const files = [...byFile.values()].map((xs) => ({ xs: [...xs].sort((a, b) => sevScore(b) - sevScore(a)), s: Math.max(...xs.map(sevScore)) }));
+  files.sort((a, b) => b.s - a.s);
+  return files.flatMap((f) => f.xs.map((r) => r.id));
+}
+
+export type LoadFailure = { name: string; reason: string };
+export type LoadNotice = { tried: number; read: number; failures: LoadFailure[]; duplicates: string[] };
+export type LoadStats = { files: number; sections: number; ms: number };
 
 function download(name: string, data: BlobPart, type: string) {
   const url = URL.createObjectURL(new Blob([data], { type }));
@@ -32,6 +70,11 @@ function download(name: string, data: BlobPart, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+const orderReviews = (rs: Review[], order: string[]) => {
+  const pos = new Map(order.map((id, i) => [id, i]));
+  return [...rs].sort((a, b) => (pos.get(a.id) ?? 1e9) - (pos.get(b.id) ?? 1e9));
+};
+
 export default function App() {
   const [step, setStep] = useState<Step>('upload');
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -39,39 +82,80 @@ export default function App() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string>();
   const [reportAll, setReportAll] = useState(false);
+  const [order, setOrder] = useState<string[]>([]);
+  const [stats, setStats] = useState<LoadStats | null>(null);
+  const [notice, setNotice] = useState<LoadNotice | null>(null);
   const [recent, setRecent] = useState<{ name: string; at: Date; red: number; orange: number; sections: number }[]>([]);
 
   const review = useMemo(() => reviews.find((r) => r.id === current) ?? null, [reviews, current]);
-  const multi = reviews.length > 1;
+  const [appendNext, setAppendNext] = useState(false);
+  const [overviewSticky, setOverviewSticky] = useState(false);
+  const multi = reviews.length > 1 || overviewSticky;
 
   const load = async (items: { name: string; buf: () => Promise<ArrayBuffer> }[], append = false) => {
     setError(undefined);
+    const t0 = performance.now();
     const out: Review[] = [];
-    try {
-      for (const it of items) {
-        setBusy(it.name);
-        const src = await readSource(it.name, await it.buf());
+    const failures: LoadFailure[] = [];
+    const duplicates: string[] = [];
+    const base = append ? reviews : [];
+    const seen = new Set<string>();
+    for (const r of base) {
+      seen.add(fingerprint(r.source.bytes));
+      seen.add(`${r.source.name}:${r.source.bytes.byteLength}`);
+    }
+    let readCount = 0;
+    for (const it of items) {
+      setBusy(it.name);
+      try {
+        const buf = await it.buf();
+        const fp = fingerprint(buf);
+        const ns = `${it.name}:${buf.byteLength}`;
+        if (seen.has(fp) || seen.has(ns)) {
+          duplicates.push(it.name);
+          continue;
+        }
+        seen.add(fp);
+        seen.add(ns);
+        const src = await readSource(it.name, buf);
         const rs = reviewsFor(src);
-        if (!rs.length) throw new Error(`${it.name}에서 교과 계획을 찾지 못했어요.`);
+        if (!rs.length) throw new ReadFail('교과 계획을 찾지 못했어요');
         out.push(...rs);
+        readCount++;
         setRecent((xs) => [
           { name: it.name, at: new Date(), red: rs.reduce((n, r) => n + counts(r).red, 0), orange: rs.reduce((n, r) => n + counts(r).orange, 0), sections: rs.length },
           ...xs,
         ]);
+      } catch (e) {
+        failures.push({ name: it.name, reason: e instanceof ReadFail ? e.message : '파일을 읽지 못했어요' });
+        if (!(e instanceof ReadFail)) console.error(it.name, e);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(null);
     }
-    if (!out.length) return;
+    setBusy(null);
+    const ms = performance.now() - t0;
+    const notice: LoadNotice = { tried: items.length, read: readCount, failures, duplicates };
+    if (!out.length) {
+      const lines = [...failures.map((f) => `${f.name}: ${f.reason}`), ...duplicates.map((d) => `${d}: 이미 올린 파일이에요`)];
+      setError(lines.join('\n') || '읽은 파일이 없어요');
+      return;
+    }
     const next = append ? [...reviews, ...out] : out;
     setReviews(next);
+    setOrder((o) => (append ? [...o, ...orderOf(out)] : orderOf(out)));
+    setStats((st) => ({
+      files: new Set(next.map((r) => r.source.id)).size,
+      sections: next.length,
+      ms: (append && st ? st.ms : 0) + ms,
+    }));
+    setNotice(failures.length || duplicates.length ? notice : null);
     setCurrent(next[append ? reviews.length : 0].id);
-    setStep(next.length > 1 ? 'overview' : 'review');
+    setAppendNext(false);
+    const toOverview = items.length > 1 || next.length > 1;
+    setOverviewSticky(toOverview);
+    setStep(toOverview ? 'overview' : 'review');
   };
 
-  const onFiles = (files: File[]) => load(files.map((f) => ({ name: f.name, buf: () => f.arrayBuffer() })));
+  const onFiles = (files: File[]) => load(files.map((f) => ({ name: f.name, buf: () => f.arrayBuffer() })), appendNext && reviews.length > 0);
   const onSample = (s: SampleEntry) =>
     load([{ name: s.file.split('/').pop()!, buf: async () => (await fetch(`${import.meta.env.BASE_URL}samples/v2/${s.file}`)).arrayBuffer() }]);
 
@@ -133,12 +217,13 @@ export default function App() {
           enabled={enabled}
           onStep={(s) => {
             if (s === 'report') setReportAll(false);
+            if (s === 'upload') setAppendNext(false);
             setStep(s);
           }}
         />
       </div>
       <main className="flex min-h-0 flex-1 flex-col print:block">
-        {step === 'upload' && <Home busy={busy} error={error} onFiles={onFiles} onSample={onSample} recent={recent} />}
+        {step === 'upload' && <Home busy={busy} error={error} onFiles={onFiles} onSample={onSample} recent={recent} appending={appendNext && reviews.length > 0} />}
         {step === 'overview' && (
           <Overview
             reviews={reviews}
@@ -150,7 +235,14 @@ export default function App() {
               setReportAll(true);
               setStep('report');
             }}
-            onAdd={() => setStep('upload')}
+            onAdd={() => {
+              setAppendNext(true);
+              setStep('upload');
+            }}
+            order={order}
+            stats={stats}
+            notice={notice}
+            onDismissNotice={() => setNotice(null)}
           />
         )}
         {step === 'review' && review && (
@@ -170,7 +262,7 @@ export default function App() {
           />
         )}
         {step === 'map' && review && <AlignmentMap input={review.input} onToggle={onToggleLink} onResults={() => setStep('review')} lastLinked={null} />}
-        {step === 'report' && review && <Report reviews={reportAll ? reviews : [review]} onBack={() => setStep(reportAll ? 'overview' : 'review')} />}
+        {step === 'report' && review && <Report reviews={reportAll ? orderReviews(reviews, order) : [review]} cover={reportAll} onBack={() => setStep(reportAll ? 'overview' : 'review')} />}
       </main>
     </div>
   );
