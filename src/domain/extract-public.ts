@@ -209,6 +209,8 @@ function readCodeTexts(doc: ParsedDocument, kind: DocKind): CodeText[] {
         const re = /\[\s*(\d{1,2})\s*([가-힣()]{1,6}?)\s*-?\s*(\d{1,2})\s*-\s*(\d{2})\s*\]\s*([^[\n]{6,240}?다)\.?(?=\s*(?:\[|\n|$))/g;
         for (const m of (cell ?? '').matchAll(re)) {
           const code = extractCodes(`[${m[1]}${m[2]}${m[3].padStart(2, '0')}-${m[4]}]`)[0];
+          // "[9정03-03] [9정04-04]\n문장1\n문장2"처럼 코드를 몰아 적은 칸은 어느 문장이 어느 코드인지 알 수 없어 짝짓지 않는다
+          if (/\]\s*$/.test((cell ?? '').slice(0, m.index))) continue;
           if (code) out.push({ code, text: m[5].trim(), ref: ref(kind, ti, r, c) });
         }
       }),
