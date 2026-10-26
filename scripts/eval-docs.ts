@@ -16,7 +16,7 @@ docs.forEach((d, i) => {
   const sections = splitSections(doc);
   for (const section of sections.length ? sections : [undefined]) {
     const ex = extractPublic(doc, section);
-    const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public', context: ex.context, essay: ex.essay, absence: ex.absence });
+    const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public', context: ex.context, essay: ex.essay, absence: ex.absence, malformed: ex.malformed, cells: (r) => doc.tables[r.table]?.rows[r.row]?.[r.col] ?? '' });
     out.push({ i, sec: section ? [section.from, section.to] : null, tag: d.tag, fmt: d.fmt, id: d.id, name: d.name, subject: ex.context.subject, grades: ex.context.grades, year: ex.context.year, curriculum: ex.context.curriculum, basis: ex.context.curriculumBasis,
       publicFormat: isPublicFormat(doc), plan: ex.plan.length, rubric: ex.rubric.length, codes: ex.codeTexts?.length ?? 0, std: ex.planStandards.length,
       cards: res.cards.filter((c) => c.rule !== 'J6' && c.rule !== 'S5').map((c) => ({ key: c.key, rule: c.rule, severity: c.severity, title: c.title, quote: c.quote.slice(0, 400) })) });

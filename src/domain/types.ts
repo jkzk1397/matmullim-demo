@@ -87,9 +87,13 @@ export type Extraction = {
   essay?: EssayRow[];
   /** (추가 필드) 결시자(미응시) 처리기준이 적힌 곳 */
   absence?: { found: boolean; ref?: CellRef };
+  /** (추가 필드) 괄호 한쪽이 빠진 성취기준 코드 */
+  malformed?: Malformed[];
 };
 
-export type EssayRow = { table: number; total: number; ref: CellRef; raw: string };
+export type Malformed = { raw: string; fixed: string; ref: CellRef };
+
+export type EssayRow = { table: number; total: number; ref: CellRef; raw: string; subject?: string };
 
 // ---------- 점검 결과 ----------
 
@@ -157,6 +161,9 @@ export type CheckInput = {
   context?: DocContext;
   essay?: EssayRow[];
   absence?: { found: boolean; ref?: CellRef };
+  malformed?: Malformed[];
+  /** (추가 필드) 원문 칸 글자 읽기 (바로 고치기 가능 여부 판단용) */
+  cells?: (ref: CellRef) => string;
 };
 
 export type PassedCheck = { rule: RuleId | 'J12-weight'; label: string; detail: string };

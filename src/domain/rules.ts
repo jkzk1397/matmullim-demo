@@ -306,6 +306,29 @@ function j12Public(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     const off = both.filter((a) => a.maxScore !== a.weightPercent);
     if (off.length !== 1 || same.length < 2) continue;
     const a = off[0];
+    // 이 칸만 만점과 같게 고치면 표의 반영비율 합계가 정확히 100%가 될 때: 하나의 오류로 보고 바로 고치기를 붙인다
+    const tableTotal = sum(as.map((x) => x.weightPercent));
+    const sumCard = cards.findIndex((c) => c.key === `J12-weight-sum:${a.source.table}`);
+    const wRef = a.refs?.weightPercent;
+    const wCell = wRef && input.cells ? input.cells(wRef) : undefined;
+    if (sumCard >= 0 && Math.abs(tableTotal - a.weightPercent! + a.maxScore! - 100) < 1e-9 && wRef && wCell?.includes(`${a.weightPercent}%`)) {
+      cards.splice(sumCard, 1);
+      cards.push({
+        key: `J12-public-ratio:${normalizeName(a.name)}`,
+        rule: 'J12',
+        severity: 'red',
+        strength: '사실',
+        title: `‘${a.name}’ 반영비율 ${a.weightPercent}%는 ${a.maxScore}%를 잘못 적은 것 같아요 (합계 ${tableTotal}%)`,
+        locations: [wRef],
+        emphasis: [wRef],
+        quote: `${as.map((x) => `${x.name} ${fmt(x.maxScore, '점')}(${fmt(x.weightPercent, '%')})`).join(' · ')}\n반영비율 합계 ${tableTotal}%`,
+        basis: { source: '같은 문서 안 대조 · 사실 확인', text: `같은 표의 다른 영역은 모두 만점과 반영비율이 같습니다. 이 칸만 ${a.maxScore}%로 고치면 반영비율 합계가 100%가 됩니다.` },
+        actions: ['fix', 'memo'],
+        fix: `${a.name}의 반영비율을 ${a.maxScore}%로 고치세요. 한 칸으로 '합계 100%'와 '만점–비율 일치'가 함께 맞춰집니다.`,
+        replace: { from: `${a.weightPercent}%`, to: `${a.maxScore}%` },
+      });
+      continue;
+    }
     cards.push({
       key: `J12-public-ratio:${normalizeName(a.name)}`,
       rule: 'J12',
@@ -646,9 +669,11 @@ function j13(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   if (!pack || input.format !== 'public') return;
   let checked = 0;
   // 논술형
-  const arts = pack.essayMin.artsSubjects.includes(ctx.subject ?? '');
-  const min = arts ? pack.essayMin.arts : pack.essayMin.value;
   for (const e of input.essay ?? []) {
+    // 표의 성취기준 코드로 본 교과가 문서 교과와 다르면 그 교과 기준으로 (체육·예술 20%)
+    const subj = e.subject ?? ctx.subject ?? '';
+    const arts = pack.essayMin.artsSubjects.includes(subj) || (!e.subject && pack.essayMin.artsSubjects.includes(ctx.subject ?? ''));
+    const min = arts ? pack.essayMin.arts : pack.essayMin.value;
     checked++;
     if (e.total + 1e-9 >= min) continue;
     cards.push({
@@ -716,6 +741,30 @@ function j14(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   });
 }
 
+/** 괄호 한쪽이 빠진 성취기준 코드: 다른 프로그램(정보공시·나이스 등)에서 코드로 읽히지 않는다 */
+function j4fmt(input: CheckInput, cards: Card[]) {
+  const by = new Map<string, NonNullable<CheckInput['malformed']>>();
+  for (const m of input.malformed ?? []) by.set(m.raw, [...(by.get(m.raw) ?? []), m]);
+  for (const [raw, ms] of by) {
+    const fixed = ms[0].fixed;
+    const missing = raw.startsWith('[') ? '닫는 괄호 ‘]’' : '여는 괄호 ‘[’';
+    cards.push({
+      key: `J4-bracket:${raw}`,
+      rule: 'J4',
+      severity: 'red',
+      strength: '사실',
+      title: `‘${raw}’에 ${missing}가 빠졌어요`,
+      locations: ms.map((m) => m.ref),
+      quote: `문서에 적힌 글자: ${raw} → ${fixed}`,
+      highlights: [raw],
+      basis: { source: sourceOf(ctxOf(input)), text: `괄호를 채운 ${fixed}는 실제 성취기준 코드입니다. 괄호가 빠지면 코드로 읽히지 않아 성취기준–평가 연결 점검에서도 빠집니다.` },
+      actions: ['fix', 'memo'],
+      fix: `${raw}를 ${fixed}로 고치세요.`,
+      replace: { from: raw, to: fixed },
+    });
+  }
+}
+
 /** 노랑 제안은 이번 데모에서 1개만: S5 학생 성찰 기회 */
 function s5(input: CheckInput, cards: Card[]) {
   const perf = input.rubric;
@@ -745,6 +794,7 @@ export function runChecks(input: CheckInput): CheckResult {
   j12(input, cards, passed);
   j13(input, cards, passed);
   j4(input, cards, passed);
+  j4fmt(input, cards);
   j5(input, cards, passed);
   j7(input, cards, passed);
   j14(input, cards, passed);

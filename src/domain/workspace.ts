@@ -38,6 +38,8 @@ export function analyze(doc: ParsedDocument, section: SubjectSection): { ex: Ext
     context: ex.context,
     essay: ex.essay,
     absence: ex.absence,
+    malformed: ex.malformed,
+    cells: (r) => doc.tables[r.table]?.rows[r.row]?.[r.col] ?? '',
   };
   return { ex, input, result: runChecks(input) };
 }

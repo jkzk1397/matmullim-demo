@@ -3,8 +3,8 @@
 // 요약표는 첫 "열"이 머리글이다(평가 종류 / 반영 비율 / 영역 / 영역 만점(반영비율) / 성취기준 / 평가요소 …).
 // 이 파일은 그런 문서를 데모의 데이터 모델(Assessment)로 바꾼다. 점검 규칙은 그대로 rules.ts를 쓴다.
 import { fillMerged, normalizeName } from './extract';
-import { extractCodes, subjectOfCode, typoOf } from './standards';
-import { detectContext, splitSections, type DocContext, type SubjectSection } from './context';
+import { extractCodes, lookupAll, subjectOfCode, typoOf } from './standards';
+import { detectContext, dominantSubject, splitSections, type DocContext, type SubjectSection } from './context';
 import type { Assessment, CellRef, CodeText, DocKind, Element, EssayRow, Extraction, ParsedDocument, ParsedTable, PlanStandard } from './types';
 
 const norm = (s: string) => (s ?? '').replace(/\s+/g, '').replace(/[()（）]/g, '');
@@ -265,7 +265,27 @@ export function extractPublic(raw: ParsedDocument, hint?: string | SubjectSectio
     seen.set(k, n);
     if (n > 1) a.name = `${a.name} (${n})`;
   }
-  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context, essay: readEssay(doc), absence: findAbsence(raw, ranges[0][0], ranges[0][1]) };
+  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context, essay: readEssay(doc), absence: findAbsence(raw, ranges[0][0], ranges[0][1]), malformed: findMalformed(doc, isSubj) };
+}
+
+/** 여는 괄호가 빠진 성취기준 코드: "9정03-04] 사례를…" (괄호를 채우면 이 교과의 실제 코드가 될 때만). 닫는 괄호 쪽은 [9정01-01-01]·[9정02-03, 04] 같은 표기가 많아 보지 않는다 */
+function findMalformed(doc: ParsedDocument, isSubj: (c: string) => boolean): { raw: string; fixed: string; ref: CellRef }[] {
+  const out: { raw: string; fixed: string; ref: CellRef }[] = [];
+  doc.tables.forEach((t, ti) =>
+    t.rows.forEach((row, r) =>
+      row.forEach((cell, c) => {
+        const text = cell ?? '';
+        for (const m of text.matchAll(/(^|[^[\d가-힣])(\d{1,2}[가-힣]{1,3}\d{2}-\d{2})\]/g)) {
+          const fixed = `[${m[2]}]`;
+          // "[9정01-01, 9정01-02]"처럼 한 괄호 안에 여러 코드를 적은 경우는 빼고
+          const before = text.slice(0, m.index! + m[1].length);
+          if (before.lastIndexOf('[') > before.lastIndexOf(']')) continue;
+          if (isSubj(fixed) && lookupAll(fixed).length) out.push({ raw: `${m[2]}]`, fixed, ref: ref('plan', ti, r, c) });
+        }
+      }),
+    ),
+  );
+  return out;
 }
 
 const pct = (x: string) => {
@@ -293,7 +313,9 @@ function readEssay(doc: ParsedDocument): EssayRow[] {
       const items = vals.filter((v, k) => v !== undefined && k !== tIdx) as number[];
       const total = tIdx !== undefined ? vals[tIdx]! : items.reduce((a, b) => a + b, 0);
       const lastIdx = tIdx ?? vals.lastIndexOf(nums[nums.length - 1]);
-      out.push({ table: ti, total, ref: ref('plan', ti, r, lastIdx + 1), raw: row.map((x) => x.replace(/\s+/g, ' ')).join(' | ') });
+      // 이 요약표가 속한 교과: 표 안과 바로 앞 표들의 성취기준 코드로 (여러 교과를 한 구간으로 읽은 파일 대비)
+      const subject = dominantSubject(doc, ti, ti + 1) ?? dominantSubject(doc, Math.max(0, ti - 3), ti + 1);
+      out.push({ table: ti, total, ref: ref('plan', ti, r, lastIdx + 1), raw: row.map((x) => x.replace(/\s+/g, ' ')).join(' | '), subject });
     });
   });
   return out;

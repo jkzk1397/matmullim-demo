@@ -108,7 +108,8 @@ function titleLines(doc: ParsedDocument, from = 0, to = doc.tables.length): stri
     const t = doc.tables[i];
     if (!t) continue;
     if (t.title) out.push(t.title);
-    if (t.rows.length <= 3) for (const r of t.rows) for (const c of r) if (c && c.length < 160) out.push(c);
+    // 제목·머리글 표는 보통 6줄 이하 (빈 줄로 높이를 잡은 제목 상자 포함)
+    if (t.rows.length <= 6) for (const r of t.rows) for (const c of r) if (c && c.length < 160) out.push(c);
   }
   return out.map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
 }
@@ -130,7 +131,9 @@ export function detectContext(doc: ParsedDocument, from = 0, to = doc.tables.len
   if (gradesHint?.length) { grades.clear(); gradesHint.forEach((g) => grades.add(g)); }
   const semester2 = semester ?? (Number(kv.semester?.match(/[12]/)?.[0]) || undefined);
   const subject = subjectHint ?? (kv.subject ? mapSubject(kv.subject) : undefined) ?? subjectFromTitle([...head, ...lines.slice(0, 12)].join(' \n ')) ?? subjectFromTitle(doc.fileName) ?? dominantSubject(doc, from, to) ?? subjectFromText(doc.fileName);
-  const ctx: DocContext = { subject, grades: [...grades].sort(), year, semester: semester2, curriculumBasis: 'unknown', title: head[0] };
+  // 화면 제목: 계획서 제목 꼴인 줄을 먼저 (문서 끝 안내문이 첫 문단으로 잡히는 경우가 있다)
+  const title = head.find((l) => PLAN_TITLE.test(l) && l.length <= 80) ?? head.find((l) => l.length <= 80) ?? head[0];
+  const ctx: DocContext = { subject, grades: [...grades].sort(), year, semester: semester2, curriculumBasis: 'unknown', title };
   const tg = gradesByTable(doc, from, to);
   const tgSet = new Set(Object.values(tg));
   if (tgSet.size > 1) { ctx.tableGrades = tg; tgSet.forEach((g) => grades.add(g)); ctx.grades = [...grades].sort(); }
@@ -145,6 +148,7 @@ export function detectContext(doc: ParsedDocument, from = 0, to = doc.tables.len
   return ctx;
 }
 
+const KEY_WORDS = /^(학교명?|학기|학년|과목명?|교과명?|학급|대상|지도교사|담당교사|교사|담당|시수|단위|비고)$/;
 function headerValues(doc: ParsedDocument, from: number, to: number): { grade?: string; subject?: string; semester?: string } {
   const out: { grade?: string; subject?: string; semester?: string } = {};
   for (let i = from; i < to; i++) {
@@ -157,6 +161,17 @@ function headerValues(doc: ParsedDocument, from: number, to: number): { grade?: 
         if (h === '학년' && /[123]/.test(v) && !out.grade) out.grade = v;
         if ((h === '과목' || h === '교과' || h === '과목명' || h === '교과명') && !out.subject) out.subject = v;
         if (h === '학기' && !out.semester) out.semester = v;
+      });
+    }
+    // 같은 줄에 "교과 | 정보 | 대상 | 1학년"처럼 이름-값이 번갈아 적힌 표
+    for (const row of rows.slice(0, 6)) {
+      row.forEach((h0, c) => {
+        const h = (h0 ?? '').replace(/\s+/g, '');
+        const v = (row[c + 1] ?? '').trim();
+        if (!v || v.length > 20 || c + 1 >= row.length || KEY_WORDS.test(v.replace(/\s+/g, ''))) return;
+        if ((h === '학년' || h === '대상' || h === '대상학년') && /[123]\s*학년|^[123]$/.test(v) && !out.grade) out.grade = v;
+        if ((h === '과목' || h === '교과' || h === '과목명' || h === '교과명') && !out.subject && !/^(과목|교과)/.test(v)) out.subject = v;
+        if (h === '학기' && /[12]/.test(v) && !out.semester) out.semester = v;
       });
     }
   }
@@ -220,17 +235,22 @@ function sectionMark(doc: ParsedDocument, i: number): { subject?: string; grades
  * 교과 계획 제목이나 "학교명 | 학년 | 과목" 머리글 표를 경계로 쓴다. 구간이 하나면 문서 전체.
  */
 export function splitSections(doc: ParsedDocument): SubjectSection[] {
-  const marks: { i: number; subject: string; grades: number[]; title: string }[] = [];
+  const marks: { i: number; last: number; subject: string; grades: number[]; title: string }[] = [];
   for (let i = 0; i < doc.tables.length; i++) {
     const m = sectionMark(doc, i);
     if (!m?.subject) continue;
     const prev = marks[marks.length - 1];
-    // 제목 표 바로 뒤의 머리글 표(학교명|학년|과목)는 같은 구간: 학년만 보탠다
-    if (prev && prev.subject === m.subject) {
+    // 제목 표 바로 뒤의 머리글 표(학교명|학년|과목)는 같은 구간: 학년만 보탠다.
+    // 같은 교과라도 떨어진 곳에서 다른 학년 계획이 다시 시작하면 새 구간 (예: 1학년 계획 + 2학년 계획을 이어 붙인 파일)
+    const otherGrade = prev && prev.grades.length && m.grades.length && !m.grades.some((g) => prev.grades.includes(g));
+    // 앞 구간이 평가 요약표(반영비율)까지 갖춘 완결된 계획일 때만 나눈다
+    const prevComplete = prev && doc.tables.slice(prev.i, i).some((t) => t.rows.some((r) => r.some((c) => /반영\s*비율/.test(c ?? ''))));
+    if (prev && prev.subject === m.subject && !(otherGrade && i - prev.last > 2 && prevComplete)) {
       prev.grades = [...new Set([...prev.grades, ...m.grades])].sort();
+      prev.last = i;
       continue;
     }
-    marks.push({ i, subject: m.subject, grades: m.grades, title: m.title });
+    marks.push({ i, last: i, subject: m.subject, grades: m.grades, title: m.title });
   }
   if (!marks.length) {
     const subject = detectContext(doc).subject ?? dominantSubject(doc);

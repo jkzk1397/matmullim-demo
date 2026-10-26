@@ -14,7 +14,7 @@ type Raw = { tag: string; fmt: string; id: string; name: string; title?: string;
 
 const check = (doc: ParsedDocument, section?: SubjectSection) => {
   const ex = extractPublic(doc, section);
-  const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public', context: ex.context, essay: ex.essay, absence: ex.absence });
+  const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public', context: ex.context, essay: ex.essay, absence: ex.absence, malformed: ex.malformed, cells: (r) => doc.tables[r.table]?.rows[r.row]?.[r.col] ?? '' });
   return { ex, cards: res.cards };
 };
 const clone = (d: ParsedDocument): ParsedDocument => ({ ...d, paragraphs: d.paragraphs?.map((p) => ({ ...p })), tables: d.tables.map((t) => ({ ...t, rows: t.rows.map((r) => [...r]) })) });
