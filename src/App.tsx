@@ -157,7 +157,7 @@ export default function App() {
 
   const onFiles = (files: File[]) => load(files.map((f) => ({ name: f.name, buf: () => f.arrayBuffer() })), appendNext && reviews.length > 0);
   const onSample = (s: SampleEntry) =>
-    load([{ name: s.file.split('/').pop()!, buf: async () => (await fetch(`${import.meta.env.BASE_URL}samples/v2/${s.file}`)).arrayBuffer() }]);
+    load([{ name: s.file.split('/').pop()!, buf: async () => (await fetch(`${import.meta.env.BASE_URL}samples/v2/${s.file}`)).arrayBuffer() }], appendNext && reviews.length > 0);
 
   const update = (next: Review) => setReviews((rs) => rs.map((r) => (r.id === next.id ? next : r)));
 
