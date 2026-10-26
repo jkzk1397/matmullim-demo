@@ -36,7 +36,8 @@ const isCont = (t: ParsedTable, r: number, c: number) =>
 
 /** "90점(36%)", "30점 (30%)", "20(20%)" 같은 칸에서 점·%를 읽는다. 앞에 안내 문구가 있으면 마지막 값을 쓴다. */
 export function readScoreCell(cell: string): { max?: number; weight?: number } {
-  const t = (cell ?? '').replace(/,/g, '');
+  // "20점(논술형 5점)"처럼 괄호 안 하위 배점은 빼고 읽는다
+  const t = (cell ?? '').replace(/,/g, '').replace(/\((?:논술형|서술형|선택형|단답형)[^)]*\)/g, '');
   const pairs = [...t.matchAll(/(\d+(?:\.\d+)?)\s*점?\s*\(\s*(\d+(?:\.\d+)?)\s*%\s*\)/g)];
   if (pairs.length) {
     const m = pairs[pairs.length - 1];
@@ -63,9 +64,11 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
     for (let r = from; r < to; r++) if (re.test(norm(g[r][0] ?? ''))) return r;
     return -1;
   };
-  const typeRow = find(/^(평가)?(종류|유형)/, 0, maxRow);
+  let typeRow = find(/^(평가)?(종류|유형)/, 0, maxRow);
+  // 머리 칸 이름이 달라도(예: '영역') 값에 정기시험·수행평가가 적힌 줄이면 평가 종류 줄로 본다
+  if (typeRow < 0) typeRow = g.slice(0, maxRow).findIndex((row) => row.slice(1).some((x) => /정기\s*시험|지필\s*평가/.test(x ?? '')) && row.slice(1).some((x) => /수행\s*평가/.test(x ?? '')));
   let nameRow = -1;
-  for (let r = maxRow - 1; r >= 0; r--) if (/영역|평가명|횟수/.test(norm(g[r][0] ?? '')) && !isMaxRow(g[r][0])) { nameRow = r; break; }
+  for (let r = maxRow - 1; r >= 0; r--) if (/영역|평가명|횟수/.test(norm(g[r][0] ?? '')) && !isMaxRow(g[r][0]) && !isCont(t, r, 0)) { nameRow = r; break; }
   // 만점과 반영비율을 다른 줄에 적은 표: "만점(점) | 40" 다음 줄 "반영비율(%) | 40"
   const wRow = (() => { for (let r = maxRow + 1; r < Math.min(g.length, maxRow + 3); r++) if (/^반영비율(%)?$/.test(norm(g[r][0] ?? '').replace('%', '%'))) return r; return -1; })();
   const stdRow = find(/성취기준|평가내용/, maxRow + 1);
@@ -75,7 +78,8 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
   let incomplete = false;
   for (let c = 1; c < width; c++) {
     if (isCont(t, maxRow, c)) continue;
-    const noteCol = /※|변경될 수|일정에 따라/.test((nameRow >= 0 ? g[nameRow][c] : '') + (g[maxRow][c] ?? ''));
+    const sc0 = readScoreCell(g[maxRow][c] ?? '');
+    const noteCol = /※|변경될 수|일정에 따라/.test((nameRow >= 0 ? g[nameRow][c] : '') + (g[maxRow][c] ?? '')) && sc0.max === undefined && sc0.weight === undefined;
     if (noteCol) continue;
     const head = typeRow >= 0 ? g[typeRow][c] ?? '' : '';
     const nameAt = nameRow >= 0 ? (g[nameRow][c] ?? '').trim() : '';
@@ -123,7 +127,8 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
       standards,
       refs: { name: ref('plan', ti, elRow >= 0 ? elRow : maxRow, c), standards: stdRow >= 0 ? ref('plan', ti, stdRow, c) : undefined },
     }));
-    const written = /정기|지필|선택형/.test(head + name) || /^(논술형|서술형)(\s*\(\d+\))?$/.test(name.trim());
+    // 머리 행이 '수행'이면 이름에 '논술형'이 있어도 수행평가다
+    const written = !/수행/.test(head) && (/정기|지필|선택형/.test(head + name) || /^(논술형|서술형)(\s*\(\d+\))?$/.test(name.trim()) || /^\d+\s*[회차](\s*\((논술형|서술형|선택형)\))?$/.test(name.trim()));
     out.push({
       id: `plan-${ti}-${c}`,
       name,
@@ -152,7 +157,7 @@ function readRubrics(doc: ParsedDocument, isSubj: (c: string) => boolean): Asses
     const g = fillMerged(t);
     for (let r = 0; r < g.length; r++) {
       const row = g[r];
-      if (/^평가영역(명)?\d*$/.test(norm(row[0] ?? '')) || /^평가영역명?\d*$/.test(norm(row[0] ?? ''))) {
+      if ((/^평가영역(명)?\d*$/.test(norm(row[0] ?? '')) || /^평가영역명?\d*$/.test(norm(row[0] ?? ''))) && !isCont(t, r, 0)) {
         const mc = row.findIndex((x, j) => j > 0 && /만점/.test(norm(x)));
         if (mc > 0) {
           // 성취기준 코드가 있는데 이 교과 코드가 하나도 없으면 다른 교과의 세부기준이다
@@ -162,6 +167,8 @@ function readRubrics(doc: ParsedDocument, isSubj: (c: string) => boolean): Asses
           const mcell = row.slice(mc + 1).find((x) => /\d/.test(x)) ?? '';
           const mv = readScoreCell(mcell);
           if (mv.max === undefined && /^\s*\d+(?:\.\d+)?\s*$/.test(mcell)) mv.max = Number(mcell);
+          // "1차, 2차 각 25점": 회차별 만점이라 영역 합계와 비교하지 않는다
+          if (/각\s*\d/.test(mcell)) mv.max = undefined;
           cur = { id: `rubric-${ti}-${r}`, name, maxScore: mv.max, elements: [], source: ref('rubric', ti, r, 1), refs: { maxScore: ref('rubric', ti, r, mc + 1) } };
           out.push(cur);
         }
@@ -226,6 +233,8 @@ export function extractPublic(raw: ParsedDocument, hint?: string | SubjectSectio
   const isSubj = (c: string) => (context.subject ? subjectOfCode(c) === context.subject : !!subjectOfCode(c));
   const plan: Assessment[] = [];
   doc.tables.forEach((t, ti) => {
+    // 고입 내신 산출용 등 학기 성적 계획이 아닌 보조 표는 빼고
+    if (/특성화고|고입|내신\s*산출|전기고/.test(t.title ?? '')) return;
     const items = readSummary(t, ti);
     // 요약표 성취기준 칸에 다른 교과 코드만 있으면 이 교과 표가 아니다
     const codes = items.flatMap((a) => a.elements.flatMap((e) => e.standards));
@@ -303,6 +312,8 @@ function readEssay(doc: ParsedDocument): EssayRow[] {
     if (!g.some((row) => isMaxRow(row[0] ?? ''))) return;
     g.forEach((row, r) => {
       if (!/논술형.{0,12}(반영|비율)/.test(norm(row[0] ?? ''))) return;
+      // 머리 칸에 숫자가 들어 있거나("5% 논술형 반드시 포함") 값 칸이 기호(•)뿐이면 비율을 확정할 수 없다
+      if (/\d\s*%/.test(row[0] ?? '') || row.slice(1).some((x) => /^[•●○◦·∙]$/.test((x ?? '').trim()))) return;
       // 병합으로 같은 값이 여러 칸에 복사되지 않게 원래 칸만
       const cells = row.map((x, c) => (c > 0 && !isCont(t, r, c) ? x : '')).slice(1);
       const vals = cells.map(pct);

@@ -273,7 +273,9 @@ function j12Public(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     if (rn.length < 2) continue;
     const base = (n: string) => normalizeName(n.replace(/\s*\(\d+\)$/, ''));
     const exact = perf.filter((p) => base(p.name) === rn);
-    const all = exact.length ? exact : perf.filter((p) => base(p.name).startsWith(rn));
+    let all = exact.length ? exact : perf.filter((p) => base(p.name).startsWith(rn));
+    // 이름이 똑같은 칸이 여러 개(병합 칸 복사)면 하나만
+    all = all.filter((p, i) => all.findIndex((q) => q.source.table === p.source.table && q.name === p.name && q.maxScore === p.maxScore) === i);
     if (!all.length || all.some((p) => p.maxScore === undefined)) continue;
     // 학년별 요약표가 여러 개면 같은 이름이 표마다 있을 수 있다: 어느 한 표에서라도 맞으면 통과
     const byT = new Map<number, Assessment[]>();
@@ -495,6 +497,8 @@ export function findDiscouraged(text: string): { label: string; match: string }[
     for (const p of J7_PATTERNS) {
       const m = line.match(p.re);
       if (!m) continue;
+      // 영양·식품의 '1인 1회 분량', '섭취 분량' 등은 글 분량이 아니다
+      if (p.label === '분량' && /(1인\s*1회|섭취|권장|식품|영양)/.test(line)) continue;
       if ((p.label === '감점' || p.label === '과제 수행률') && TASK_CONTEXT.test(line) && !/(도달|완성|수행률|완성률|달성률)/.test(m[0])) continue;
       if (!out.some((o) => o.label === p.label)) out.push({ label: p.label, match: m[0].trim() });
     }
