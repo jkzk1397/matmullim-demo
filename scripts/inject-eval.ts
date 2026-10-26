@@ -10,14 +10,14 @@ import { packFor } from '../src/domain/rulepacks';
 import { classifyCode, lookupAll } from '../src/domain/standards';
 import type { Card, CellRef, ParsedDocument } from '../src/domain/types';
 
-type Raw = { tag: string; fmt: string; id: string; name: string; title?: string; tables?: ParsedDocument['tables']; pages?: string[] };
+type Raw = { tag: string; fmt: string; id: string; name: string; title?: string; tables?: ParsedDocument['tables']; pages?: string[]; paragraphs?: ParsedDocument['paragraphs'] };
 
 const check = (doc: ParsedDocument, section?: SubjectSection) => {
   const ex = extractPublic(doc, section);
   const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public', context: ex.context, essay: ex.essay, absence: ex.absence });
   return { ex, cards: res.cards };
 };
-const clone = (d: ParsedDocument): ParsedDocument => ({ ...d, tables: d.tables.map((t) => ({ ...t, rows: t.rows.map((r) => [...r]) })) });
+const clone = (d: ParsedDocument): ParsedDocument => ({ ...d, paragraphs: d.paragraphs?.map((p) => ({ ...p })), tables: d.tables.map((t) => ({ ...t, rows: t.rows.map((r) => [...r]) })) });
 const cell = (d: ParsedDocument, r: CellRef) => d.tables[r.table]?.rows[r.row]?.[r.col] ?? '';
 const setCell = (d: ParsedDocument, r: CellRef, v: string) => {
   d.tables[r.table].rows[r.row][r.col] = v;
@@ -90,14 +90,16 @@ function mutations(doc: ParsedDocument, base: ReturnType<typeof check>): Mutatio
     if (s.includes(v)) out.push({ kind: '논술형 반영비율 미달', expect: ['J13'], desc: `${v}%→15%`, apply: (d) => (setCell(d, e.ref, s.replace(v, '15')), true) });
   }
   // 결시자 처리기준 문장 삭제
-  if (pack && ex.absence?.found && ex.absence.ref) {
-    const ref = ex.absence.ref;
+  if (pack && ex.absence?.found) {
     out.push({ kind: '결시자 처리기준 누락', expect: ['J14'], desc: '해당 칸 비움', apply: (d) => {
       // 같은 구간에서 결시 관련 문구가 있는 칸을 모두 비운다 (문서에 여러 번 적힌 경우)
       const re = /결시|미응시|인정점|미참여|불참|참여하지\s*못|응시하지|결석|불응시/;
       let n = 0;
       d.tables.forEach((t, ti) => t.rows.forEach((row, r) => row.forEach((c, k) => { if (ti >= (base.ex.subjectRanges[0]?.[0] ?? 0) && ti < (base.ex.subjectRanges[0]?.[1] ?? 0) && re.test(c)) { d.tables[ti].rows[r][k] = ''; n++; } })));
-      return n > 0 && !!ref;
+      // 표 밖 본문 문단도 같은 구간이면 지운다
+      const [from, to] = base.ex.subjectRanges[0] ?? [0, d.tables.length];
+      d.paragraphs = (d.paragraphs ?? []).map((p) => (p.before >= from && p.before <= to && re.test(p.text) ? (n++, { ...p, text: '' }) : p));
+      return n > 0;
     } });
   }
   // 채점기준에 '제출 여부' 넣기
@@ -114,7 +116,7 @@ type Row = { doc: number; sec: number; subject?: string; kind: string; desc: str
 const rows: Row[] = [];
 let sections = 0;
 docs.forEach((d, i) => {
-  const doc: ParsedDocument = d.fmt === 'pdf' ? pdfPagesToDoc(d.pages ?? [], d.name, 'plan') : { doc: 'plan', fileName: d.name, title: d.title ?? '', tables: (d.tables ?? []).map((t) => ({ ...t, rows: (t.rows ?? []).map((r) => (r ?? []).map((c) => c ?? '')) })) };
+  const doc: ParsedDocument = d.fmt === 'pdf' ? pdfPagesToDoc(d.pages ?? [], d.name, 'plan') : { doc: 'plan', fileName: d.name, title: d.title ?? '', tables: (d.tables ?? []).map((t) => ({ ...t, rows: (t.rows ?? []).map((r) => (r ?? []).map((c) => c ?? '')) })), paragraphs: d.paragraphs };
   const secs = splitSections(doc);
   (secs.length ? secs : [undefined]).forEach((sec, si) => {
     sections++;

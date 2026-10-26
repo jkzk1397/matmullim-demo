@@ -7,12 +7,12 @@ import { runChecks } from '../src/domain/rules';
 import { splitSections } from '../src/domain/context';
 import type { ParsedDocument } from '../src/domain/types';
 
-type Raw = { tag: string; fmt: string; id: string; name: string; title?: string; tables?: ParsedDocument['tables']; pages?: string[] };
+type Raw = { tag: string; fmt: string; id: string; name: string; title?: string; tables?: ParsedDocument['tables']; pages?: string[]; paragraphs?: ParsedDocument['paragraphs'] };
 const docs: Raw[] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const out: any[] = [];
 docs.forEach((d, i) => {
-  const doc: ParsedDocument = d.fmt === 'pdf' ? pdfPagesToDoc(d.pages ?? [], d.name, 'plan') : { doc: 'plan', fileName: d.name, title: d.title ?? '', tables: (d.tables ?? []).map((t) => ({ ...t, rows: (t.rows ?? []).map((r) => (r ?? []).map((c) => c ?? '')) })) };
+  const doc: ParsedDocument = d.fmt === 'pdf' ? pdfPagesToDoc(d.pages ?? [], d.name, 'plan') : { doc: 'plan', fileName: d.name, title: d.title ?? '', tables: (d.tables ?? []).map((t) => ({ ...t, rows: (t.rows ?? []).map((r) => (r ?? []).map((c) => c ?? '')) })), paragraphs: d.paragraphs };
   const sections = splitSections(doc);
   for (const section of sections.length ? sections : [undefined]) {
     const ex = extractPublic(doc, section);
