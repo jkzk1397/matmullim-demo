@@ -511,6 +511,30 @@ function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   // 표를 읽지 못한 문서(PDF 등)는 평가 목록이 비어 있어 연결을 따질 수 없다
   if (input.format === 'public' && !input.plan.length) return;
   const rows = buildAlignment(input);
+  if (input.format === 'public') {
+    // 평가 쪽에 코드가 하나도 없으면 연결을 잴 수 없다
+    const anyCodes = [...input.plan, ...input.rubric].some((a) => a.elements.some((e) => e.standards.length));
+    if (!anyCodes) return;
+    const un = rows.filter((r) => !r.linked);
+    if (un.length) {
+      cards.push({
+        key: 'J6-public',
+        rule: 'J6',
+        severity: 'gray',
+        strength: '사실',
+        title: `수업 계획의 성취기준 ${rows.length}개 중 ${un.length}개가 평가와 연결되지 않았어요`,
+        locations: un.map((r) => r.ref),
+        quote: un.map((r) => `${r.code} ${r.text.slice(0, 40)}${r.text.length > 40 ? '…' : ''}`).join('\n'),
+        basis: {
+          source: '성취기준–평가 정렬 · Webb 범주 일치, UbD',
+          text: '평가 요약표·세부기준에 적힌 성취기준 코드와 맞춰 본 결과입니다. 실제로 가르치거나 평가하지 않았다는 뜻은 아니며, 학기 중 다른 방법으로 확인할 수도 있습니다.',
+        },
+        actions: ['link', 'memo'],
+        fix: '정렬 맵에서 연결을 확인하세요. 평가할 성취기준이라면 평가 요소 표에 코드를 적으세요.',
+      });
+    } else if (rows.length) passed.push({ rule: 'J6', label: '성취기준–평가 연결', detail: `성취기준 ${rows.length}개 모두 평가와 연결` });
+    return;
+  }
   for (const row of rows) {
     if (row.linked) continue;
     cards.push({

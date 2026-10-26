@@ -3,13 +3,13 @@ import type { CellRef, ParsedTable } from '../domain/types';
 import { refKey, sameRef } from './helpers';
 import { Icon } from './primitives';
 
-export type Step = 'upload' | 'confirm' | 'results' | 'map' | 'recheck';
+export type Step = 'upload' | 'overview' | 'review' | 'map' | 'report';
 export const STEPS: { id: Step; label: string }[] = [
   { id: 'upload', label: '올리기' },
-  { id: 'confirm', label: '확인' },
-  { id: 'results', label: '결과' },
+  { id: 'overview', label: '전체 현황' },
+  { id: 'review', label: '점검' },
   { id: 'map', label: '정렬 맵' },
-  { id: 'recheck', label: '재점검' },
+  { id: 'report', label: '보고서' },
 ];
 
 const LOGO = `${import.meta.env.BASE_URL}brand/logo-mark.png`;
@@ -27,7 +27,7 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
         <nav className="flex h-full items-stretch" aria-label="단계">
           {STEPS.map((s, i) => {
             const active = s.id === step;
-            const done = i < idx;
+            const done = i < idx && enabled[s.id];
             return (
               <button
                 key={s.id}

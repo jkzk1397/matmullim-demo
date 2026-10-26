@@ -18,8 +18,8 @@ export const DOC_NAME = { plan: '평가계획서', rubric: '채점기준표' } a
 
 export const SEVERITY: Record<Severity, { label: string; dot: string; text: string; border: string }> = {
   red: { label: '확인된 오류', dot: 'bg-sev-red', text: 'text-sev-red', border: 'border-l-sev-red' },
-  orange: { label: '지침 권고와 다름', dot: 'bg-sev-orange', text: 'text-sev-orange', border: 'border-l-sev-orange' },
-  gray: { label: '연결 확인 필요', dot: 'bg-sev-gray', text: 'text-sev-gray', border: 'border-l-sev-gray' },
+  orange: { label: '지침과 다름', dot: 'bg-sev-orange', text: 'text-sev-orange', border: 'border-l-sev-orange' },
+  gray: { label: '확인 필요', dot: 'bg-sev-gray', text: 'text-sev-gray', border: 'border-l-sev-gray' },
   yellow: { label: '제안', dot: 'bg-sev-yellow', text: 'text-sev-yellow', border: 'border-l-sev-yellow' },
 };
 
