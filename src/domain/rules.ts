@@ -19,7 +19,8 @@ import type {
 export const GG_2026 = '경기도교육청 「2026학년도 중등 학생평가 및 학업성적관리 이해하기」';
 export const J7_SOURCE_TEXT =
   '수행 수준(채점기준)을 과제 수행률(%), 분량, 감점, 지적 횟수, 출석률 등으로 제시하는 것은 지양합니다.';
-export const J7_PAGE = '인쇄 31쪽(중학교 예시) — 원문 대조 후 확정';
+export const J7_PAGE = '28쪽 Ⅲ.3.나 (중학교 예시 31쪽)';
+export const J7_URL = 'https://www.goe.go.kr/resource/goe/na/bbs_2675/2026/02/58bdfa90-f02e-41dc-b6a5-f03a65f81e61.pdf';
 export const SCHOOL_RULE_NOTE = '학교 학업성적관리규정도 확인하세요.';
 /** 문맥이 없으면(팀이 만든 예시 문서) 2022 개정 중학교 정보로 본다 */
 const DEFAULT_CTX: DocContext = { subject: '정보', grades: [], curriculum: '2022', curriculumBasis: 'unknown' };
@@ -520,7 +521,7 @@ function j7(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         highlights: hits.map((h) => h.match),
         basis: hits.every((h) => h.label === '제출 여부')
           ? { source: GG_AUDIT.source, text: GG_AUDIT.submit, url: GG_AUDIT.url }
-          : { source: GG_2026, page: J7_PAGE, text: J7_SOURCE_TEXT },
+          : { source: GG_2026, page: J7_PAGE, text: J7_SOURCE_TEXT, url: J7_URL, quoted: true },
         actions: ['fix', 'memo'],
         note: SCHOOL_RULE_NOTE,
         fix: '분량·횟수 대신 성취기준의 핵심 행동이 드러나는 수준별 기술로 바꾸세요.',
@@ -549,7 +550,7 @@ function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         locations: un.map((r) => r.ref),
         quote: un.map((r) => `${r.code} ${r.text.slice(0, 40)}${r.text.length > 40 ? '…' : ''}`).join('\n'),
         basis: {
-          source: '성취기준–평가 정렬 · Webb 범주 일치, UbD',
+          source: '성취기준–평가 연결 확인',
           text: '평가 요약표·세부기준에 적힌 성취기준 코드와 맞춰 본 결과입니다. 실제로 가르치거나 평가하지 않았다는 뜻은 아니며, 학기 중 다른 방법으로 확인할 수도 있습니다.',
         },
         actions: ['link', 'memo'],
@@ -569,7 +570,7 @@ function j6(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       locations: [row.ref],
       quote: `${row.code} ${row.text}`,
       basis: {
-        source: '성취기준–평가 정렬 · Webb 범주 일치, UbD',
+        source: '성취기준–평가 연결 확인',
         text: '문서에서 연결을 찾지 못했다는 뜻이며, 실제로 가르치거나 평가하지 않았다는 뜻은 아닙니다. 교육적 타당성은 자동으로 판정하지 않습니다.',
       },
       actions: ['link', 'memo'],
@@ -684,7 +685,7 @@ function j13(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       title: `논술형 평가 반영비율이 ${e.total}%예요 (${min}% 이상이어야 해요)`,
       locations: [e.ref],
       quote: e.raw,
-      basis: { source: pack.source, page: pack.essayMin.page, text: pack.essayMin.text + (arts ? ' (체육·예술 교과는 20%)' : ''), url: pack.url },
+      basis: { source: pack.source, page: pack.essayMin.page, text: pack.essayMin.text, url: pack.url, quoted: true },
       actions: ['fix', 'memo'],
       note: SCHOOL_RULE_NOTE,
       fix: `논술형 평가 반영비율을 ${min}% 이상으로 맞추세요.`,
@@ -709,7 +710,7 @@ function j13(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       title: `수행평가 반영비율 합계가 ${perf}%예요 (${pack.perfMin.value}% 이상이어야 해요)`,
       locations: as.map((a) => a.refs?.weightPercent ?? a.source),
       quote: as.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' + '),
-      basis: { source: pack.source, page: pack.perfMin.page, text: pack.perfMin.text, url: pack.url },
+      basis: { source: pack.source, page: pack.perfMin.page, text: pack.perfMin.text, url: pack.url, quoted: true },
       actions: ['fix', 'memo'],
       fix: `수행평가 반영비율을 ${pack.perfMin.value}% 이상으로 맞추세요.`,
     });
@@ -734,7 +735,7 @@ function j14(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     title: '결시자(미응시) 처리기준을 계획서에서 찾지 못했어요',
     locations: [input.plan[0].source],
     quote: '계획서 안에서 결시·미응시·인정점에 관한 문장을 찾지 못함',
-    basis: { source: pack.source, page: pack.absence.page, text: pack.absence.text, url: pack.url },
+    basis: { source: pack.source, page: pack.absence.page, text: pack.absence.text, url: pack.url, quoted: true },
     actions: ['memo'],
     note: SCHOOL_RULE_NOTE,
     fix: '수행평가 결시자 처리기준(인정점 등)을 평가 계획에 적으세요. 학교 규정을 따르는 경우 그 문장을 넣으세요.',

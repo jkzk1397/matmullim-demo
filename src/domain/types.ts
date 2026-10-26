@@ -111,6 +111,8 @@ export type Basis = {
   text?: string;
   /** 원문 링크 */
   url?: string;
+  /** true면 text가 출처 문서의 문장을 그대로 옮긴 인용. 아니면 맞물림의 판단 기준 설명 */
+  quoted?: boolean;
 };
 
 export type CompareRow = { label: string; plan?: string; rubric?: string; differs: boolean };
