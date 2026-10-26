@@ -645,6 +645,35 @@ function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     const differ = sims.filter((x) => x.sim < 0.85 && !x.prefix && (!x.cur || x.cur === pick.curriculum));
     if (!match.length || !differ.length) continue;
     const variants = [...new Map(differ.map((d) => [d.text.replace(/\s/g, ''), d])).values()];
+    // 다르게 적은 문장이 사실은 다른 성취기준(다른 코드, 또는 다른 교육과정)의 원문과 같은지
+    // 그 칸의 학년(적용 교육과정)을 알 때만 판정한다. 같은 코드의 다른 교육과정 문장은 위 (1)에서 다룬다.
+    const other = ctx.subject && variants[0].grade && variants[0].cur
+      ? (['2022', '2015'] as Curriculum[])
+          .flatMap((c) => standardsFor(ctx.subject!, c))
+          .filter((st) => st.code !== code)
+          .map((st) => ({ st, sim: similarity(variants[0].text, st.text) }))
+          .filter((x) => x.sim >= 0.9)
+          .sort((a, b) => b.sim - a.sim)[0]?.st
+      : undefined;
+    if (other) {
+      const oldCur = other.curriculum !== pick.curriculum;
+      cards.push({
+        key: `J5-swap:${code}`,
+        rule: 'J5',
+        severity: oldCur ? 'red' : 'orange',
+        strength: '사실',
+        title: oldCur
+          ? `${code} 자리에 ${curriculumLabel(other.curriculum)} ${other.code} 문장을 적었어요`
+          : `${code} 자리에 다른 성취기준 ${other.code}의 문장을 적었어요`,
+        locations: variants.map((v) => v.ref),
+        quote: `문서: ${variants[0].text}\n${curriculumLabel(other.curriculum)} ${other.code} 원문: ${other.text}\n${curriculumLabel(pick.curriculum)} ${code} 원문: ${official}`,
+        basis: { source: dbSource(pick.curriculum, pick.subject), text: `문서의 문장은 ${curriculumLabel(other.curriculum)} ${other.code}의 고시 문장과 같습니다. ${code}의 고시 문장과는 다릅니다.` },
+        actions: ['fix', 'memo'],
+        fix: oldCur ? `${code} 문장을 ${curriculumLabel(pick.curriculum)} 원문으로 바꾸고, 평가 요소가 새 성취기준과 맞는지 확인하세요.` : `코드와 문장 중 어느 쪽이 맞는지 확인하세요. 코드가 맞다면 문장을 ${code} 원문으로 바꾸세요.`,
+        replace: { from: variants[0].text, to: official },
+      });
+      continue;
+    }
     cards.push({
       key: `J5:${code}`,
       rule: 'J5',
