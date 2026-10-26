@@ -169,12 +169,16 @@ function readRubrics(doc: ParsedDocument, isSubj: (c: string) => boolean): Asses
     }
     if (!cur) return;
     // 채점기준 머리글: 평가요소 + (채점기준|수행 수준|평가 기준)
-    const hr = g.findIndex((row) => row.some((x) => /채점기준|수행수준|평가기준/.test(norm(x))) && row.some((x) => /평가요소|평가항목|채점요소|요소/.test(norm(x))));
+    // 머리글 칸은 짧다 (본문 문장 속 '핵심 요소' 같은 말을 머리글로 잘못 보지 않게)
+    const isHead = (x: string, re: RegExp) => norm(x).length <= 16 && re.test(norm(x));
+    const CRIT = /채점기준|수행수준|평가기준/;
+    const ELEM = /평가요소|평가항목|채점요소|요소/;
+    const hr = g.findIndex((row) => row.some((x) => isHead(x, CRIT)) && row.some((x) => isHead(x, ELEM)));
     if (hr < 0) return;
     const h = g[hr];
-    const cEl = h.findIndex((x) => /평가요소|평가항목|채점요소|요소/.test(norm(x)));
-    const cCrit = h.findIndex((x) => /채점기준|수행수준|평가기준/.test(norm(x)));
-    const cPts = h.findIndex((x) => /배점|점수/.test(norm(x)));
+    const cEl = h.findIndex((x) => isHead(x, ELEM));
+    const cCrit = h.findIndex((x) => isHead(x, CRIT));
+    const cPts = h.findIndex((x) => isHead(x, /배점|점수/));
     for (let r = hr + 1; r < g.length; r++) {
       const elName = (g[r][cEl] ?? '').replace(/\s+/g, ' ').trim();
       const crit = (g[r][cCrit] ?? '').trim();
