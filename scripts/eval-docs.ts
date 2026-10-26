@@ -4,6 +4,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { extractPublic, isPublicFormat, suggestPublicPairs } from '../src/domain/extract-public';
 import { pdfPagesToDoc } from '../src/domain/pdf-text';
 import { runChecks } from '../src/domain/rules';
+import { splitSections } from '../src/domain/context';
 import type { ParsedDocument } from '../src/domain/types';
 
 type Raw = { tag: string; fmt: string; id: string; name: string; title?: string; tables?: ParsedDocument['tables']; pages?: string[] };
@@ -12,10 +13,14 @@ const docs: Raw[] = JSON.parse(readFileSync(process.argv[2], 'utf8'));
 const out: any[] = [];
 docs.forEach((d, i) => {
   const doc: ParsedDocument = d.fmt === 'pdf' ? pdfPagesToDoc(d.pages ?? [], d.name, 'plan') : { doc: 'plan', fileName: d.name, title: d.title ?? '', tables: (d.tables ?? []).map((t) => ({ ...t, rows: (t.rows ?? []).map((r) => (r ?? []).map((c) => c ?? '')) })) };
-  const ex = extractPublic(doc);
-  const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public' });
-  out.push({ i, tag: d.tag, fmt: d.fmt, id: d.id, name: d.name, publicFormat: isPublicFormat(doc), plan: ex.plan.length, rubric: ex.rubric.length, codes: ex.codeTexts?.length ?? 0, std: ex.planStandards.length,
-    cards: res.cards.filter((c) => c.rule !== 'J6' && c.rule !== 'S5').map((c) => ({ key: c.key, rule: c.rule, severity: c.severity, title: c.title, quote: c.quote.slice(0, 400) })) });
+  const sections = splitSections(doc);
+  for (const section of sections.length ? sections : [undefined]) {
+    const ex = extractPublic(doc, section);
+    const res = runChecks({ plan: ex.plan, rubric: ex.rubric, planStandards: ex.planStandards, codeTexts: ex.codeTexts, pairs: suggestPublicPairs(ex.plan, ex.rubric), links: [], format: 'public', context: ex.context });
+    out.push({ i, sec: section ? [section.from, section.to] : null, tag: d.tag, fmt: d.fmt, id: d.id, name: d.name, subject: ex.context.subject, grades: ex.context.grades, year: ex.context.year, curriculum: ex.context.curriculum, basis: ex.context.curriculumBasis,
+      publicFormat: isPublicFormat(doc), plan: ex.plan.length, rubric: ex.rubric.length, codes: ex.codeTexts?.length ?? 0, std: ex.planStandards.length,
+      cards: res.cards.filter((c) => c.rule !== 'J6' && c.rule !== 'S5').map((c) => ({ key: c.key, rule: c.rule, severity: c.severity, title: c.title, quote: c.quote.slice(0, 400) })) });
+  }
 });
 writeFileSync(process.argv[3], JSON.stringify(out, null, 1));
 const by = (f: (r: (typeof out)[number]) => boolean) => out.filter(f).length;

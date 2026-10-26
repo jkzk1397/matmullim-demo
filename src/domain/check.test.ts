@@ -97,17 +97,19 @@ describe('정상판', () => {
 
 describe('J4 코드 확인', () => {
   it('지원 범위 밖 코드는 빨강이 아니라 회색이다', () => {
-    expect(classifyCode('[9수01-01]')).toBe('out-of-scope');
+    expect(classifyCode('[9수01-01]', { subject: '정보', curriculum: '2022' })).toBe('other-subject');
     expect(classifyCode('[12정01-01]')).toBe('out-of-scope');
     expect(classifyCode('[9정03-10]')).toBe('not-in-db');
     expect(classifyCode('[9정03-01]')).toBe('valid');
     const plan: Assessment[] = [
-      { id: 'p1', name: 'X', elements: [{ name: 'e', points: 10, standards: ['[9수01-01]'] }], source: ref },
+      { id: 'p1', name: 'X', elements: [{ name: 'e', points: 10, standards: ['[9수01-01]', '[9인01-01]'] }], source: ref },
     ];
     const { cards } = runChecks({ plan, rubric: [], planStandards: [], pairs: {}, links: [] });
-    const c = cards.find((x) => x.key === 'J4-scope:[9수01-01]')!;
+    // 다른 교과 코드(융합 수업)는 오류로 보지 않는다
+    expect(cards.some((x) => x.key.includes('[9수01-01]'))).toBe(false);
+    // 학교자율시간 과목 같은 모르는 코드는 회색
+    const c = cards.find((x) => x.key === 'J4-scope:[9인01-01]')!;
     expect(c.severity).toBe('gray');
-    expect(c.title).toContain('현재 지원 범위(2022 개정 중학교 정보)에서 확인 불가');
   });
 });
 

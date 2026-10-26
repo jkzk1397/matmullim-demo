@@ -1,6 +1,7 @@
 // 점검 규칙. 모두 결정적 코드다 (LLM 호출 없음). 같은 입력이면 같은 결과.
 import { normalizeName } from './extract';
-import { STANDARDS_DB, classifyCode, lookupStandard } from './standards';
+import { classifyCode, curriculumFor, curriculumLabel, dbSource, lookupStandard, standardsFor, typoOf, type CodeContext, type Curriculum } from './standards';
+import type { DocContext } from './context';
 import type {
   Assessment,
   Card,
@@ -19,7 +20,64 @@ export const J7_SOURCE_TEXT =
   '수행 수준(채점기준)을 과제 수행률(%), 분량, 감점, 지적 횟수, 출석률 등으로 제시하는 것은 지양합니다.';
 export const J7_PAGE = '인쇄 31쪽(중학교 예시) — 원문 대조 후 확정';
 export const SCHOOL_RULE_NOTE = '학교 학업성적관리규정도 확인하세요.';
-const DB_SOURCE = '2022 개정 교육과정 고시(교육부 고시 제2022-33호 [별책3]) 중학교 정보 성취기준 — DECK6 공개 정형 데이터(MIT)';
+/** 문맥이 없으면(팀이 만든 예시 문서) 2022 개정 중학교 정보로 본다 */
+const DEFAULT_CTX: DocContext = { subject: '정보', grades: [], curriculum: '2022', curriculumBasis: 'unknown' };
+export const ctxOf = (input: CheckInput): DocContext => input.context ?? DEFAULT_CTX;
+const codeCtx = (c: DocContext): CodeContext => ({ subject: c.subject, curriculum: c.curriculum });
+const applied = (c: DocContext): Curriculum | undefined => (c.curriculum === '2015' || c.curriculum === '2022' ? c.curriculum : undefined);
+const sourceOf = (c: DocContext) => dbSource(applied(c) ?? '2022', c.subject);
+const gradeLabel = (c: DocContext, g?: number) => (c.year && (g || c.grades.length) ? `${c.year}학년도 ${g ?? c.grades.join('·')}학년` : '이 문서');
+/** 이 칸이 속한 학년의 적용 교육과정 (학년도·학년을 확실히 알 때만) */
+function curAt(c: DocContext, at?: CellRef): { cur?: Curriculum; grade?: number } {
+  if (c.curriculumBasis !== 'year-grade' || !c.year) return { cur: applied(c) };
+  const g = at && c.tableGrades ? c.tableGrades[at.table] : c.grades.length === 1 ? c.grades[0] : undefined;
+  if (!g) return { cur: applied(c) };
+  if (at && reliable && !reliable.has(at.table)) return { cur: undefined };
+  return { cur: curriculumFor(c.year, g), grade: g };
+}
+
+/**
+ * 학년 표지를 잘못 따라간 표를 걸러 낸다: 표 안의 성취기준 대부분이 그 학년의 적용 교육과정과 맞을 때만
+ * 그 표에서 '다른 교육과정' 판정을 한다. 실제 실수는 대개 맞는 코드들 사이에 한두 개 섞여 있다.
+ */
+let reliable: Set<number> | null = null;
+function computeReliable(input: CheckInput) {
+  reliable = null;
+  const c = ctxOf(input);
+  if (c.curriculumBasis !== 'year-grade' || !c.year) return;
+  const score = new Map<number, { ok: number; bad: number }>();
+  const bump = (t: number, k: 'ok' | 'bad') => { const v = score.get(t) ?? { ok: 0, bad: 0 }; v[k]++; score.set(t, v); };
+  const expected = (t: number) => {
+    const g = c.tableGrades ? c.tableGrades[t] : c.grades.length === 1 ? c.grades[0] : undefined;
+    return g ? curriculumFor(c.year!, g) : undefined;
+  };
+  for (const ct of input.codeTexts ?? []) {
+    const cur = expected(ct.ref.table);
+    if (!cur) continue;
+    const here = lookupStandard(ct.code, cur), there = lookupStandard(ct.code, cur === '2022' ? '2015' : '2022');
+    if (here && similarity(ct.text, here.text) >= 0.85) bump(ct.ref.table, 'ok');
+    else if (there && similarity(ct.text, there.text) >= 0.85) bump(ct.ref.table, 'bad');
+  }
+  const codes: { code: string; ref: CellRef }[] = [...input.planStandards];
+  for (const a of [...input.plan, ...input.rubric]) for (const e of a.elements) if (e.refs?.standards) for (const code of e.standards) codes.push({ code, ref: e.refs.standards });
+  for (const { code, ref } of codes) {
+    const cur = expected(ref.table);
+    if (!cur) continue;
+    const here = lookupStandard(code, cur), there = lookupStandard(code, cur === '2022' ? '2015' : '2022');
+    if (here && !there) bump(ref.table, 'ok');
+    else if (!here && there) bump(ref.table, 'bad');
+  }
+  if (!c.tableGrades) {
+    // 한 학년 문서: 문서 전체가 대체로 맞으면 모든 표를 믿는다
+    let ok = 0, bad = 0;
+    score.forEach((v) => { ok += v.ok; bad += v.bad; });
+    reliable = ok >= 3 && ok >= 3 * bad ? new Set(score.keys()) : new Set();
+    // 코드가 없는 표(요약표 등)도 같은 학년
+    if (ok >= 3 && ok >= 3 * bad) for (const a of [...input.plan, ...input.rubric]) reliable.add(a.source.table);
+    return;
+  }
+  reliable = new Set([...score.entries()].filter(([, v]) => v.ok >= 2 && v.ok >= 3 * v.bad).map(([t]) => t));
+}
 
 // ---------- 정렬 맵 ----------
 
@@ -43,7 +101,7 @@ export function buildAlignment(input: CheckInput): AlignmentRow[] {
       else if (links.some((l) => l.code === s.code && l.assessmentId === a.id)) via = 'manual';
       return { assessmentId: a.id, via };
     });
-    const db = lookupStandard(s.code);
+    const db = lookupStandard(s.code, applied(ctxOf(input))) ?? lookupStandard(s.code);
     return { code: s.code, text: db?.text ?? s.text, inDb: !!db, ref: s.ref, cells, linked: cells.some((c) => c.via) };
   });
 }
@@ -284,52 +342,35 @@ function compareRows(p: Assessment, r: Assessment): CompareRow[] {
   return rows;
 }
 
-/** 다른 교과 코드에 쓰이지 않는 글자 하나가 '정' 자리에 들어갔거나, 학년 앞에 0이 붙은 경우 */
-const SUBJECT_CODES = new Set(['국', '수', '영', '과', '사', '도', '역', '음', '미', '체', '기가', '한', '정', '진', '보', '환', '중', '일', '프', '독', '스', '러', '아', '베']);
-export function typoOf(code: string): string | null {
-  const m = code.match(/^\[(0?9)([가-힣]{1,2})(\d{2})-(\d{2})\]$/);
-  if (!m) return null;
-  const [, grade, subj, a, b] = m;
-  const fixed = `[9정${a}-${b}]`;
-  if (!lookupStandard(fixed)) return null;
-  if (grade === '09' && subj === '정') return fixed;
-  // '정'과 자판·모양이 비슷한 글자(장·점·전·졍 등: 첫소리 ㅈ + 가운데 ㅏ/ㅓ/ㅕ)만 오자로 본다.
-  // '인', '문', '피'처럼 학교자율시간 과목 약칭일 수 있는 글자는 오자로 보지 않는다.
-  if (grade === '9' && subj.length === 1 && subj !== '정' && !SUBJECT_CODES.has(subj)) {
-    const c = subj.charCodeAt(0) - 0xac00;
-    const initial = Math.floor(c / 588), medial = Math.floor((c % 588) / 28);
-    if (initial === 12 && [0, 4, 6].includes(medial)) return fixed;
-  }
-  return null;
-}
-
-/** 문서의 성취기준 문구 대부분이 2022 개정 원문과 다르면(예: 2015 개정 문서) 2022 기준 판정을 하지 않는다. */
-function otherCurriculum(input: CheckInput): boolean {
-  const items = (input.codeTexts ?? []).filter((ct) => classifyCode(ct.code) === 'valid');
-  if (items.length < 3) return false;
-  const match = items.filter((ct) => similarity(ct.text, lookupStandard(ct.code)!.text) >= 0.92).length;
-  return match / items.length < 0.3;
-}
+export { typoOf } from './standards';
 
 function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const ctx = ctxOf(input);
+  const cc = codeCtx(ctx);
+  const cur = applied(ctx);
   const where = new Map<string, CellRef[]>();
   const add = (code: string, at?: CellRef) => {
     if (!where.has(code)) where.set(code, []);
-    if (at) where.get(code)!.push(at);
+    if (at && !where.get(code)!.some((x) => x.table === at.table && x.row === at.row && x.col === at.col)) where.get(code)!.push(at);
   };
   input.planStandards.forEach((s) => add(s.code, s.ref));
   (input.codeTexts ?? []).forEach((s) => add(s.code, s.ref));
   for (const a of [...input.plan, ...input.rubric]) for (const e of a.elements) for (const c of e.standards) add(c, e.refs?.standards);
 
   let valid = 0;
-  for (const [code, locs] of where) {
-    const st = classifyCode(code);
-    if (st === 'valid') {
-      valid++;
-      continue;
-    }
-    const typo = typoOf(code);
+  for (const [code, allLocs] of where) {
+    // 학년별로 적용 교육과정이 다를 수 있어 칸마다 판정한다
+    const per = allLocs.map((l) => ({ l, ...curAt(ctx, l) }));
+    const bad = per.filter((p) => classifyCode(code, { subject: ctx.subject, curriculum: p.cur }) !== 'valid');
+    if (!bad.length && allLocs.length) { valid++; continue; }
+    const locs = bad.length ? bad.map((b) => b.l) : allLocs;
+    const st = classifyCode(code, { subject: ctx.subject, curriculum: bad[0]?.cur ?? cc.curriculum });
+    if (st === 'valid') { valid++; continue; }
+    const grade = bad[0]?.grade;
+    const curHere = bad[0]?.cur ?? cur;
+    const typo = st === 'other-subject' ? null : typoOf(code, cc);
     if (typo) {
+      const t = lookupStandard(typo, cur) ?? lookupStandard(typo)!;
       cards.push({
         key: `J4-typo:${code}`,
         rule: 'J4',
@@ -337,53 +378,77 @@ function j4(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         strength: '사실',
         title: `${code}는 ${typo}를 잘못 적은 것 같아요`,
         locations: locs,
-        quote: `문서에 적힌 코드: ${code}\n가까운 코드: ${typo} ${lookupStandard(typo)?.text ?? ''}`,
-        basis: { source: DB_SOURCE, text: `${code}라는 코드는 없습니다. 숫자가 같은 ${typo}가 2022 개정 중학교 정보 성취기준에 있습니다.` },
+        quote: `문서에 적힌 코드: ${code}\n가까운 코드: ${typo} ${t.text}`,
+        basis: { source: dbSource(t.curriculum, t.subject), page: t.page ? `PDF ${t.page}쪽` : undefined, text: `${code}라는 코드는 없습니다. 한 글자만 다른 ${typo}가 ${curriculumLabel(t.curriculum)} 중학교 ${t.subject} 성취기준에 있습니다.` },
         actions: ['fix', 'memo'],
         fix: `${typo}로 고치세요.`,
+        replace: { from: code, to: typo },
       });
       continue;
     }
-    if (st === 'not-in-db' && otherCurriculum(input)) continue;
+    if (st === 'other-curriculum' && curHere) {
+      const other = lookupStandard(code)!;
+      const sure = ctx.curriculumBasis === 'year-grade' && !!grade;
+      cards.push({
+        key: `J4-curriculum:${code}`,
+        rule: 'J4',
+        severity: sure ? 'red' : 'gray',
+        strength: '사실',
+        title: `${code}는 ${curriculumLabel(other.curriculum)} 교육과정에만 있는 코드예요`,
+        locations: locs,
+        quote: `문서에 적힌 코드: ${code} (${curriculumLabel(other.curriculum)}: ${other.text})`,
+        basis: {
+          source: dbSource(curHere, ctx.subject),
+          text: sure
+            ? `${gradeLabel(ctx, grade)}은 ${curriculumLabel(curHere)} 교육과정을 적용합니다(중학교 2022 개정: 2025학년도 1학년부터 한 학년씩). ${curriculumLabel(curHere)} ${ctx.subject} 성취기준에는 이 코드가 없습니다.`
+            : `이 문서의 다른 성취기준은 ${curriculumLabel(curHere)} 문장과 같은데, 이 코드는 ${curriculumLabel(other.curriculum)}에만 있습니다.`,
+        },
+        actions: ['fix', 'memo'],
+        fix: `${curriculumLabel(curHere)} ${ctx.subject} 성취기준 코드로 고치세요.`,
+      });
+      continue;
+    }
     if (st === 'not-in-db') {
-      const domainNo = code.slice(3, 5);
-      const siblings = STANDARDS_DB.standards.filter((s) => s.code.startsWith(`[9정${domainNo}-`)).map((s) => s.code);
+      const pool = curHere ? standardsFor(ctx.subject ?? '', curHere) : [];
+      const prefix = code.slice(0, code.length - 3);
+      const siblings = pool.filter((s) => s.code.startsWith(prefix)).map((s) => s.code);
+      const label = curHere ? `${curriculumLabel(curHere)} 중학교 ${ctx.subject}` : `중학교 ${ctx.subject ?? ''}`;
       cards.push({
         key: `J4-missing:${code}`,
         rule: 'J4',
         severity: 'red',
         strength: '사실',
-        title: `${code}는 2022 개정 중학교 정보 성취기준에 없는 코드예요`,
+        title: `${code}는 ${label} 성취기준에 없는 코드예요`,
         locations: locs,
         quote: `문서에 적힌 코드: ${code}`,
         basis: {
-          source: DB_SOURCE,
+          source: sourceOf(ctx),
           text: siblings.length
             ? `같은 영역에는 ${siblings[0]}~${siblings[siblings.length - 1]}(${siblings.length}개)만 있습니다.`
-            : `중학교 정보 성취기준 ${STANDARDS_DB.standards.length}개 중 같은 영역 번호가 없습니다.`,
+            : `2015·2022 개정 중학교 성취기준 어디에도 이 코드가 없습니다.`,
         },
         actions: ['fix', 'memo'],
-        fix: siblings.length ? `같은 영역 코드(${siblings[0]}~${siblings[siblings.length - 1]}) 중 이 평가가 다루는 코드로 고치세요.` : '2022 개정 중학교 정보 성취기준 코드로 고치세요.',
+        fix: siblings.length ? `같은 영역 코드(${siblings[0]}~${siblings[siblings.length - 1]}) 중 이 평가가 다루는 코드로 고치세요.` : `${label} 성취기준 코드로 고치세요.`,
       });
-    } else {
-      // 공시 문서에는 다른 교과·학교자율시간 과목 코드가 함께 있어 회색 카드가 쏟아지므로 띄우지 않는다.
-      if (input.format === 'public') continue;
-      cards.push({
-        key: `J4-scope:${code}`,
-        rule: 'J4',
-        severity: 'gray',
-        strength: '사실',
-        title: `${code}는 현재 지원 범위(2022 개정 중학교 정보)에서 확인 불가`,
-        locations: locs,
-        quote: `문서에 적힌 코드: ${code}`,
-        basis: { source: DB_SOURCE, text: '다른 교과나 다른 교육과정의 코드는 이번 데모의 DB에 없어 실재 여부를 판정하지 않습니다.' },
-        actions: ['memo'],
-        fix: '의도한 다른 교과 코드라면 메모하고 넘기세요.',
-      });
+      continue;
     }
+    // 다른 교과 코드(융합 수업)나 고교·학교자율시간 과목 코드는 오류로 보지 않는다.
+    if (input.format === 'public' || st === 'other-subject') continue;
+    cards.push({
+      key: `J4-scope:${code}`,
+      rule: 'J4',
+      severity: 'gray',
+      strength: '사실',
+      title: `${code}는 중학교 교과 성취기준 코드 모양이 아니에요`,
+      locations: locs,
+      quote: `문서에 적힌 코드: ${code}`,
+      basis: { source: sourceOf(ctx), text: '고교 과목, 학교자율시간 과목 등 중학교 교과 DB 밖의 코드는 실재 여부를 판정하지 않습니다.' },
+      actions: ['memo'],
+      fix: '의도한 코드라면 메모하고 넘기세요.',
+    });
   }
   if (valid && !cards.some((c) => c.rule === 'J4' && c.severity === 'red'))
-    passed.push({ rule: 'J4', label: '성취기준 코드 실재', detail: `코드 ${valid}개 모두 DB에 있음` });
+    passed.push({ rule: 'J4', label: '성취기준 코드 실재', detail: `코드 ${valid}개 모두 ${cur ? curriculumLabel(cur) + ' ' : ''}${ctx.subject ?? ''} DB에 있음` });
 }
 
 const J7_PATTERNS: { label: string; re: RegExp }[] = [
@@ -476,22 +541,56 @@ export function similarity(a: string, b: string): number {
 }
 
 /**
- * J5 같은 코드 다른 문구: 한 문서 안에서 같은 성취기준 코드를 고시 원문과 다른 문장으로도 적었을 때.
- * 고시 원문과 같은 문장이 한 번이라도 있어야 띄운다(다른 교육과정 문서를 오류로 보지 않게).
+ * J5 성취기준 문구.
+ * (1) 적용 교육과정이 확실한데 문장이 다른 교육과정(예: 2015 개정) 고시 문장과 같으면 빨강 — 이전 교육과정 문구가 남은 것.
+ * (2) 한 문서 안에서 같은 코드를 고시 원문과 다른 문장으로도 적었으면 회색.
+ * 모든 곳이 원문과 다르면(재구성한 성취기준일 수 있음) 띄우지 않는다.
  */
 function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
-  const by = new Map<string, { text: string; ref: CellRef }[]>();
+  const ctx = ctxOf(input);
+  const by = new Map<string, { text: string; ref: CellRef; cur?: Curriculum; grade?: number }[]>();
   for (const ct of input.codeTexts ?? []) {
-    if (classifyCode(ct.code) !== 'valid') continue;
-    by.set(ct.code, [...(by.get(ct.code) ?? []), ct]);
+    const at = curAt(ctx, ct.ref);
+    if (classifyCode(ct.code, { subject: ctx.subject, curriculum: at.cur }) !== 'valid') continue;
+    by.set(ct.code, [...(by.get(ct.code) ?? []), { ...ct, ...at }]);
   }
   let checked = 0;
   for (const [code, items] of by) {
-    const official = lookupStandard(code)!.text;
-    const sims = items.map((it) => ({ ...it, sim: similarity(it.text, official), prefix: it.text.replace(/\s/g, '').startsWith(official.replace(/\s/g, '').slice(0, 25)) }));
     checked++;
+    // (1) 학년도·학년으로 적용 교육과정을 아는 칸에서, 문장이 다른 교육과정 원문과 같은 경우
+    const old = items.filter((it) => {
+      if (!it.grade || !it.cur) return false;
+      const here = lookupStandard(code, it.cur), there = lookupStandard(code, it.cur === '2022' ? '2015' : '2022');
+      return !!here && !!there && similarity(it.text, there.text) >= 0.9 && similarity(it.text, here.text) < 0.8;
+    });
+    if (old.length) {
+      const here = lookupStandard(code, old[0].cur)!, there = lookupStandard(code, old[0].cur === '2022' ? '2015' : '2022')!;
+      cards.push({
+        key: `J5-old:${code}`,
+        rule: 'J5',
+        severity: 'red',
+        strength: '사실',
+        title: `${code} 문장이 ${curriculumLabel(there.curriculum)} 교육과정 문장이에요`,
+        locations: old.map((o) => o.ref),
+        quote: `문서: ${old[0].text}\n${curriculumLabel(here.curriculum)} 원문: ${here.text}`,
+        basis: {
+          source: dbSource(here.curriculum, here.subject),
+          page: here.page ? `PDF ${here.page}쪽` : undefined,
+          text: `${gradeLabel(ctx, old[0].grade)}은 ${curriculumLabel(here.curriculum)} 교육과정을 적용합니다. 같은 코드라도 두 교육과정의 성취기준 내용이 다릅니다.`,
+        },
+        actions: ['fix', 'memo'],
+        fix: `${code} 문장을 ${curriculumLabel(here.curriculum)} 원문으로 바꾸고, 평가 요소가 새 성취기준과 맞는지 확인하세요.`,
+        replace: { from: old[0].text, to: here.text },
+      });
+      continue;
+    }
+    // (2) 같은 문서 안 다른 문구 (같은 교육과정 칸끼리)
+    const cur = items[0].cur ?? applied(ctx);
+    const pick = (cur ? lookupStandard(code, cur) : undefined) ?? lookupStandard(code)!;
+    const official = pick.text;
+    const sims = items.map((it) => ({ ...it, sim: similarity(it.text, official), prefix: it.text.replace(/\s/g, '').startsWith(official.replace(/\s/g, '').slice(0, 25)) }));
     const match = sims.filter((x) => x.sim >= 0.92);
-    const differ = sims.filter((x) => x.sim < 0.85 && !x.prefix);
+    const differ = sims.filter((x) => x.sim < 0.85 && !x.prefix && (!x.cur || x.cur === pick.curriculum));
     if (!match.length || !differ.length) continue;
     const variants = [...new Map(differ.map((d) => [d.text.replace(/\s/g, ''), d])).values()];
     cards.push({
@@ -503,9 +602,10 @@ function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       locations: [...match.map((m) => m.ref), ...variants.map((v) => v.ref)],
       emphasis: variants.map((v) => v.ref),
       quote: `고시 원문: ${official}\n다르게 적은 곳: ${variants.map((v) => v.text).join(' / ')}`,
-      basis: { source: DB_SOURCE, text: '같은 문서 안에서 같은 코드가 서로 다른 문장으로 적혀 있습니다. 이전 교육과정 문구가 남았거나 다른 코드의 문장을 옮겨 적었을 수 있습니다.' },
+      basis: { source: dbSource(pick.curriculum, pick.subject), text: '같은 문서 안에서 같은 코드가 서로 다른 문장으로 적혀 있습니다. 다른 코드의 문장을 옮겨 적었거나 성취기준을 재구성했을 수 있습니다.' },
       actions: ['fix', 'memo'],
       fix: `${code} 문장을 고시 원문으로 맞추세요. 의도한 재구성이라면 메모하고 넘기세요.`,
+      replace: { from: variants[0].text, to: official },
     });
   }
   if (checked && !cards.some((c) => c.rule === 'J5')) passed.push({ rule: 'J5', label: '성취기준 문구', detail: `코드 ${checked}개 문구가 고시 원문과 일치` });
@@ -536,6 +636,7 @@ const RULE_ORDER = ['J12', 'J4', 'J5', 'J7', 'J6', 'S5'];
 export function runChecks(input: CheckInput): CheckResult {
   const cards: Card[] = [];
   const passed: PassedCheck[] = [];
+  computeReliable(input);
   j12(input, cards, passed);
   j4(input, cards, passed);
   j5(input, cards, passed);

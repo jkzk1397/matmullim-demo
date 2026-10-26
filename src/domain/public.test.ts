@@ -64,9 +64,9 @@ describe('공시 양식 읽기', () => {
   it('여러 교과가 든 문서에서 정보과 부분만 고른다', () => {
     const doc = publicDoc();
     const multi: ParsedDocument = { ...doc, tables: [table('', [['2026학년도 2학기 1학년 국어과 교수·학습 및 평가 운영 계획']]), table('', [['영역 만점(반영비율)', '50점(50%)', '60점(60%)']]), ...doc.tables] };
-    const { ranges } = selectSubject(multi);
+    const { ranges } = selectSubject(multi, '정보');
     expect(ranges).toEqual([[2, multi.tables.length]]);
-    expect(extractPublic(multi).plan).toHaveLength(3);
+    expect(extractPublic(multi, '정보').plan).toHaveLength(3);
   });
 });
 

@@ -1,3 +1,4 @@
+import type { DocContext } from './context';
 // 「맞물림」 데이터 모델.
 // 만점(maxScore), 배점(points), 반영비율(weightPercent)은 서로 다른 단위다. 절대 섞어 비교하지 않는다.
 
@@ -78,6 +79,8 @@ export type Extraction = {
   codeTexts?: CodeText[];
   /** (추가 필드) 'public' = 학교알리미 공시 양식 한 파일 */
   format?: 'pair' | 'public';
+  /** (추가 필드) 교과·학년·교육과정 */
+  context?: DocContext;
 };
 
 // ---------- 점검 결과 ----------
@@ -122,6 +125,8 @@ export type Card = {
   emphasis?: CellRef[];
   /** 두 문서 나란히 비교 */
   compare?: CompareRow[];
+  /** 바로 고치기: 문서에서 from을 to로 바꾼다 (결정적으로 알 수 있을 때만) */
+  replace?: { from: string; to: string };
 };
 
 /** 정렬 맵에서 교사가 지정한 연결 */
@@ -138,6 +143,8 @@ export type CheckInput = {
   codeTexts?: CodeText[];
   /** (추가 필드) 'public'이면 한 파일 안 요약표 ↔ 세부기준을 대조한다 */
   format?: 'pair' | 'public';
+  /** (추가 필드) 교과·학년·교육과정. 없으면 2022 개정 중학교 정보로 본다(예시 문서) */
+  context?: DocContext;
 };
 
 export type PassedCheck = { rule: RuleId | 'J12-weight'; label: string; detail: string };

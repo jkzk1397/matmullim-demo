@@ -3,16 +3,13 @@
 // 요약표는 첫 "열"이 머리글이다(평가 종류 / 반영 비율 / 영역 / 영역 만점(반영비율) / 성취기준 / 평가요소 …).
 // 이 파일은 그런 문서를 데모의 데이터 모델(Assessment)로 바꾼다. 점검 규칙은 그대로 rules.ts를 쓴다.
 import { fillMerged, normalizeName } from './extract';
-import { extractCodes } from './standards';
+import { extractCodes, subjectOfCode, typoOf } from './standards';
+import { detectContext, splitSections, type DocContext, type SubjectSection } from './context';
 import type { Assessment, CellRef, CodeText, DocKind, Element, Extraction, ParsedDocument, ParsedTable, PlanStandard } from './types';
 
 const norm = (s: string) => (s ?? '').replace(/\s+/g, '').replace(/[()（）]/g, '');
 const ref = (doc: DocKind, table: number, row: number, col: number): CellRef => ({ doc, table, row, col });
 
-const SUBJECTS = /(국어|수학|영어|과학|사회|도덕|역사|음악|미술|체육|기술|가정|한문|중국어|일본어|정보|진로|보건|환경|스페인어|독일어|프랑스어)/;
-const PLAN_TITLE = /(학년|학기).{0,30}(교수|평가).{0,30}계획/;
-/** '정보공시', '개인정보' 같은 낱말 때문에 교과명 '정보'를 잘못 찾지 않게 지운다. */
-const scrub = (s: string) => s.replace(/정보\s*공시|정보\s*고시|개인\s*정보|정보\s*통신/g, '');
 
 const isMaxRow = (label: string) => /^(영역)?만점(비율)?(반영비율|점|%)?$/.test(norm(label));
 
@@ -22,33 +19,16 @@ export function isPublicFormat(doc: ParsedDocument): boolean {
 }
 
 /**
- * 여러 교과가 한 파일에 있는 경우(학년별 전 교과 계획) 정보과 부분의 표만 남긴다.
- * 교과 제목 표/문단(예: "2026학년도 2학기 1학년 정보과 교수·학습 및 평가 운영 계획")을 경계로 쓴다.
+ * 여러 교과·학년이 한 파일에 있는 경우 한 구간의 표만 남긴다. 구간을 안 주면 교과(없으면 첫 교과)의 첫 구간.
+ * 표 번호(원문 위치)를 유지하려고 다른 구간 표는 빼지 않고 빈 표로 바꾼다.
  */
-export function selectSubject(doc: ParsedDocument, subject = '정보'): { doc: ParsedDocument; ranges: [number, number][] } {
-  const marks: { i: number; isTarget: boolean }[] = [];
-  doc.tables.forEach((t, i) => {
-    const cells = [t.title, ...(t.rows.length <= 2 ? t.rows.flat() : [])].map((x) => scrub((x ?? '').replace(/\s+/g, ' ')));
-    for (const c of cells) {
-      if (c.length < 120 && PLAN_TITLE.test(c) && SUBJECTS.test(c)) {
-        marks.push({ i, isTarget: c.includes(subject) });
-        break;
-      }
-    }
-  });
-  const ranges: [number, number][] = [];
-  for (let m = 0; m < marks.length; m++) {
-    if (!marks[m].isTarget || (m > 0 && marks[m - 1].isTarget)) continue;
-    let end = doc.tables.length;
-    for (let q = m + 1; q < marks.length; q++) if (!marks[q].isTarget) { end = marks[q].i; break; }
-    ranges.push([marks[m].i, end]);
-  }
-  const otherSubjects = marks.some((m) => !m.isTarget);
-  if (!ranges.length || !otherSubjects) return { doc, ranges: [[0, doc.tables.length]] };
-  const keep = new Set<number>();
-  ranges.forEach(([s, e]) => { for (let i = s; i < e; i++) keep.add(i); });
-  // 표 번호(원문 위치)를 유지하려고 빼지 않고 빈 표로 바꾼다.
-  return { doc: { ...doc, tables: doc.tables.map((t, i) => (keep.has(i) ? t : { title: '', rows: [], spans: [] })) }, ranges };
+export function selectSubject(doc: ParsedDocument, subject?: string | SubjectSection): { doc: ParsedDocument; ranges: [number, number][]; section?: SubjectSection } {
+  const sections = splitSections(doc);
+  const section = typeof subject === 'object' ? subject : sections.find((x) => !subject || x.subject === subject) ?? (subject ? undefined : sections[0]);
+  if (!section) return { doc, ranges: [[0, doc.tables.length]] };
+  if (sections.length <= 1) return { doc, ranges: [[0, doc.tables.length]], section: { ...section, from: 0, to: doc.tables.length } };
+  const keep = (i: number) => i >= section.from && i < section.to;
+  return { doc: { ...doc, tables: doc.tables.map((t, i) => (keep(i) ? t : { title: '', rows: [], spans: [] })) }, ranges: [[section.from, section.to]], section };
 }
 
 const isCont = (t: ParsedTable, r: number, c: number) =>
@@ -165,7 +145,7 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
 }
 
 /** 수행평가 세부기준: "평가 영역(명) | 이름 | 영역 만점 | 30점" 행이 있는 표와, 그 뒤의 채점기준 표 */
-function readRubrics(doc: ParsedDocument): Assessment[] {
+function readRubrics(doc: ParsedDocument, isSubj: (c: string) => boolean): Assessment[] {
   const out: Assessment[] = [];
   let cur: Assessment | null = null;
   doc.tables.forEach((t, ti) => {
@@ -175,9 +155,9 @@ function readRubrics(doc: ParsedDocument): Assessment[] {
       if (/^평가영역(명)?\d*$/.test(norm(row[0] ?? '')) || /^평가영역명?\d*$/.test(norm(row[0] ?? ''))) {
         const mc = row.findIndex((x, j) => j > 0 && /만점/.test(norm(x)));
         if (mc > 0) {
-          // 성취기준 코드가 있는데 정보과 코드가 하나도 없으면 다른 교과의 세부기준이다
+          // 성취기준 코드가 있는데 이 교과 코드가 하나도 없으면 다른 교과의 세부기준이다
           const codes = extractCodes(g.flat().join(' '));
-          if (codes.length && !codes.some((c) => /^\[9정/.test(c))) { cur = null; continue; }
+          if (codes.length && !codes.some(isSubj)) { cur = null; continue; }
           const name = (row[1] ?? '').trim();
           const mcell = row.slice(mc + 1).find((x) => /\d/.test(x)) ?? '';
           const mv = readScoreCell(mcell);
@@ -222,7 +202,7 @@ function readCodeTexts(doc: ParsedDocument, kind: DocKind): CodeText[] {
   doc.tables.forEach((t, ti) =>
     t.rows.forEach((row, r) =>
       row.forEach((cell, c) => {
-        const re = /\[\s*(\d{1,2})\s*([가-힣]{1,3})\s*(\d{1,2})\s*-\s*(\d{2})\s*\]\s*([^[\n]{6,200}?다)\.?(?=\s*(?:\[|\n|$))/g;
+        const re = /\[\s*(\d{1,2})\s*([가-힣()]{1,6}?)\s*-?\s*(\d{1,2})\s*-\s*(\d{2})\s*\]\s*([^[\n]{6,240}?다)\.?(?=\s*(?:\[|\n|$))/g;
         for (const m of (cell ?? '').matchAll(re)) {
           const code = extractCodes(`[${m[1]}${m[2]}${m[3].padStart(2, '0')}-${m[4]}]`)[0];
           if (code) out.push({ code, text: m[5].trim(), ref: ref(kind, ti, r, c) });
@@ -233,22 +213,25 @@ function readCodeTexts(doc: ParsedDocument, kind: DocKind): CodeText[] {
   return out;
 }
 
-export function extractPublic(raw: ParsedDocument): Extraction & { subjectRanges: [number, number][] } {
-  const { doc, ranges } = selectSubject(raw);
+export function extractPublic(raw: ParsedDocument, hint?: string | SubjectSection): Extraction & { subjectRanges: [number, number][]; context: DocContext } {
+  const { doc, ranges, section } = selectSubject(raw, hint);
+  const context = detectContext(raw, ranges[0][0], ranges[0][1], section?.subject ?? (typeof hint === 'string' ? hint : undefined), section?.grades);
+  // 교과를 끝내 모르면 중학교 교과 코드는 모두 받는다
+  const isSubj = (c: string) => (context.subject ? subjectOfCode(c) === context.subject : !!subjectOfCode(c));
   const plan: Assessment[] = [];
   doc.tables.forEach((t, ti) => {
     const items = readSummary(t, ti);
-    // 요약표 성취기준 칸에 다른 교과 코드만 있으면 정보과 표가 아니다
+    // 요약표 성취기준 칸에 다른 교과 코드만 있으면 이 교과 표가 아니다
     const codes = items.flatMap((a) => a.elements.flatMap((e) => e.standards));
-    if (codes.length && !codes.some((c) => /^\[9정/.test(c))) return;
+    if (codes.length && !codes.some(isSubj)) return;
     plan.push(...items);
   });
-  const rubric = readRubrics(doc);
+  const rubric = readRubrics(doc, isSubj);
   // 학기 성취기준: 성취기준별 성취수준 표 등에서 코드와 문장
   const codeTexts = readCodeTexts(doc, 'plan');
-  // 정렬 맵의 행 = 이번 학기 교수·학습 운영 계획(머리글에 월·주가 있는 표)에 적힌 정보과 코드. 없으면 문서 전체.
+  // 정렬 맵의 행 = 이번 학기 교수·학습 운영 계획(머리글에 월·주가 있는 표)에 적힌 이 교과 코드. 없으면 문서 전체.
   const isSchedule = (ti: number) => (doc.tables[ti]?.rows[0] ?? []).some((h) => /^(월|주|시기|차시)$/.test(norm(h)));
-  const infoCode = (c: string) => /^\[9정\d{2}-\d{2}\]$/.test(c);
+  const infoCode = isSubj;
   const scheduled = codeTexts.filter((ct) => isSchedule(ct.ref.table) && infoCode(ct.code));
   const planStandards: PlanStandard[] = [];
   for (const ct of scheduled.length ? scheduled : codeTexts.filter((c) => infoCode(c.code)))
@@ -256,13 +239,14 @@ export function extractPublic(raw: ParsedDocument): Extraction & { subjectRanges
   // 요약표 성취기준 칸에만 있는 코드도 정렬 맵에 넣는다
   for (const a of plan) for (const e of a.elements) for (const code of e.standards)
     if (infoCode(code) && !planStandards.some((s) => s.code === code)) planStandards.push({ code, text: '', ref: e.refs?.standards ?? a.source });
-  // 표를 읽지 못한 문서(PDF 등): 본문 어디에든 적힌 정보과 코드(오타 모양 포함)를 모아 코드 점검만이라도 한다
+  // 표를 읽지 못한 문서(PDF 등): 본문 어디에든 적힌 이 교과 코드(오자 모양 포함)를 모아 코드 점검만이라도 한다
   if (!plan.length)
     for (const [ti, t] of doc.tables.entries())
       for (const [ri, row] of t.rows.entries())
         for (const [ci, cell] of row.entries())
-          for (const m of (cell ?? '').matchAll(/\[0?9[자-짛]\d{2}-\d{2}\]/g))
-            if (!planStandards.some((s) => s.code === m[0])) planStandards.push({ code: m[0], text: '', ref: ref('plan', ti, ri, ci) });
+          for (const m of (cell ?? '').matchAll(/\[0?9[가-힣()]{1,6}\d{2}-\d{2}\]/g))
+            if ((isSubj(m[0]) || typoOf(m[0], { subject: context.subject })) && !planStandards.some((s) => s.code === m[0]))
+              planStandards.push({ code: m[0], text: '', ref: ref('plan', ti, ri, ci) });
   const warnings: string[] = [];
   if (!plan.length) warnings.push('공시 양식의 평가 요약표(영역 만점·반영비율)를 찾지 못했어요.');
   // 같은 이름의 평가가 요약표에 두 번 이상 나오면(학년별 반복) 이름 뒤에 표 번호를 붙인다
@@ -277,7 +261,7 @@ export function extractPublic(raw: ParsedDocument): Extraction & { subjectRanges
     seen.set(k, n);
     if (n > 1) a.name = `${a.name} (${n})`;
   }
-  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges };
+  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context };
 }
 
 /** 이름으로 짝 제안 (공시 양식: 같은 파일 안 요약표 ↔ 세부기준) */
