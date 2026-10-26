@@ -10,6 +10,7 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "samples": "tsx scripts/make-hwpx.ts",
+    "samples:v2": "tsx scripts/make-samples-v2.ts",
     "screenshots": "tsx scripts/screenshots.ts"
   },
   "dependencies": {
