@@ -2,6 +2,7 @@
 import { normalizeName } from './extract';
 import { classifyCode, curriculumFor, curriculumLabel, dbSource, lookupStandard, standardsFor, typoOf, type CodeContext, type Curriculum } from './standards';
 import type { DocContext } from './context';
+import { GG_AUDIT, packFor } from './rulepacks';
 import type {
   Assessment,
   Card,
@@ -458,6 +459,7 @@ const J7_PATTERNS: { label: string; re: RegExp }[] = [
   { label: '감점', re: /감점/ },
   { label: '지적 횟수', re: /(?:지적\s*(?:횟수|\d+\s*회)|\d+\s*회\s*(?:이상\s*)?지적)/ },
   { label: '출석률', re: /출석률|출석\s*(?:일수|횟수|여부)/ },
+  { label: '제출 여부', re: /제출\s*(?:여부|만\s*(?:해도|하면|한\s*경우))|(?:기한\s*내\s*)?제출\s*시\s*\d+\s*점|제출한\s*경우\s*\d+\s*점/ },
 ];
 
 /** 채점기준이 아니라 학생이 만들 프로그램·문제 지문을 설명하는 문장 (예: "점수 변수 감점 알고리즘을 구현") */
@@ -493,7 +495,9 @@ function j7(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         locations: e.refs?.rubricText ? [e.refs.rubricText] : [a.source],
         quote: e.rubricText,
         highlights: hits.map((h) => h.match),
-        basis: { source: GG_2026, page: J7_PAGE, text: J7_SOURCE_TEXT },
+        basis: hits.every((h) => h.label === '제출 여부')
+          ? { source: GG_AUDIT.source, text: GG_AUDIT.submit, url: GG_AUDIT.url }
+          : { source: GG_2026, page: J7_PAGE, text: J7_SOURCE_TEXT },
         actions: ['fix', 'memo'],
         note: SCHOOL_RULE_NOTE,
         fix: '분량·횟수 대신 성취기준의 핵심 행동이 드러나는 수준별 기술로 바꾸세요.',
@@ -611,6 +615,83 @@ function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   if (checked && !cards.some((c) => c.rule === 'J5')) passed.push({ rule: 'J5', label: '성취기준 문구', detail: `코드 ${checked}개 문구가 고시 원문과 일치` });
 }
 
+/** J13 반영비율 하한 (규칙팩: 수행평가·논술형) */
+function j13(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const ctx = ctxOf(input);
+  const pack = packFor(ctx.year);
+  if (!pack || input.format !== 'public') return;
+  let checked = 0;
+  // 논술형
+  const arts = pack.essayMin.artsSubjects.includes(ctx.subject ?? '');
+  const min = arts ? pack.essayMin.arts : pack.essayMin.value;
+  for (const e of input.essay ?? []) {
+    checked++;
+    if (e.total + 1e-9 >= min) continue;
+    cards.push({
+      key: `J13-essay:${e.table}`,
+      rule: 'J13',
+      severity: 'orange',
+      strength: '의무',
+      title: `논술형 평가 반영비율이 ${e.total}%예요 (${min}% 이상이어야 해요)`,
+      locations: [e.ref],
+      quote: e.raw,
+      basis: { source: pack.source, page: pack.essayMin.page, text: pack.essayMin.text + (arts ? ' (체육·예술 교과는 20%)' : ''), url: pack.url },
+      actions: ['fix', 'memo'],
+      note: SCHOOL_RULE_NOTE,
+      fix: `논술형 평가 반영비율을 ${min}% 이상으로 맞추세요.`,
+    });
+  }
+  // 수행평가 (요약표마다, 정기시험이 있는 표만)
+  const byTable = new Map<number, Assessment[]>();
+  for (const a of input.plan) byTable.set(a.source.table, [...(byTable.get(a.source.table) ?? []), a]);
+  for (const [t, as] of byTable) {
+    if (as.some((a) => a.incomplete) || as.some((a) => a.weightPercent === undefined)) continue;
+    const written = as.filter((a) => /지필|정기/.test(a.method ?? ''));
+    if (!written.length) continue;
+    checked++;
+    const perf = sum(as.filter((a) => !written.includes(a)).map((a) => a.weightPercent));
+    const all = sum(as.map((a) => a.weightPercent));
+    if (Math.abs(all - 100) > 0.6 || perf + 1e-9 >= pack.perfMin.value) continue;
+    cards.push({
+      key: `J13-perf:${t}`,
+      rule: 'J13',
+      severity: 'orange',
+      strength: '의무',
+      title: `수행평가 반영비율 합계가 ${perf}%예요 (${pack.perfMin.value}% 이상이어야 해요)`,
+      locations: as.map((a) => a.refs?.weightPercent ?? a.source),
+      quote: as.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' + '),
+      basis: { source: pack.source, page: pack.perfMin.page, text: pack.perfMin.text, url: pack.url },
+      actions: ['fix', 'memo'],
+      fix: `수행평가 반영비율을 ${pack.perfMin.value}% 이상으로 맞추세요.`,
+    });
+  }
+  if (checked && !cards.some((c) => c.rule === 'J13')) passed.push({ rule: 'J13', label: '반영비율 하한', detail: `${pack.name} 지침의 수행평가·논술형 하한 충족` });
+}
+
+/** J14 결시자 처리기준이 계획에 있는지 (규칙팩) */
+function j14(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const ctx = ctxOf(input);
+  const pack = packFor(ctx.year);
+  if (!pack || input.format !== 'public' || !input.absence || !input.plan.length) return;
+  if (input.absence.found) {
+    passed.push({ rule: 'J14', label: '결시자 처리기준', detail: '계획서에 결시·미응시 처리 내용이 있음' });
+    return;
+  }
+  cards.push({
+    key: 'J14-absence',
+    rule: 'J14',
+    severity: 'gray',
+    strength: '의무',
+    title: '결시자(미응시) 처리기준을 계획서에서 찾지 못했어요',
+    locations: [input.plan[0].source],
+    quote: '계획서 안에서 결시·미응시·인정점에 관한 문장을 찾지 못함',
+    basis: { source: pack.source, page: pack.absence.page, text: pack.absence.text, url: pack.url },
+    actions: ['memo'],
+    note: SCHOOL_RULE_NOTE,
+    fix: '수행평가 결시자 처리기준(인정점 등)을 평가 계획에 적으세요. 학교 규정을 따르는 경우 그 문장을 넣으세요.',
+  });
+}
+
 /** 노랑 제안은 이번 데모에서 1개만: S5 학생 성찰 기회 */
 function s5(input: CheckInput, cards: Card[]) {
   const perf = input.rubric;
@@ -631,16 +712,18 @@ function s5(input: CheckInput, cards: Card[]) {
 }
 
 const ORDER: Record<Severity, number> = { red: 0, orange: 1, gray: 2, yellow: 3 };
-const RULE_ORDER = ['J12', 'J4', 'J5', 'J7', 'J6', 'S5'];
+const RULE_ORDER = ['J12', 'J13', 'J4', 'J5', 'J7', 'J14', 'J6', 'S5'];
 
 export function runChecks(input: CheckInput): CheckResult {
   const cards: Card[] = [];
   const passed: PassedCheck[] = [];
   computeReliable(input);
   j12(input, cards, passed);
+  j13(input, cards, passed);
   j4(input, cards, passed);
   j5(input, cards, passed);
   j7(input, cards, passed);
+  j14(input, cards, passed);
   j6(input, cards, passed);
   s5(input, cards);
   cards.sort((a, b) => ORDER[a.severity] - ORDER[b.severity] || RULE_ORDER.indexOf(a.rule) - RULE_ORDER.indexOf(b.rule));

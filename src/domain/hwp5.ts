@@ -132,6 +132,7 @@ export function parseHwp5(data: ArrayBuffer | Uint8Array, fileName: string, doc:
     .filter(({ path }) => /BodyText\/Section\d+$/i.test(path))
     .sort((a, b) => Number(a.path.match(/(\d+)$/)![1]) - Number(b.path.match(/(\d+)$/)![1]));
   const tables: ParsedTable[] = [];
+  const paragraphs: { before: number; text: string }[] = [];
   let title = '';
   for (const { e } of sections) {
     const raw = bytes(e.content);
@@ -143,10 +144,11 @@ export function parseHwp5(data: ArrayBuffer | Uint8Array, fileName: string, doc:
       const { para, next } = readPara(rs, i);
       const text = para.text.replace(/\s+/g, ' ').trim();
       if (!title && text && !para.tables.length) title = text;
+      if (text) paragraphs.push({ before: tables.length, text });
       for (const t of para.tables) tables.push({ title: text || lastText, rows: t.rows, spans: t.spans });
       if (text) lastText = text;
       i = next;
     }
   }
-  return { doc, fileName, title, tables };
+  return { doc, fileName, title, tables, paragraphs };
 }

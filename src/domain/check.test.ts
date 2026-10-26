@@ -127,8 +127,9 @@ describe('세분화된 평가요소', () => {
 });
 
 describe('J7 표현 패턴', () => {
-  it('원문에 있는 표현만 잡고 "제출 여부"는 잡지 않는다', () => {
-    expect(findDiscouraged('과제 제출 여부에 따라 점수를 줌')).toEqual([]);
+  it('지침·감사사례의 표현을 잡는다', () => {
+    expect(findDiscouraged('과제 제출 여부에 따라 점수를 줌').map((h) => h.label)).toEqual(['제출 여부']);
+    expect(findDiscouraged('결과물을 제출하고 발표한다')).toEqual([]);
     expect(findDiscouraged('A4 2쪽 이상 작성').map((h) => h.label)).toEqual(['분량']);
     expect(findDiscouraged('과제 수행률 80% 이상').map((h) => h.label)).toEqual(['과제 수행률']);
     expect(findDiscouraged('지각 시 1점 감점').map((h) => h.label)).toEqual(['감점']);

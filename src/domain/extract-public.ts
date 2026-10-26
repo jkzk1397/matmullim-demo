@@ -5,7 +5,7 @@
 import { fillMerged, normalizeName } from './extract';
 import { extractCodes, subjectOfCode, typoOf } from './standards';
 import { detectContext, splitSections, type DocContext, type SubjectSection } from './context';
-import type { Assessment, CellRef, CodeText, DocKind, Element, Extraction, ParsedDocument, ParsedTable, PlanStandard } from './types';
+import type { Assessment, CellRef, CodeText, DocKind, Element, EssayRow, Extraction, ParsedDocument, ParsedTable, PlanStandard } from './types';
 
 const norm = (s: string) => (s ?? '').replace(/\s+/g, '').replace(/[()（）]/g, '');
 const ref = (doc: DocKind, table: number, row: number, col: number): CellRef => ({ doc, table, row, col });
@@ -261,7 +261,47 @@ export function extractPublic(raw: ParsedDocument, hint?: string | SubjectSectio
     seen.set(k, n);
     if (n > 1) a.name = `${a.name} (${n})`;
   }
-  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context };
+  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context, essay: readEssay(doc), absence: findAbsence(raw, ranges[0][0], ranges[0][1]) };
+}
+
+const pct = (x: string) => {
+  const m = (x ?? '').replace(/,/g, '').match(/(\d+(?:\.\d+)?)\s*%/);
+  return m ? Number(m[1]) : /^\s*\d+(?:\.\d+)?\s*$/.test(x ?? '') ? Number(x) : undefined;
+};
+
+/** 요약표의 '논술형 평가 반영비율' 행: 맨 끝이 합계 칸이면 그 값, 아니면 칸들의 합 */
+function readEssay(doc: ParsedDocument): EssayRow[] {
+  const out: EssayRow[] = [];
+  doc.tables.forEach((t, ti) => {
+    const g = fillMerged(t);
+    if (!g.some((row) => isMaxRow(row[0] ?? ''))) return;
+    g.forEach((row, r) => {
+      if (!/논술형.{0,12}(반영|비율)/.test(norm(row[0] ?? ''))) return;
+      // 병합으로 같은 값이 여러 칸에 복사되지 않게 원래 칸만
+      const cells = row.map((x, c) => (c > 0 && !isCont(t, r, c) ? x : '')).slice(1);
+      const vals = cells.map(pct);
+      const nums = vals.filter((v): v is number => v !== undefined);
+      if (!nums.length) return;
+      // 합계 칸: 머리글 행 어딘가에 '합계'/'계'가 적힌 열
+      const totalCols = new Set<number>();
+      for (const hr of g.slice(0, r)) hr.forEach((x, c) => { if (c > 0 && /^(합계|계|총계)$/.test(norm(x))) totalCols.add(c - 1); });
+      const tIdx = [...totalCols].find((c) => vals[c] !== undefined);
+      const items = vals.filter((v, k) => v !== undefined && k !== tIdx) as number[];
+      const total = tIdx !== undefined ? vals[tIdx]! : items.reduce((a, b) => a + b, 0);
+      const lastIdx = tIdx ?? vals.lastIndexOf(nums[nums.length - 1]);
+      out.push({ table: ti, total, ref: ref('plan', ti, r, lastIdx + 1), raw: row.map((x) => x.replace(/\s+/g, ' ')).join(' | ') });
+    });
+  });
+  return out;
+}
+
+const ABSENCE = /결시|미응시|인정점|미참여|불참|참여하지\s*못|응시하지|결석|불응시/;
+function findAbsence(doc: ParsedDocument, from: number, to: number): { found: boolean; ref?: CellRef } {
+  for (let ti = from; ti < to; ti++)
+    for (const [r, row] of (doc.tables[ti]?.rows ?? []).entries())
+      for (const [c, cell] of row.entries()) if (ABSENCE.test(cell ?? '')) return { found: true, ref: ref('plan', ti, r, c) };
+  for (const p of doc.paragraphs ?? []) if (p.before >= from && p.before <= to && ABSENCE.test(p.text)) return { found: true };
+  return { found: false };
 }
 
 /** 이름으로 짝 제안 (공시 양식: 같은 파일 안 요약표 ↔ 세부기준) */

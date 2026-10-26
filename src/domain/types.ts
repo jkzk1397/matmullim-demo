@@ -64,6 +64,8 @@ export type ParsedDocument = {
   /** 문서 제목 (첫 문단) */
   title: string;
   tables: ParsedTable[];
+  /** 표 밖 본문 문단 (표 사이 설명 글). [표 번호 직전 위치, 글] */
+  paragraphs?: { before: number; text: string }[];
 };
 
 /** 문서 안에 "[코드] 문장" 꼴로 적힌 성취기준 문구 한 곳 */
@@ -81,14 +83,20 @@ export type Extraction = {
   format?: 'pair' | 'public';
   /** (추가 필드) 교과·학년·교육과정 */
   context?: DocContext;
+  /** (추가 필드) 요약표의 '논술형 평가 반영비율' 행 */
+  essay?: EssayRow[];
+  /** (추가 필드) 결시자(미응시) 처리기준이 적힌 곳 */
+  absence?: { found: boolean; ref?: CellRef };
 };
+
+export type EssayRow = { table: number; total: number; ref: CellRef; raw: string };
 
 // ---------- 점검 결과 ----------
 
 export type Severity = 'red' | 'orange' | 'gray' | 'yellow';
 export type Strength = '사실' | '의무' | '권고' | '제안';
 export type Action = 'fix' | 'memo' | 'link';
-export type RuleId = 'J4' | 'J5' | 'J7' | 'J12' | 'J6' | 'S5';
+export type RuleId = 'J4' | 'J5' | 'J7' | 'J12' | 'J6' | 'S5' | 'J13' | 'J14';
 
 export type Basis = {
   /** 규칙 출처 (문서명) */
@@ -97,6 +105,8 @@ export type Basis = {
   page?: string;
   /** 원문 문장 (있을 때만, 지어내지 않는다) */
   text?: string;
+  /** 원문 링크 */
+  url?: string;
 };
 
 export type CompareRow = { label: string; plan?: string; rubric?: string; differs: boolean };
@@ -145,6 +155,8 @@ export type CheckInput = {
   format?: 'pair' | 'public';
   /** (추가 필드) 교과·학년·교육과정. 없으면 2022 개정 중학교 정보로 본다(예시 문서) */
   context?: DocContext;
+  essay?: EssayRow[];
+  absence?: { found: boolean; ref?: CellRef };
 };
 
 export type PassedCheck = { rule: RuleId | 'J12-weight'; label: string; detail: string };
