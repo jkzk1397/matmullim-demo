@@ -128,7 +128,7 @@ export default function Home({ busy, error, onFiles, onSample, recent, appending
               </li>
               <li className="border-t border-line pt-2.5">
                 <span>검증</span>
-                <b className="mt-0.5 block text-ink">실제 공개 계획서 595개 · 오류 주입 1,501건 중 1,495건 탐지</b>
+                <b className="mt-0.5 block text-ink">공개 계획서 911개 · 처음 보는 문서 오류 주입 99.7% 탐지</b>
               </li>
             </ul>
           </section>
