@@ -1,3 +1,4 @@
+import type { DocContext } from './context';
 // 「맞물림」 데이터 모델.
 // 만점(maxScore), 배점(points), 반영비율(weightPercent)은 서로 다른 단위다. 절대 섞어 비교하지 않는다.
 
@@ -33,6 +34,8 @@ export type Assessment = {
   rubricText?: string;
   /** 원문 위치 (평가명 칸) */
   source: CellRef;
+  /** (추가 필드) 공시 양식 요약표에서 읽지 못한 칸이 있으면 true (합계 판정을 하지 않는다) */
+  incomplete?: boolean;
   /** (추가 필드) 평가 방법: "지필" | "수행" 등 원문 그대로 */
   method?: string;
   /** (추가 필드) 각 값이 나온 원문 칸 */
@@ -61,7 +64,12 @@ export type ParsedDocument = {
   /** 문서 제목 (첫 문단) */
   title: string;
   tables: ParsedTable[];
+  /** 표 밖 본문 문단 (표 사이 설명 글). [표 번호 직전 위치, 글] */
+  paragraphs?: { before: number; text: string }[];
 };
+
+/** 문서 안에 "[코드] 문장" 꼴로 적힌 성취기준 문구 한 곳 */
+export type CodeText = { code: string; text: string; ref: CellRef };
 
 /** 추출 결과 = 교사 확인 화면에서 고치는 대상 */
 export type Extraction = {
@@ -69,14 +77,30 @@ export type Extraction = {
   rubric: Assessment[];
   planStandards: PlanStandard[];
   warnings: string[];
+  /** (추가 필드) 성취기준 문구가 적힌 모든 곳 */
+  codeTexts?: CodeText[];
+  /** (추가 필드) 'public' = 학교알리미 공시 양식 한 파일 */
+  format?: 'pair' | 'public';
+  /** (추가 필드) 교과·학년·교육과정 */
+  context?: DocContext;
+  /** (추가 필드) 요약표의 '논술형 평가 반영비율' 행 */
+  essay?: EssayRow[];
+  /** (추가 필드) 결시자(미응시) 처리기준이 적힌 곳 */
+  absence?: { found: boolean; ref?: CellRef };
+  /** (추가 필드) 괄호 한쪽이 빠진 성취기준 코드 */
+  malformed?: Malformed[];
 };
+
+export type Malformed = { raw: string; fixed: string; ref: CellRef };
+
+export type EssayRow = { table: number; total: number; ref: CellRef; raw: string; subject?: string };
 
 // ---------- 점검 결과 ----------
 
 export type Severity = 'red' | 'orange' | 'gray' | 'yellow';
 export type Strength = '사실' | '의무' | '권고' | '제안';
 export type Action = 'fix' | 'memo' | 'link';
-export type RuleId = 'J4' | 'J7' | 'J12' | 'J6' | 'S5';
+export type RuleId = 'J4' | 'J5' | 'J7' | 'J12' | 'J6' | 'S5' | 'J13' | 'J14';
 
 export type Basis = {
   /** 규칙 출처 (문서명) */
@@ -85,6 +109,10 @@ export type Basis = {
   page?: string;
   /** 원문 문장 (있을 때만, 지어내지 않는다) */
   text?: string;
+  /** 원문 링크 */
+  url?: string;
+  /** true면 text가 출처 문서의 문장을 그대로 옮긴 인용. 아니면 맞물림의 판단 기준 설명 */
+  quoted?: boolean;
 };
 
 export type CompareRow = { label: string; plan?: string; rubric?: string; differs: boolean };
@@ -113,6 +141,8 @@ export type Card = {
   emphasis?: CellRef[];
   /** 두 문서 나란히 비교 */
   compare?: CompareRow[];
+  /** 바로 고치기: 문서에서 from을 to로 바꾼다 (결정적으로 알 수 있을 때만) */
+  replace?: { from: string; to: string };
 };
 
 /** 정렬 맵에서 교사가 지정한 연결 */
@@ -125,6 +155,17 @@ export type CheckInput = {
   /** rubric 평가 id → plan 평가 id (null이면 짝 없음) */
   pairs: Record<string, string | null>;
   links: ManualLink[];
+  /** (추가 필드) 성취기준 문구가 적힌 모든 곳 — J5 문구 대조에 쓴다 */
+  codeTexts?: CodeText[];
+  /** (추가 필드) 'public'이면 한 파일 안 요약표 ↔ 세부기준을 대조한다 */
+  format?: 'pair' | 'public';
+  /** (추가 필드) 교과·학년·교육과정. 없으면 2022 개정 중학교 정보로 본다(예시 문서) */
+  context?: DocContext;
+  essay?: EssayRow[];
+  absence?: { found: boolean; ref?: CellRef };
+  malformed?: Malformed[];
+  /** (추가 필드) 원문 칸 글자 읽기 (바로 고치기 가능 여부 판단용) */
+  cells?: (ref: CellRef) => string;
 };
 
 export type PassedCheck = { rule: RuleId | 'J12-weight'; label: string; detail: string };

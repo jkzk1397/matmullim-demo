@@ -80,6 +80,7 @@ export async function parseHwpx(data: ArrayBuffer | Uint8Array, fileName: string
   if (!sections.length) throw new Error('HWPX 안에서 Contents/section*.xml을 찾지 못했어요. 구형 HWP나 다른 형식일 수 있어요.');
 
   const tables: ParsedTable[] = [];
+  const paragraphs: { before: number; text: string }[] = [];
   let title = '';
   for (const name of sections) {
     const xml = await zip.file(name)!.async('string');
@@ -89,9 +90,10 @@ export async function parseHwpx(data: ArrayBuffer | Uint8Array, fileName: string
       const text = paragraphText(p);
       const tbls = tablesIn(p);
       if (!title && text && !tbls.length) title = text;
+      if (text) paragraphs.push({ before: tables.length, text });
       for (const t of tbls) tables.push(parseTable(t, text || lastText));
       if (text) lastText = text;
     }
   }
-  return { doc, fileName, title, tables };
+  return { doc, fileName, title, tables, paragraphs };
 }

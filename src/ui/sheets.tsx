@@ -137,6 +137,22 @@ export function buildSheets(card: Card, docs: Docs, input: CheckInput): SheetPai
     };
   }
 
+  if (card.rule === 'J5') {
+    const code = card.key.split(':')[1];
+    const st = STANDARDS_DB.standards.find((x) => x.code === code);
+    const d: DocKind = has('plan') ? 'plan' : 'rubric';
+    return {
+      left: { label: DOC_NAME[d], sub: docs[d].fileName, parts: docParts(docs, card.locations, card.emphasis ?? card.locations, [code], d) },
+      right: {
+        label: '성취기준 DB',
+        sub: `2022 개정 중학교 정보${st ? ` · ${st.domain}` : ''}`,
+        parts: [{ title: '고시 원문', header: ['코드', '성취기준'], rows: [[{ text: code, strong: true }, { text: st?.text ?? '' }]], wide: 1 }],
+        note: '문서 안에 이 문장과 다른 문장이 함께 있어요.',
+      },
+      joint,
+    };
+  }
+
   if (card.rule === 'J6') {
     const left = doc('plan', [/^성취기준$/]);
     const code = card.key.split(':')[1];

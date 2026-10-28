@@ -10,11 +10,15 @@
     "test": "vitest run",
     "typecheck": "tsc -b",
     "samples": "tsx scripts/make-hwpx.ts",
+    "samples:v2": "tsx scripts/make-samples-v2.ts",
     "screenshots": "tsx scripts/screenshots.ts"
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.8.10",
+    "cfb": "^1.2.2",
+    "fflate": "^0.8.2",
     "jszip": "^3.10.1",
+    "pdfjs-dist": "^4.10.38",
     "pretendard": "^1.3.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

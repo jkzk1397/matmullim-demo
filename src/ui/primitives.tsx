@@ -76,6 +76,38 @@ export function Marked({ text, marks, className = 'font-bold text-sev-red' }: { 
 }
 
 export const Icon = {
+  download: (c = 'h-4 w-4') => (
+    <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M10 3.5v9M6 9l4 4 4-4M4 16h12" />
+    </svg>
+  ),
+  print: (c = 'h-4 w-4') => (
+    <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden>
+      <path d="M6 7V3h8v4M6 14H4V8h12v6h-2M6 11h8v6H6z" />
+    </svg>
+  ),
+  wand: (c = 'h-4 w-4') => (
+    <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3.5 16.5l9-9M11 4l.6 1.4L13 6l-1.4.6L11 8l-.6-1.4L9 6l1.4-.6zM15.5 9l.4.9.9.4-.9.4-.4.9-.4-.9-.9-.4.9-.4z" />
+    </svg>
+  ),
+  map: (c = 'h-4 w-4') => (
+    <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="3" width="14" height="14" rx="2" />
+      <path d="M3 8h14M3 12.5h14M8 3v14M12.5 3v14" />
+    </svg>
+  ),
+  link: (c = 'h-3.5 w-3.5') => (
+    <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M11 4h5v5M16 4l-7 7M14 11.5V16H4V6h4.5" />
+    </svg>
+  ),
+  shield: (c = 'h-4 w-4') => (
+    <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden>
+      <path d="M10 2.5l6 2.2v4.6c0 3.8-2.6 6.6-6 8.2-3.4-1.6-6-4.4-6-8.2V4.7z" />
+      <path d="M7.5 10l1.8 1.8L13 8" strokeLinecap="round" />
+    </svg>
+  ),
   lock: (c = 'h-4 w-4') => (
     <svg className={c} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
       <rect x="4" y="9" width="12" height="8" rx="2" />

@@ -2,7 +2,7 @@ name: Deploy demo to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/demo-creation-skev7t]
+    branches: [main, claude/demo-creation-skev7t, claude/public-format]
   workflow_dispatch:
 
 permissions:

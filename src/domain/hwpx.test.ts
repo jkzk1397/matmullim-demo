@@ -10,13 +10,13 @@ describe('HWPX 파서', () => {
     for (const kind of ['plan', 'rubric'] as const)
       it(`${SAMPLES[id].label} ${kind}: 작성한 HWPX를 다시 읽으면 fixture와 같다`, async () => {
         const doc = SAMPLES[id][kind];
-        const parsed = await parseHwpx(await writeHwpx(doc), doc.fileName, kind);
+        const { paragraphs: _p, ...parsed } = await parseHwpx(await writeHwpx(doc), doc.fileName, kind);
         expect(parsed).toEqual(doc);
       });
 
   it('커밋된 public/samples HWPX 파일을 읽으면 fixture와 같다', async () => {
     const doc = SAMPLES.error.plan;
-    const parsed = await parseHwpx(readFileSync(`public/samples/${doc.fileName}`), doc.fileName, 'plan');
+    const { paragraphs: _p, ...parsed } = await parseHwpx(readFileSync(`public/samples/${doc.fileName}`), doc.fileName, 'plan');
     expect(parsed).toEqual(doc);
   });
 
