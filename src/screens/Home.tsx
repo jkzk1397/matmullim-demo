@@ -56,7 +56,7 @@ export default function Home({ busy, error, onFiles, onSample, recent, appending
           ref={input}
           type="file"
           multiple
-          accept=".hwpx,.hwp,.pdf"
+          accept=".hwpx,.hwp,.pdf,.docx,.xlsx,.odt"
           className="hidden"
           onChange={(e) => {
             const fs = Array.from(e.target.files ?? []);
@@ -71,7 +71,7 @@ export default function Home({ busy, error, onFiles, onSample, recent, appending
           <>
             <span className="text-key font-extrabold text-ink">파일을 끌어 놓거나 눌러서 고르세요</span>
             <span className="flex items-center gap-2 text-help text-ink-3">
-              {['HWP', 'HWPX', 'PDF'].map((f) => (
+              {['HWP', 'HWPX', 'PDF', 'Word', 'Excel', 'ODT'].map((f) => (
                 <span key={f} className="rounded-md bg-canvas px-2 py-0.5 font-bold text-ink-2">
                   {f}
                 </span>

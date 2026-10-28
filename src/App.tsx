@@ -2,9 +2,10 @@ import { useMemo, useState } from 'react';
 import { parseHwpx } from './domain/hwpx';
 import { isHwp5, parseHwp5 } from './domain/hwp5';
 import { isPdf, parsePdf } from './domain/pdf-text';
+import { parseDocx, parseOdt, parseXlsx, zipKind } from './domain/office';
 import { runChecks } from './domain/rules';
 import type { Card, CellRef } from './domain/types';
-import { applyQuickFix, counts, reviewsFor, setCellText, type Review, type Source, type SourceKind } from './domain/workspace';
+import { applyQuickFix, counts, KIND_LABEL, reviewsFor, setCellText, type Review, type Source, type SourceKind } from './domain/workspace';
 import { Header, type Step } from './ui/layout';
 import AlignmentMap from './screens/AlignmentMap';
 import Home, { type SampleEntry } from './screens/Home';
@@ -18,18 +19,34 @@ let seq = 0;
 /** 읽지 못한 이유 (교사에게 보이는 말) */
 class ReadFail extends Error {}
 
+const EXT = /\.(hwpx|hwp|pdf|docx|xlsx|odt)$/i;
+const OLD_OFFICE = /\.(doc|xls|ppt|pptx|cell|show)$/i;
+
 async function readSource(name: string, buf: ArrayBuffer): Promise<Source> {
   const head = new Uint8Array(buf.slice(0, 8));
-  if (!/\.(hwpx|hwp|pdf)$/i.test(name)) throw new ReadFail('HWP·HWPX·PDF 파일이 아니에요');
+  if (OLD_OFFICE.test(name)) throw new ReadFail('이 형식은 아직 읽지 못해요. 한글·Word·Excel 문서로 저장해 올려 주세요');
+  if (!EXT.test(name)) throw new ReadFail('문서 파일(HWP·HWPX·PDF·Word·Excel·ODT)이 아니에요');
   if (!buf.byteLength) throw new ReadFail('빈 파일이에요');
-  const kind: SourceKind = isPdf(head) ? 'pdf' : isHwp5(head) ? 'hwp' : 'hwpx';
   const isZip = head[0] === 0x50 && head[1] === 0x4b;
-  if (kind === 'hwpx' && !isZip) throw new ReadFail(/\.pdf$/i.test(name) ? 'PDF 형식이 아니에요' : /\.hwp$/i.test(name) ? 'HWP 형식이 아니에요' : 'HWPX 형식이 아니에요');
+  let kind: SourceKind;
+  if (isPdf(head)) kind = 'pdf';
+  else if (isHwp5(head)) kind = 'hwp';
+  else if (isZip) {
+    const z = await zipKind(buf).catch(() => null);
+    if (!z) throw new ReadFail('파일 안을 읽지 못했어요');
+    kind = z;
+  } else throw new ReadFail(/\.pdf$/i.test(name) ? 'PDF 형식이 아니에요' : /\.hwp$/i.test(name) ? 'HWP 형식이 아니에요' : '파일이 손상됐거나 형식이 달라요');
   let doc;
   try {
-    doc = kind === 'pdf' ? await parsePdf(buf, name, 'plan') : kind === 'hwp' ? parseHwp5(buf, name, 'plan') : await parseHwpx(buf, name, 'plan');
+    doc =
+      kind === 'pdf' ? await parsePdf(buf, name, 'plan')
+      : kind === 'hwp' ? parseHwp5(buf, name, 'plan')
+      : kind === 'docx' ? await parseDocx(buf, name, 'plan')
+      : kind === 'xlsx' ? await parseXlsx(buf, name, 'plan')
+      : kind === 'odt' ? await parseOdt(buf, name, 'plan')
+      : await parseHwpx(buf, name, 'plan');
   } catch {
-    throw new ReadFail(kind === 'pdf' ? 'PDF를 열지 못했어요' : kind === 'hwp' ? 'HWP 파일을 열지 못했어요 (암호가 걸려 있는지 확인해 주세요)' : 'HWPX 형식이 아니에요');
+    throw new ReadFail(kind === 'pdf' ? 'PDF를 열지 못했어요' : kind === 'hwp' ? 'HWP 파일을 열지 못했어요 (암호가 걸려 있는지 확인해 주세요)' : `${KIND_LABEL[kind]} 파일을 열지 못했어요`);
   }
   if (!doc.tables.length) throw new ReadFail(kind === 'pdf' ? '표를 찾지 못했어요 (스캔한 PDF는 글자를 읽을 수 없어요)' : '표를 찾지 못했어요');
   return { id: `f${++seq}`, name, kind, bytes: buf, doc };
@@ -181,7 +198,7 @@ export default function App() {
 
   const onDownload = async () => {
     if (!review) return;
-    const base = review.source.name.replace(/\.(hwpx|hwp|pdf)$/i, '');
+    const base = review.source.name.replace(/\.(hwpx|hwp|pdf|docx|xlsx|odt)$/i, '');
     // 같은 파일의 다른 교과에서 고친 것까지 한 번에
     const sameFile = reviews.filter((r) => r.source.id === review.source.id);
     const edits = sameFile.flatMap((r) => r.edits);
@@ -189,6 +206,12 @@ export default function App() {
       const { patchHwpx } = await import('./domain/hwpx-patch');
       const out = await patchHwpx(review.source.bytes, edits);
       download(`${base}_맞물림수정.hwpx`, out.bytes, 'application/hwp+zip');
+      return;
+    }
+    if (review.source.kind === 'docx' && edits.length) {
+      const { patchDocx } = await import('./domain/office-patch');
+      const out = await patchDocx(review.source.bytes, edits);
+      download(`${base}_맞물림수정.docx`, out.bytes, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       return;
     }
     const lines = [`[맞물림 수정 목록] ${review.source.name}`, ''];

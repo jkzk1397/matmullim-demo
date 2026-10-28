@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { curriculumLabel, STANDARD_COUNT } from '../domain/standards';
 import { packFor } from '../domain/rulepacks';
 import type { Card, CellRef, ParsedDocument, ParsedTable, Severity } from '../domain/types';
-import { counts, resolvedCards, sectionLabel, type Review as R } from '../domain/workspace';
+import { counts, PATCHABLE, resolvedCards, sectionLabel, type Review as R } from '../domain/workspace';
 import { SEVERITY } from '../ui/helpers';
 import { Button, Dot, Icon } from '../ui/primitives';
 import { cellsOf, isInsertCard, J14_EXAMPLE, J14_PLACE, kindLabel } from './cardInfo';
@@ -187,7 +187,7 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
             {Icon.print()} 점검 보고서
           </Button>
           <Button variant="primary" onClick={onDownload}>
-            {Icon.download()} {review.source.kind === 'hwpx' ? '고친 파일 받기' : '수정 목록 받기'}
+            {Icon.download()} {PATCHABLE.includes(review.source.kind) ? '고친 파일 받기' : '수정 목록 받기'}
           </Button>
         </div>
       </div>

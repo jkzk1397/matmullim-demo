@@ -4,7 +4,10 @@ import { extractPublic, suggestPublicPairs } from './extract-public';
 import { countBySeverity, runChecks } from './rules';
 import type { Card, CellRef, CheckInput, CheckResult, Extraction, ParsedDocument, Severity } from './types';
 
-export type SourceKind = 'hwpx' | 'hwp' | 'pdf';
+export type SourceKind = 'hwpx' | 'hwp' | 'pdf' | 'docx' | 'xlsx' | 'odt';
+export const KIND_LABEL: Record<SourceKind, string> = { hwpx: 'HWPX', hwp: 'HWP', pdf: 'PDF', docx: 'Word', xlsx: 'Excel', odt: 'ODT' };
+/** 고친 칸을 원본 서식 그대로 다시 쓸 수 있는 형식 */
+export const PATCHABLE: SourceKind[] = ['hwpx', 'docx'];
 export type Source = { id: string; name: string; kind: SourceKind; bytes: ArrayBuffer; doc: ParsedDocument };
 
 export type CellEdit = { table: number; row: number; col: number; from: string; to: string; cardKey?: string; at: number };

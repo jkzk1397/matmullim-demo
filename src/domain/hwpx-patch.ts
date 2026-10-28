@@ -14,7 +14,7 @@ export type PatchResult = {
 
 // ---------- 최소 DOM 타입 (xmldom 노드) ----------
 
-type XNode = {
+export type XNode = {
   nodeType: number;
   localName: string;
   childNodes: ArrayLike<XNode> & { length: number };
@@ -27,7 +27,7 @@ type XNode = {
   nodeValue: string | null;
   length: number;
 };
-type XDoc = { documentElement: XNode; createTextNode(s: string): XNode };
+export type XDoc = { documentElement: XNode; createTextNode(s: string): XNode };
 
 const ELEMENT = 1;
 const TEXT = 3;
@@ -59,9 +59,9 @@ function textNodes(e: XNode, out: XNode[] = []): XNode[] {
 
 type Seg = { node: XNode; start: number; end: number };
 /** 문단 하나: paragraphText()가 trim하기 전의 원문(raw)과, 그 원문을 이루는 텍스트 노드 조각들 */
-type Para = { raw: string; segs: Seg[]; text: string };
+export type Para = { raw: string; segs: Seg[]; text: string };
 
-function paraOf(p: XNode): Para {
+export function paraOf(p: XNode): Para {
   const segs: Seg[] = [];
   let raw = '';
   for (const n of walk(p, 'tbl'))
@@ -112,7 +112,7 @@ const stripWs = (s: string) => s.replace(/\s+/g, '');
 
 type Hit = { para: Para; start: number; end: number } | { reason: string };
 
-function locate(paras: Para[], from: string): Hit {
+export function locate(paras: Para[], from: string): Hit {
   if (!from) return { reason: '바꿀 글자가 비어 있음' };
   const full = cellText(paras);
   // 1) 정확히 일치: 문단마다 trim된 범위 안에서 찾는다
@@ -164,7 +164,7 @@ function dropLineSegs(node: XNode) {
 }
 
 /** [start,end) 범위를 to로 바꾼다. 처음 걸린 텍스트 노드에 to를 넣고, 뒤에 걸린 노드에서는 일치 부분만 지운다. */
-function replaceRange({ segs }: Para, start: number, end: number, to: string) {
+export function replaceRange({ segs }: Para, start: number, end: number, to: string) {
   const hit = segs.filter((s) => s.end > start && s.start < end);
   hit.forEach((s, k) => {
     dropLineSegs(s.node);
@@ -180,14 +180,14 @@ function replaceRange({ segs }: Para, start: number, end: number, to: string) {
 const STORE_MAGIC = '\x00\x00';
 
 /** 원래 압축 방식을 파일마다 지정해 두면 JSZip이 원래 압축 바이트를 그대로 다시 쓴다. */
-function originalCompression(f: JSZip.JSZipObject): 'STORE' | 'DEFLATE' | undefined {
+export function originalCompression(f: JSZip.JSZipObject): 'STORE' | 'DEFLATE' | undefined {
   const magic = (f as unknown as { _data?: { compression?: { magic?: string } } })._data?.compression?.magic;
   if (magic === undefined) return undefined;
   return magic === STORE_MAGIC ? 'STORE' : 'DEFLATE';
 }
 
 /** 루트 요소 앞의 원문(XML 선언 등)을 그대로 둔다. xmldom은 선언의 공백 등을 바꿔 쓰기 때문. */
-function serialize(original: string, doc: XDoc): string {
+export function serialize(original: string, doc: XDoc): string {
   const i = original.search(/<[^?!]/);
   const prolog = i > 0 ? original.slice(0, i) : '';
   return prolog + new XMLSerializer().serializeToString(doc.documentElement as never);
