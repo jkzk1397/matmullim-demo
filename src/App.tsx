@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { trySample } from './deeplink';
 import { parseHwpx } from './domain/hwpx';
 import { isHwp5, parseHwp5 } from './domain/hwp5';
 import { isPdf, parsePdf } from './domain/pdf-text';
@@ -92,6 +93,28 @@ const orderReviews = (rs: Review[], order: string[]) => {
   return [...rs].sort((a, b) => (pos.get(a.id) ?? 1e9) - (pos.get(b.id) ?? 1e9));
 };
 
+/** 예시 문서 (public/samples/v2). 배포 경로가 붙어도 열리게 BASE_URL 기준 */
+const sampleItem = (file: string) => ({
+  name: file.split('/').pop()!,
+  buf: async () => {
+    const res = await fetch(`${import.meta.env.BASE_URL}samples/v2/${file}`);
+    if (!res.ok) throw new ReadFail('예시 문서를 불러오지 못했어요');
+    return res.arrayBuffer();
+  },
+});
+
+/** 포스터 바로가기로 예시 문서를 여는 동안 */
+function Opening() {
+  return (
+    <div role="status" className="flex flex-1 items-center justify-center px-6 py-16">
+      <span className="flex items-center gap-3 text-body font-bold text-ink-2">
+        <span className="h-5 w-5 rounded-full border-2 border-brand-blue-50 border-t-brand-blue motion-safe:animate-spin" aria-hidden />
+        예시 문서를 여는 중…
+      </span>
+    </div>
+  );
+}
+
 export default function App() {
   const [step, setStep] = useState<Step>('upload');
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -173,8 +196,16 @@ export default function App() {
   };
 
   const onFiles = (files: File[]) => load(files.map((f) => ({ name: f.name, buf: () => f.arrayBuffer() })), appendNext && reviews.length > 0);
-  const onSample = (s: SampleEntry) =>
-    load([{ name: s.file.split('/').pop()!, buf: async () => (await fetch(`${import.meta.env.BASE_URL}samples/v2/${s.file}`)).arrayBuffer() }], appendNext && reviews.length > 0);
+  const onSample = (s: SampleEntry) => load([sampleItem(s.file)], appendNext && reviews.length > 0);
+
+  // 포스터 QR 바로가기 (?try=info · ?try=all): 예시 문서를 바로 연다. 모르는 값이면 올리기 화면 그대로
+  const [opening, setOpening] = useState(() => trySample(window.location.search));
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!opening || opened.current) return;
+    opened.current = true;
+    load([sampleItem(opening)]).finally(() => setOpening(null));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (next: Review) => setReviews((rs) => rs.map((r) => (r.id === next.id ? next : r)));
 
@@ -233,7 +264,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-full min-w-[1280px] flex-col print:block print:h-auto print:min-w-0">
+    <div className="flex h-full min-w-[1280px] flex-col narrow:h-auto narrow:min-h-full narrow:min-w-0 print:block print:h-auto print:min-w-0">
       <div className="print:hidden">
         <Header
           step={step}
@@ -246,7 +277,8 @@ export default function App() {
         />
       </div>
       <main className="flex min-h-0 flex-1 flex-col print:block">
-        {step === 'upload' && <Home busy={busy} error={error} onFiles={onFiles} onSample={onSample} recent={recent} appending={appendNext && reviews.length > 0} />}
+        {step === 'upload' &&
+          (opening ? <Opening /> : <Home busy={busy} error={error} onFiles={onFiles} onSample={onSample} recent={recent} appending={appendNext && reviews.length > 0} />)}
         {step === 'overview' && (
           <Overview
             reviews={reviews}

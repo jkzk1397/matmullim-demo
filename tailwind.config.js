@@ -4,6 +4,12 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // 휴대폰·좁은 창(1024px 미만)에서만 덧씌우는 화면 규칙. 데스크톱과 인쇄 화면은 그대로 둔다.
+      screens: {
+        narrow: { raw: 'screen and (max-width: 1023.98px)' },
+        // 그중 손가락으로 쓰는 화면(휴대폰·태블릿 세로). 좁은 PC 창은 빼고 싶을 때
+        touch: { raw: 'screen and (max-width: 1023.98px) and (pointer: coarse)' },
+      },
       fontFamily: {
         sans: ['"Pretendard Variable"', 'Pretendard', 'system-ui', 'sans-serif'],
       },

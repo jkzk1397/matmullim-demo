@@ -4,6 +4,7 @@
 @tailwind utilities;
 
 html, body, #root { height: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   @apply bg-canvas text-ink font-sans text-body font-medium antialiased;
   font-variant-numeric: tabular-nums;

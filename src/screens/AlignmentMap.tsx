@@ -25,7 +25,7 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
         right={<Button onClick={onResults}>결과로 돌아가기</Button>}
       />
 
-      <div className="flex shrink-0 items-center gap-6 pb-4 text-body text-ink-2">
+      <div className="flex shrink-0 items-center gap-6 pb-4 text-body text-ink-2 narrow:flex-wrap narrow:gap-x-4 narrow:gap-y-1.5 narrow:text-help">
         {used.has('plan') && (
           <span className="flex items-center gap-2">
             <Mark via="plan" /> 평가계획서에 적힌 연결
@@ -52,7 +52,11 @@ export default function AlignmentMap({ input, onToggle, onResults, lastLinked }:
 
       <div className="min-h-0 flex-1 pb-6">
         <Card className="max-h-full overflow-auto">
-          <table className="w-full border-collapse text-body">
+          {/* 좁은 화면: 평가 칸이 뭉개지지 않게 최소 폭을 두고 카드 안에서 옆으로 민다 */}
+          <table
+            className="w-full border-collapse text-body narrow:min-w-[var(--map-min)]"
+            style={{ '--map-min': `${340 + input.plan.length * 168}px` } as React.CSSProperties}
+          >
             <thead className="sticky top-0 z-10 bg-paper">
               <tr>
                 <th className="border-b border-line py-2 pl-6 pr-4 text-left text-help font-bold text-ink-3">성취기준</th>
@@ -93,7 +97,7 @@ function Row({ row, input, onToggle }: { row: AlignmentRow; input: CheckInput; o
   return (
     <tr className="border-b border-line-2 last:border-0">
       <td className={`border-l-4 py-2 pl-4 pr-4 ${row.linked ? 'border-l-transparent' : 'border-l-sev-gray'}`}>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 narrow:min-w-[300px]">
           <span className={`w-[104px] shrink-0 font-bold ${row.inDb ? 'text-ink' : 'text-sev-red'}`}>{row.code}</span>
           <span className="line-clamp-1 flex-1 text-ink-2" title={row.text}>
             {row.text}

@@ -101,10 +101,10 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
     });
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
-    <div className="mx-auto flex w-[calc(100%-48px)] max-w-page flex-col gap-5 py-6">
+    <div className="min-h-0 flex-1 overflow-auto narrow:overflow-visible">
+    <div className="mx-auto flex w-[calc(100%-48px)] max-w-page flex-col gap-5 py-6 narrow:w-[calc(100%-32px)] narrow:gap-4 narrow:pb-8 narrow:pt-5">
       {notice && (notice.failures.length > 0 || notice.duplicates.length > 0) && (
-        <div role="status" className="flex items-start gap-3 rounded-xl bg-[#fff8e6] px-5 py-3 text-body text-ink shadow-[inset_0_0_0_1px_#f0dca8]">
+        <div role="status" className="flex items-start gap-3 rounded-xl bg-[#fff8e6] px-5 py-3 text-body text-ink shadow-[inset_0_0_0_1px_#f0dca8] narrow:px-4">
           <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sev-orange" aria-hidden />
           <div className="min-w-0 flex-1">
             <b className="font-bold">
@@ -129,7 +129,7 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
         </div>
       )}
 
-      <div className="flex items-end justify-between gap-6">
+      <div className="flex items-end justify-between gap-6 narrow:flex-col narrow:items-start narrow:gap-3">
         <div>
           <h1 className="text-title font-extrabold tracking-[-0.03em] text-ink">
             {needFix > 0 ? (
@@ -150,7 +150,7 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
             {noPlan > 0 && ` · 평가표 못 읽음 ${noPlan}개`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 narrow:flex-wrap">
           <Button onClick={onAdd}>{Icon.upload('h-4 w-4')} 파일 더 올리기</Button>
           <Button variant="primary" onClick={onReport}>
             {Icon.print()} 전체 보고서
@@ -158,7 +158,7 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 narrow:grid-cols-2 narrow:gap-3">
         <Stat label="점검한 교과" value={reviews.length} unit="개" />
         <Stat label="확인된 오류" value={total.red} unit="건" tone={total.red ? 'red' : undefined} />
         <Stat label="지침과 다름" value={total.orange} unit="건" tone={total.orange ? 'orange' : undefined} />
@@ -184,12 +184,12 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
             </button>
           );
         })}
-        <label className="ml-auto flex h-10 w-[280px] items-center gap-2 rounded-lg bg-paper px-3 shadow-[inset_0_0_0_1px_#e3e7ed] focus-within:shadow-[inset_0_0_0_1.5px_#0b5cad]">
+        <label className="ml-auto flex h-10 w-[280px] items-center gap-2 rounded-lg bg-paper px-3 shadow-[inset_0_0_0_1px_#e3e7ed] focus-within:shadow-[inset_0_0_0_1.5px_#0b5cad] narrow:ml-0 narrow:mt-1 narrow:h-11 narrow:w-full">
           <svg className="h-4 w-4 shrink-0 text-ink-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
             <circle cx="9" cy="9" r="5.5" />
             <path d="M13.5 13.5L17 17" />
           </svg>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="교과·파일 이름 찾기" className="min-w-0 flex-1 bg-transparent text-help outline-none placeholder:text-ink-3" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="교과·파일 이름 찾기" className="min-w-0 flex-1 bg-transparent text-help outline-none placeholder:text-ink-3 narrow:text-body" />
           {q && (
             <button type="button" onClick={() => setQ('')} className="text-help font-bold text-ink-3 hover:text-ink" aria-label="지우기">
               ×
@@ -198,22 +198,23 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
         </label>
       </div>
 
-      <section className="overflow-hidden rounded-xl bg-paper shadow-card">
-        <table className="w-full table-fixed border-collapse text-left">
+      {/* 좁은 화면: 표는 이 상자 안에서 옆으로 밀어 보고, 교과 칸은 왼쪽에 붙어 있다 */}
+      <section className="overflow-hidden rounded-xl bg-paper shadow-card narrow:overflow-x-auto">
+        <table className="w-full table-fixed border-collapse text-left narrow:w-[908px]">
           <colgroup>
             <col />
-            <col className="w-[120px]" />
-            <col className="w-[96px]" />
-            <col className="w-[100px]" />
-            <col className="w-[130px]" />
-            <col className="w-[130px]" />
-            <col className="w-[120px]" />
-            <col className="w-[190px]" />
-            <col className="w-[96px]" />
+            <col className="w-[120px] narrow:w-[100px]" />
+            <col className="w-[96px] narrow:w-[64px]" />
+            <col className="w-[100px] narrow:w-[80px]" />
+            <col className="w-[130px] narrow:w-[112px]" />
+            <col className="w-[130px] narrow:w-[112px]" />
+            <col className="w-[120px] narrow:w-[100px]" />
+            <col className="w-[190px] narrow:w-[120px]" />
+            <col className="w-[96px] narrow:w-[64px]" />
           </colgroup>
           <thead>
             <tr className="border-b border-line bg-canvas text-help font-bold text-ink-3">
-              <th className="px-5 py-3">교과</th>
+              <th className="px-5 py-3 narrow:sticky narrow:left-0 narrow:z-[1] narrow:bg-canvas narrow:px-4">교과</th>
               <th className="px-3 py-3">교육과정</th>
               <th className="px-3 py-3">평가</th>
               <th className="px-3 py-3">성취기준</th>
@@ -241,7 +242,7 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
               <tbody key={g.id}>
                 {showHead && (
                   <tr className="cursor-pointer border-b border-line bg-[#f9fafb] hover:bg-canvas" onClick={() => toggle(g.id)} aria-expanded={open}>
-                    <td colSpan={4} className="py-2.5 pl-5 pr-3">
+                    <td colSpan={4} className="py-2.5 pl-5 pr-3 narrow:pl-4">
                       <span className="flex min-w-0 items-center gap-2">
                         <span className={`text-ink-3 transition-transform ${open ? '' : '-rotate-90'}`}>{Icon.chevron('h-4 w-4')}</span>
                         <span className="text-brand-blue">{Icon.file('h-4 w-4')}</span>
@@ -269,7 +270,7 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
                     const c = r.ex.context;
                     return (
                       <tr key={r.id} className="cursor-pointer border-b border-line hover:bg-canvas" onClick={() => onOpen(r.id)}>
-                        <td className={`py-3 pr-3 ${showHead ? 'pl-12' : 'pl-5'}`}>
+                        <td className={`py-3 pr-3 narrow:sticky narrow:left-0 narrow:z-[1] narrow:bg-paper ${showHead ? 'pl-12 narrow:pl-6' : 'pl-5 narrow:pl-4'}`}>
                           <div className="text-body font-bold text-ink">{sectionLabel(r)}</div>
                           {!showHead && <div className="max-w-[280px] truncate text-help text-ink-3">{r.source.name}</div>}
                         </td>
@@ -314,7 +315,7 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
 function Stat({ label, value, unit, tone }: { label: string; value: number; unit: string; tone?: 'red' | 'orange' | 'green' }) {
   const color = tone === 'red' ? 'text-sev-red' : tone === 'orange' ? 'text-sev-orange' : tone === 'green' ? 'text-brand-green' : 'text-ink';
   return (
-    <div className="rounded-xl bg-paper px-5 py-4 shadow-card">
+    <div className="rounded-xl bg-paper px-5 py-4 shadow-card narrow:px-4 narrow:py-3">
       <div className="text-help font-bold text-ink-3">{label}</div>
       <div className={`mt-1 text-[34px] font-extrabold leading-none tracking-[-0.03em] ${color}`}>
         {value}

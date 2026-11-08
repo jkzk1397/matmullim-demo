@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { CellRef, ParsedTable } from '../domain/types';
 import { refKey, sameRef } from './helpers';
 import { Icon } from './primitives';
@@ -14,17 +14,33 @@ export const STEPS: { id: Step; label: string }[] = [
 
 const LOGO = `${import.meta.env.BASE_URL}brand/logo-mark.png`;
 
-/** 흰 상단바 + 아래 1px 선 */
+/** 흰 상단바 + 아래 1px 선. 좁은 화면에서는 한 줄로 줄이고 단계 줄은 옆으로 밀어 본다 */
 export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<Step, boolean>; onStep: (s: Step) => void }) {
   const idx = STEPS.findIndex((s) => s.id === step);
+  const nav = useRef<HTMLElement>(null);
+  // 단계 줄이 넘칠 때(좁은 화면): 지금 단계가 다 보이는 한에서 앞 단계(올리기)를 최대한 남기고,
+  // 앞 단계가 글자 조각으로 잘려 보이면 그다음 단계 경계에서 시작한다
+  useEffect(() => {
+    const el = nav.current;
+    const cur = el?.querySelector<HTMLElement>('[aria-current="step"]');
+    if (!el || !cur || el.scrollWidth <= el.clientWidth) return;
+    let left = Math.max(0, cur.offsetLeft + cur.offsetWidth + 8 - el.clientWidth);
+    const cut = [...el.querySelectorAll<HTMLElement>('button')].find((b) => b.offsetLeft < left && left < b.offsetLeft + b.offsetWidth);
+    if (cut && left - cut.offsetLeft > 12) left = cut.offsetLeft + cut.offsetWidth;
+    el.scrollTo({ left, behavior: 'smooth' });
+  }, [step]);
   return (
     <header className="shrink-0 border-b border-line bg-paper">
-      <div className="mx-auto flex h-14 w-[calc(100%-48px)] max-w-page items-center justify-between">
-        <div className="flex w-[260px] items-center gap-2">
-          <img src={LOGO} alt="" className="h-8 w-8" />
+      <div className="mx-auto flex h-14 w-[calc(100%-48px)] max-w-page items-center justify-between narrow:h-12 narrow:w-full narrow:justify-start narrow:gap-2 narrow:pl-4">
+        <div className="flex w-[260px] items-center gap-2 narrow:w-auto narrow:shrink-0">
+          <img src={LOGO} alt="" className="h-8 w-8 narrow:h-7 narrow:w-7" />
           <span className="text-key font-extrabold tracking-[-0.03em] text-brand-navy">맞물림</span>
         </div>
-        <nav className="flex h-full items-stretch" aria-label="단계">
+        <nav
+          ref={nav}
+          className="flex h-full items-stretch narrow:relative narrow:min-w-0 narrow:flex-1 narrow:overflow-x-auto narrow:pr-4 narrow:[mask-image:linear-gradient(to_right,#000_calc(100%_-_16px),transparent)] narrow:[scrollbar-width:none] narrow:[&::-webkit-scrollbar]:hidden"
+          aria-label="단계"
+        >
           {STEPS.map((s, i) => {
             const active = s.id === step;
             const done = i < idx && enabled[s.id];
@@ -35,7 +51,7 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
                 disabled={!enabled[s.id]}
                 onClick={() => onStep(s.id)}
                 aria-current={active ? 'step' : undefined}
-                className={`relative flex items-center gap-2 px-4 text-help transition-colors duration-150 disabled:cursor-default ${
+                className={`relative flex items-center gap-2 px-4 text-help transition-colors duration-150 disabled:cursor-default narrow:shrink-0 narrow:gap-1.5 narrow:whitespace-nowrap narrow:px-2 ${
                   active ? 'font-bold text-brand-navy' : done ? 'font-bold text-ink-2 hover:text-brand-navy' : 'text-ink-3 enabled:hover:text-ink'
                 }`}
               >
@@ -52,7 +68,7 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
             );
           })}
         </nav>
-        <div className="flex w-[260px] items-center justify-end gap-2">
+        <div className="flex w-[260px] items-center justify-end gap-2 narrow:hidden">
           <div className="flex items-center gap-2 rounded-lg py-1 pl-1 pr-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-navy text-help font-bold text-white">정</span>
             <span className="text-help font-bold text-ink">○○중 정보과</span>
@@ -65,12 +81,12 @@ export function Header({ step, enabled, onStep }: { step: Step; enabled: Record<
 
 /** 화면 폭: 최대 1240px 가운데 */
 export function Page({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto flex min-h-0 w-[calc(100%-48px)] max-w-page flex-1 flex-col ${className}`}>{children}</div>;
+  return <div className={`mx-auto flex min-h-0 w-[calc(100%-48px)] max-w-page flex-1 flex-col narrow:w-[calc(100%-32px)] ${className}`}>{children}</div>;
 }
 
 export function PageHead({ title, sub, right }: { title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
   return (
-    <div className="flex shrink-0 items-end justify-between gap-8 pb-4 pt-4">
+    <div className="flex shrink-0 items-end justify-between gap-8 pb-4 pt-4 narrow:flex-col narrow:items-start narrow:gap-3">
       <div className="min-w-0">
         <h1 className="text-title font-extrabold tracking-[-0.03em] text-ink">{title}</h1>
         {sub && <p className="mt-1 text-body text-ink-3">{sub}</p>}

@@ -4,6 +4,7 @@ import { packFor } from '../domain/rulepacks';
 import type { Card, CellRef, ParsedDocument, ParsedTable, Severity } from '../domain/types';
 import { counts, PATCHABLE, resolvedCards, sectionLabel, type Review as R } from '../domain/workspace';
 import { SEVERITY } from '../ui/helpers';
+import { isNarrow } from '../ui/narrow';
 import { Button, Dot, Icon } from '../ui/primitives';
 import { cellsOf, isInsertCard, J14_EXAMPLE, J14_PLACE, kindLabel } from './cardInfo';
 import { locLabel } from './locLabel';
@@ -63,7 +64,11 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
   const [flash, setFlash] = useState<{ text: string; extra?: string } | null>(null);
   const [filter, setFilter] = useState<Severity | 'all'>('all');
   const [hintOff, setHintOff] = useState(readHint);
+  /** 좁은 화면에서 보이는 쪽 (넓은 화면은 둘 다 보인다) */
+  const [view, setView] = useState<'cards' | 'doc'>('cards');
   const docRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLOListElement>(null);
+  const tabsTop = useRef<HTMLDivElement>(null);
   const prevCounts = useRef(n);
   const prevKeys = useRef(new Set(result.cards.map((c) => c.key)));
 
@@ -111,7 +116,8 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
     if (!el || !box) return;
     const r = el.getBoundingClientRect();
     const b = box.getBoundingClientRect();
-    const off = r.bottom < b.top || r.top > b.bottom;
+    // 보이는 범위: 문서가 화면보다 길면(좁은 화면은 페이지째 스크롤) 화면 안쪽만
+    const off = r.bottom < Math.max(b.top, 0) || r.top > Math.min(b.bottom, window.innerHeight);
     el.scrollIntoView({ behavior: off ? 'auto' : 'smooth', block: isInsertCard(c) ? 'end' : 'center', inline: 'nearest' });
     if (!l) return;
     for (const x of cellsOf(c)) {
@@ -124,10 +130,32 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
     }
   };
 
+  const cardEl = (key: string) => [...(listRef.current?.querySelectorAll<HTMLElement>('[data-card]') ?? [])].find((e) => e.dataset.card === key);
+
   const select = (key: string) => {
     setSel(key);
     const c = cards.find((x) => x.key === key);
-    requestAnimationFrame(() => requestAnimationFrame(() => reveal(c)));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        reveal(c);
+        // 좁은 화면의 카드 목록: 연 카드가 탭 바로 아래에서 시작하게
+        if (isNarrow() && view === 'cards') cardEl(key)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }),
+    );
+  };
+
+  /** 좁은 화면: 지적 카드 ↔ 문서 보기. 고른 항목의 칸이나 카드로 바로 간다 */
+  const show = (v: 'cards' | 'doc', c?: Card) => {
+    setView(v);
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const top = tabsTop.current ? tabsTop.current.getBoundingClientRect().top + window.scrollY : 0;
+        if (window.scrollY > top) window.scrollTo({ top });
+        if (!c) return;
+        if (v === 'doc') reveal(c);
+        else cardEl(c.key)?.scrollIntoView({ block: 'start' });
+      }),
+    );
   };
 
   // 처음 열 때 첫 항목 칸으로
@@ -152,48 +180,50 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
   const packNote = pack ? null : ctx?.year === undefined ? '학년도를 찾지 못해 경기 2026 지침 점검은 건너뛰었어요' : `${ctx.year}학년도 지침 규칙은 아직 없어요`;
   const visible = numbered.filter((x) => filter === 'all' || x.c.severity === filter);
   const title = (ctx?.title || section.title || review.source.name).replace(/\s+/g, ' ');
+  const progress = `${total ? (fixed.length / total) * 100 : noPlan ? 0 : 100}%`;
+  const selNo = numbered.find((x) => x.c.key === sel)?.no;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {/* 문서 머리: 왼쪽은 문서 폭에 맞추고, 오른쪽은 목록 폭에 맞춘다 */}
-      <div className="flex shrink-0 border-b border-line bg-paper">
-        <div className="min-w-0 flex-1 px-8">
-          <div className="mx-auto flex max-w-[1240px] items-center gap-3 py-3">
+      {/* 문서 머리: 왼쪽은 문서 폭에 맞추고, 오른쪽은 목록 폭에 맞춘다 (좁은 화면은 위아래로) */}
+      <div className="flex shrink-0 border-b border-line bg-paper narrow:flex-col">
+        <div className="min-w-0 flex-1 px-8 narrow:px-4">
+          <div className="mx-auto flex max-w-[1240px] items-center gap-3 py-3 narrow:flex-wrap narrow:gap-x-3 narrow:gap-y-1 narrow:pb-2.5 narrow:pt-3">
             {onBack && (
-              <button type="button" onClick={onBack} className="shrink-0 rounded-lg px-2 py-1 text-help font-bold text-brand-blue hover:bg-brand-blue-50">
+              <button type="button" onClick={onBack} className="shrink-0 rounded-lg px-2 py-1 text-help font-bold text-brand-blue hover:bg-brand-blue-50 narrow:-ml-2">
                 ← {backLabel ?? '전체 현황'}
               </button>
             )}
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue-50 text-brand-blue">{Icon.doc('h-5 w-5')}</span>
-            <div className="min-w-0">
-              <div className="truncate text-key font-extrabold tracking-[-0.02em] text-ink" title={title}>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue-50 text-brand-blue narrow:hidden">{Icon.doc('h-5 w-5')}</span>
+            <div className="min-w-0 narrow:basis-full">
+              <div className="truncate text-key font-extrabold tracking-[-0.02em] text-ink narrow:line-clamp-2 narrow:whitespace-normal" title={title}>
                 {title}
               </div>
-              <div className="mt-0.5 flex min-w-0 items-center gap-2 text-help text-ink-3">
+              <div className="mt-0.5 flex min-w-0 items-center gap-2 text-help text-ink-3 narrow:mt-1.5 narrow:flex-wrap narrow:gap-1.5">
                 <Chip>{sectionLabel(review)}</Chip>
                 {ctx?.curriculum && ctx.curriculum !== 'mixed' && <Chip tone="blue">{curriculumLabel(ctx.curriculum)} 교육과정</Chip>}
                 {ctx?.curriculum === 'mixed' && <Chip tone="blue">2015·2022 개정 혼재</Chip>}
                 {pack && <Chip tone="green">규칙팩 {pack.name}</Chip>}
-                <span className="truncate">{review.source.name}</span>
+                <span className="truncate narrow:basis-full">{review.source.name}</span>
               </div>
             </div>
           </div>
         </div>
-        <div className="flex w-[460px] shrink-0 items-center justify-end gap-2 px-5">
-          <Button onClick={onMap}>
+        <div className="flex w-[460px] shrink-0 items-center justify-end gap-2 px-5 narrow:w-full narrow:flex-wrap narrow:justify-start narrow:px-4 narrow:pb-3">
+          <Button onClick={onMap} className="narrow:px-3 narrow:[&>svg]:hidden">
             {Icon.map()} 정렬 맵
           </Button>
-          <Button onClick={onReport}>
+          <Button onClick={onReport} className="narrow:px-3 narrow:[&>svg]:hidden">
             {Icon.print()} 점검 보고서
           </Button>
-          <Button variant="primary" onClick={onDownload}>
+          <Button variant="primary" onClick={onDownload} className="narrow:px-3 narrow:[&>svg]:hidden">
             {Icon.download()} {PATCHABLE.includes(review.source.kind) ? '고친 파일 받기' : '수정 목록 받기'}
           </Button>
         </div>
       </div>
 
-      {/* 숫자 줄 */}
-      <div className="flex shrink-0 border-b border-line bg-paper/60">
+      {/* 숫자 줄 (좁은 화면에서는 지적 카드 쪽 맨 위로 옮겨 보인다) */}
+      <div className="flex shrink-0 border-b border-line bg-paper/60 narrow:hidden">
         <div className="min-w-0 flex-1 px-8">
           <div className="mx-auto flex max-w-[1240px] items-center gap-2 py-2">
             {(['red', 'orange', 'gray', 'yellow'] as Severity[]).map((s, i) => (
@@ -218,17 +248,44 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
             고친 항목 <span className="text-brand-green">{fixed.length}</span> / {total}
           </span>
           <div className="h-2 w-40 overflow-hidden rounded-full bg-line">
-            <div className="h-full rounded-full bg-brand-green transition-all duration-500" style={{ width: `${total ? (fixed.length / total) * 100 : noPlan ? 0 : 100}%` }} />
+            <div className="h-full rounded-full bg-brand-green transition-all duration-500" style={{ width: progress }} />
           </div>
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1">
+      {/* 좁은 화면: 지적 카드 / 문서 보기 (위에 붙어 다닌다) */}
+      <div ref={tabsTop} className="hidden narrow:block" aria-hidden />
+      <div role="tablist" aria-label="보기" className="sticky top-0 z-30 hidden border-b border-line bg-paper narrow:flex">
+        {(
+          [
+            ['cards', '지적 카드'],
+            ['doc', '문서 보기'],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={view === v}
+            aria-controls={`rv-${v}`}
+            onClick={() => show(v, selected)}
+            className={`relative flex h-12 flex-1 items-center justify-center gap-1.5 text-help font-bold transition-colors ${view === v ? 'text-brand-navy' : 'text-ink-3'}`}
+          >
+            {label}
+            {v === 'cards' && (
+              <span className={`rounded-full px-1.5 text-help font-bold ${view === v ? 'bg-brand-navy text-white' : 'bg-canvas text-ink-3'}`}>{cards.length}</span>
+            )}
+            {view === v && <span className="absolute bottom-0 left-4 right-4 h-[3px] rounded-t bg-brand-navy" aria-hidden />}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex min-h-0 flex-1 narrow:flex-col">
         {/* 왼쪽: 문서 */}
-        <div className="relative min-w-0 flex-1">
-          <div ref={docRef} className="h-full overflow-auto bg-[#eef1f5] px-8 py-6">
+        <div id="rv-doc" className={`relative min-w-0 flex-1 ${view === 'doc' ? '' : 'narrow:hidden'}`}>
+          <div ref={docRef} className="h-full overflow-auto bg-[#eef1f5] px-8 py-6 narrow:h-auto narrow:overflow-visible narrow:px-3 narrow:pb-6 narrow:pt-3 narrow:[touch-action:manipulation]">
             {!hintOff && !review.edits.length && (
-              <div className="mx-auto mb-3 flex max-w-[1240px] items-center gap-2 rounded-lg bg-paper px-4 py-2 text-help text-ink-2 shadow-card">
+              <div className="mx-auto mb-3 flex max-w-[1240px] items-center gap-2 rounded-lg bg-paper px-4 py-2 text-help text-ink-2 shadow-card narrow:px-3">
                 <span className="text-brand-blue">{Icon.pen('h-4 w-4')}</span>
                 <span className="flex-1">칸을 두 번 누르면 바로 고칠 수 있어요</span>
                 <button type="button" onClick={dismissHint} className="rounded px-2 py-0.5 font-bold text-ink-3 hover:bg-canvas hover:text-ink">
@@ -236,7 +293,7 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
                 </button>
               </div>
             )}
-            <article className="mx-auto max-w-[1240px] rounded-sm bg-paper px-10 py-9 shadow-[0_2px_10px_rgba(13,43,87,0.10)]">
+            <article className="mx-auto max-w-[1240px] rounded-sm bg-paper px-10 py-9 shadow-[0_2px_10px_rgba(13,43,87,0.10)] narrow:px-4 narrow:py-5">
               {doc.tables.slice(section.from, section.to).map((t, k) => {
                 const ti = section.from + k;
                 if (!t.rows.length || t.rows.every((r) => r.every((c) => !c))) return null;
@@ -265,33 +322,74 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
           {flash && (
             <div
               role="status"
-              className="pointer-events-none absolute left-1/2 top-4 z-20 max-w-[min(820px,calc(100%-48px))] -translate-x-1/2 rounded-xl bg-[#0a2246] px-6 py-3.5 text-body font-bold text-white shadow-[0_8px_24px_rgba(13,43,87,0.35)]"
+              className="pointer-events-none absolute left-1/2 top-4 z-20 max-w-[min(820px,calc(100%-48px))] -translate-x-1/2 rounded-xl bg-[#0a2246] px-6 py-3.5 text-body font-bold text-white shadow-[0_8px_24px_rgba(13,43,87,0.35)] narrow:hidden"
             >
               <span className="mr-2 text-[#8ce99a]">{Icon.check('inline h-5 w-5 align-[-3px]')}</span>
               {flash.text}
               {flash.extra && <span className="text-[#ffd8a8]"> · {flash.extra}</span>}
             </div>
           )}
+          {/* 좁은 화면 문서 보기: 고른 항목을 아래에 붙여 두고 카드로 돌아간다 */}
+          {selected && (
+            <div className="sticky bottom-0 z-20 hidden items-center gap-3 border-t border-line bg-paper px-4 py-2.5 narrow:flex">
+              <span className={`flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 text-help font-extrabold text-white ${SEV_BADGE[selected.severity]}`}>{selNo}</span>
+              <span className="min-w-0 flex-1">
+                <span className={`block truncate text-help font-bold ${SEVERITY[selected.severity].text}`}>{kindLabel(selected)}</span>
+                <span className="block truncate text-help font-bold text-ink">{selected.title}</span>
+              </span>
+              <Button onClick={() => show('cards', selected)} className="shrink-0">
+                카드 보기
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* 오른쪽: 지적 목록 */}
-        <aside className="flex w-[460px] shrink-0 flex-col border-l border-line bg-paper">
-          <div className="min-h-0 flex-1 overflow-auto">
+        <aside id="rv-cards" className={`flex w-[460px] shrink-0 flex-col border-l border-line bg-paper narrow:w-full narrow:border-l-0 ${view === 'cards' ? '' : 'narrow:hidden'}`}>
+          <div className="min-h-0 flex-1 overflow-auto narrow:overflow-visible">
+            {/* 좁은 화면: 숫자 줄 */}
+            <div className="hidden border-b border-line px-4 pb-3 pt-2 narrow:block">
+              <div className="-mx-2 grid grid-cols-2 gap-x-1">
+                {ORDER.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setFilter(filter === s ? 'all' : s)}
+                    aria-pressed={filter === s}
+                    className={`flex min-h-10 items-center gap-2 rounded-lg px-2 text-help font-bold transition-colors ${
+                      filter === s ? 'shadow-[inset_0_0_0_1.5px_#0d2b57]' : ''
+                    } ${SEVERITY[s].text}`}
+                  >
+                    <Dot s={s} />
+                    {SEVERITY[s].label}
+                    <span className="ml-auto text-key font-extrabold">{n[s]}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-1.5 flex items-center gap-3">
+                <span className="shrink-0 text-help font-bold text-ink-2">
+                  고친 항목 <span className="text-brand-green">{fixed.length}</span> / {total}
+                </span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-line">
+                  <div className="h-full rounded-full bg-brand-green transition-all duration-500" style={{ width: progress }} />
+                </div>
+              </div>
+            </div>
             {noPlan && (
-              <div className="m-5 mb-0 rounded-xl bg-[#f4f1e8] p-4 text-help text-ink shadow-[inset_0_0_0_1px_#e6dcbf]">
+              <div className="m-5 mb-0 rounded-xl bg-[#f4f1e8] p-4 text-help text-ink shadow-[inset_0_0_0_1px_#e6dcbf] narrow:mx-4">
                 <div className="font-bold text-[#7a5d00]">숫자 점검을 못 했어요</div>
                 <p className="mt-1">이 계획서에서 평가 요약표(평가 종류·반영비율)를 읽지 못해 숫자 점검은 못 했어요. 성취기준 코드만 점검했어요.</p>
               </div>
             )}
-            {packNote && <p className="mx-5 mt-4 text-help text-ink-3">{packNote}</p>}
+            {packNote && <p className="mx-5 mt-4 text-help text-ink-3 narrow:mx-4">{packNote}</p>}
             {!noPlan && !cards.filter((c) => c.severity !== 'yellow').length && (
-              <div className="m-5 rounded-xl bg-brand-green-50 p-5">
+              <div className="m-5 rounded-xl bg-brand-green-50 p-5 narrow:m-4 narrow:p-4">
                 <div className="flex items-center gap-2 text-key font-extrabold text-brand-green">{Icon.check('h-6 w-6')} 확인된 오류가 없어요</div>
                 <p className="mt-1 text-help text-ink-2">점검한 {result.passed.length}가지 항목을 모두 통과했어요.</p>
               </div>
             )}
             {(noPlan || packNote) && <div className="h-3" />}
-            <ol>
+            <ol ref={listRef}>
               {visible.map(({ c, no }) => (
                 <IssueItem
                   key={c.key}
@@ -303,11 +401,12 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
                   onOpen={() => select(c.key)}
                   onQuickFix={() => onQuickFix(c)}
                   onMemo={(t) => onMemo(c.key, t)}
+                  onShowInDoc={() => show('doc', c)}
                 />
               ))}
             </ol>
             {fixed.length > 0 && (
-              <div className="border-t border-line px-5 py-4">
+              <div className="border-t border-line px-5 py-4 narrow:px-4">
                 <div className="mb-2 text-help font-bold text-ink-3">고친 항목 {fixed.length}</div>
                 <ul className="space-y-1.5">
                   {fixed.map((c) => (
@@ -320,7 +419,7 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
               </div>
             )}
             {result.passed.length > 0 && (
-              <div className="border-t border-line px-5 py-4">
+              <div className="border-t border-line px-5 py-4 narrow:px-4">
                 <div className="mb-2 text-help font-bold text-ink-3">통과한 점검 {result.passed.length}</div>
                 <ul className="space-y-1">
                   {result.passed.map((p, i) => (
@@ -335,11 +434,31 @@ export default function Review({ review, onQuickFix, onEditCell, onMemo, onMap, 
               </div>
             )}
           </div>
-          <div className="shrink-0 border-t border-line bg-canvas px-5 py-2.5 text-help text-ink-3">
+          <div className="shrink-0 border-t border-line bg-canvas px-5 py-2.5 text-help text-ink-3 narrow:px-4">
             성취기준 {STANDARD_COUNT['2015'] + STANDARD_COUNT['2022']}개(2015·2022 개정 중학교 전 교과){pack ? ` · ${pack.source}` : ''}
           </div>
         </aside>
       </div>
+
+      {/* 좁은 화면: 고친 뒤 알림은 화면 아래에, 고친 내용과 오류 수를 한 줄씩 */}
+      {flash && (
+        <div
+          role="status"
+          className={`pointer-events-none fixed inset-x-3 z-40 hidden gap-2 rounded-xl bg-[#0a2246] px-4 py-3 text-help font-bold text-white shadow-[0_8px_24px_rgba(13,43,87,0.35)] narrow:flex ${
+            view === 'doc' && selected ? 'bottom-[84px]' : 'bottom-4'
+          }`}
+        >
+          <span className="mt-[3px] shrink-0 text-[#8ce99a]">{Icon.check('h-4 w-4')}</span>
+          <span className="min-w-0">
+            {flash.text.split(' · ').map((line, i) => (
+              <span key={i} className="block">
+                {line}
+              </span>
+            ))}
+            {flash.extra && <span className="block text-[#ffd8a8]">{flash.extra}</span>}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -360,6 +479,7 @@ function IssueItem({
   onOpen,
   onQuickFix,
   onMemo,
+  onShowInDoc,
 }: {
   card: Card;
   no: number;
@@ -369,6 +489,8 @@ function IssueItem({
   onOpen: () => void;
   onQuickFix: () => void;
   onMemo: (t: string | null) => void;
+  /** 좁은 화면: 문서 보기로 가서 이 칸을 보인다 */
+  onShowInDoc?: () => void;
 }) {
   const [draft, setDraft] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -393,8 +515,8 @@ function IssueItem({
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <li className={`border-b border-line ${open ? 'bg-[#f8fafc]' : ''}`}>
-      <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 px-5 py-3.5 text-left hover:bg-canvas">
+    <li data-card={card.key} className={`border-b border-line narrow:scroll-mt-14 ${open ? 'bg-[#f8fafc]' : ''}`}>
+      <button type="button" onClick={onOpen} className="flex w-full items-start gap-3 px-5 py-3.5 text-left hover:bg-canvas narrow:px-4">
         <span className={`mt-0.5 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-help font-extrabold text-white ${SEV_BADGE[card.severity]}`}>{no}</span>
         <span className="min-w-0 flex-1">
           <span className={`block text-help font-bold ${SEVERITY[card.severity].text}`}>
@@ -406,7 +528,7 @@ function IssueItem({
         </span>
       </button>
       {open && (
-        <div className="space-y-3 px-5 pb-4 pl-14">
+        <div className="space-y-3 px-5 pb-4 pl-14 narrow:pl-[52px] narrow:pr-4">
           <div className="whitespace-pre-line rounded-lg bg-paper px-3 py-2 text-help text-ink-2 shadow-[inset_0_0_0_1px_#e3e7ed]">{card.quote}</div>
           <div className="rounded-lg border-l-4 border-brand-navy bg-brand-blue-50 px-3 py-2">
             <div className="text-help font-bold text-brand-navy">
@@ -449,7 +571,7 @@ function IssueItem({
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="넘기는 이유를 적어 두세요 (예: 학교 규정에 따름)"
-                className="h-20 w-full resize-none rounded-lg border border-line px-3 py-2 text-help outline-none focus:border-brand-blue"
+                className="h-20 w-full resize-none rounded-lg border border-line px-3 py-2 text-help outline-none focus:border-brand-blue narrow:text-body"
               />
               <div className="flex justify-end gap-2">
                 <Button onClick={() => setDraft(null)}>취소</Button>
@@ -469,6 +591,11 @@ function IssueItem({
               {memo !== undefined && (
                 <Button variant="quiet" onClick={() => onMemo(null)}>
                   메모 지우기
+                </Button>
+              )}
+              {onShowInDoc && (insert || cellsOf(card).length > 0) && (
+                <Button variant="quiet" onClick={onShowInDoc} className="hidden narrow:inline-flex narrow:px-1">
+                  문서에서 보기 {Icon.arrow('h-4 w-4')}
                 </Button>
               )}
               {!card.replace && !insert && card.actions.includes('fix') && <span className="text-help text-ink-3">문서의 칸을 두 번 눌러 직접 고칠 수 있어요</span>}
@@ -530,10 +657,15 @@ function DocTableView({
   }
   const width = table.rows[0]?.length ?? 1;
   const headCol = table.rows.length > 2 && table.rows.every((r) => r[0] !== undefined) && /만점|반영|평가|영역|성취기준|요소/.test(table.rows.map((r) => r[0]).join(' '));
+  // 좁은 화면: 표는 칸이 뭉개지지 않게 최소 폭을 두고 제 상자 안에서 옆으로 민다
+  const minWidth = `${Math.min(width * 96, 960)}px`;
   return (
-    <section className="mb-6">
+    <section className="mb-6 narrow:-mx-2 narrow:scroll-px-3 narrow:overflow-x-auto narrow:px-2 narrow:pt-2">
       {table.title && <h3 className="mb-1.5 text-help font-bold text-ink-2">{table.title.replace(/\s+/g, ' ').slice(0, 80)}</h3>}
-      <table className="w-full border-collapse text-[13px] leading-[1.55] text-ink" style={{ fontFamily: '"Pretendard Variable", Pretendard, serif' }}>
+      <table
+        className="w-full border-collapse text-[13px] leading-[1.55] text-ink narrow:min-w-[var(--table-min)]"
+        style={{ fontFamily: '"Pretendard Variable", Pretendard, serif', '--table-min': minWidth } as React.CSSProperties}
+      >
         <colgroup>
           {Array.from({ length: width }, (_, i) => (
             <col key={i} style={{ width: headCol && i === 0 ? '15%' : undefined, minWidth: 48 }} />
@@ -586,7 +718,7 @@ function DocTableView({
                           autoFocus
                           value={draft}
                           onChange={(e) => setDraft(e.target.value)}
-                          className="h-24 w-full min-w-[160px] resize-y rounded border border-brand-blue px-1 py-0.5 text-[13px] outline-none"
+                          className="h-24 w-full min-w-[160px] resize-y rounded border border-brand-blue px-1 py-0.5 text-[13px] outline-none narrow:text-body"
                         />
                         <div className="flex justify-end gap-1">
                           <button type="button" className="rounded px-2 py-0.5 text-[12px] text-ink-2 hover:bg-canvas" onClick={() => setEditing(null)}>
