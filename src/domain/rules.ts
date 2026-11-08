@@ -321,7 +321,7 @@ function j12Public(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         rule: 'J12',
         severity: 'red',
         strength: '사실',
-        title: `‘${a.name}’ 반영비율 ${a.weightPercent}%는 ${a.maxScore}%를 잘못 적은 것 같아요 (합계 ${tableTotal}%)`,
+        title: `반영비율 합계가 ${tableTotal}%예요 (‘${a.name}’ ${a.weightPercent}% 확인)`,
         locations: [wRef],
         emphasis: [wRef],
         quote: `${as.map((x) => `${x.name} ${fmt(x.maxScore, '점')}(${fmt(x.weightPercent, '%')})`).join(' · ')}\n반영비율 합계 ${tableTotal}%`,
