@@ -27,7 +27,7 @@ async function check(file: string) {
       essay: ex.essay,
       absence: ex.absence,
     });
-    return { section, context: ex.context, cards, serious: cards.filter((c) => c.severity === 'red' || c.severity === 'orange') };
+    return { doc, section, context: ex.context, cards, serious: cards.filter((c) => c.severity === 'red' || c.severity === 'orange') };
   });
 }
 
@@ -59,6 +59,20 @@ describe('v2 예시: 정보 2학년 2학기 (점검 전)', () => {
     const j7 = s.serious.filter((c) => c.rule === 'J7').map((c) => c.highlights?.join(' ')).join(' | ');
     expect(j7).toMatch(/80% 이상 작성/);
     expect(j7).toMatch(/A4 2쪽 이상/);
+  });
+});
+
+describe('v2 예시: 바로 고치기 결과', () => {
+  it('2015 개정 문장을 고시 원문으로 바꿔도 칸 끝 마침표가 겹치지 않는다', async () => {
+    const [s] = await check('정보_2학년_2학기_점검전.hwpx');
+    const card = s.serious.find((c) => c.key === 'J5-old:[9정02-01]')!;
+    const ref = card.locations[0];
+    const cell = s.doc.tables[ref.table].rows[ref.row][ref.col];
+    expect(cell).toContain(card.replace!.from);
+    const fixed = cell.replace(card.replace!.from, card.replace!.to);
+    expect(fixed).toContain('실생활의 데이터가 디지털 형태로 변환되어');
+    expect(fixed).not.toMatch(/\.\./);
+    expect(fixed.trim().endsWith('표현한다.')).toBe(true);
   });
 });
 

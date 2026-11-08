@@ -596,6 +596,11 @@ export function similarity(a: string, b: string): number {
   return na + nb ? (2 * inter) / (na + nb) : 0;
 }
 
+/** 바꿔 넣을 고시 문장의 끝 마침표를 문서 쪽 표기에 맞춘다. 문서 문장에 마침표가 없으면 칸에 남은 마침표와 겹치지 않게 뺀다. */
+function sameEnding(from: string, to: string): string {
+  return /[.。]\s*$/.test(from) ? to : to.replace(/[.。]\s*$/, '');
+}
+
 /**
  * J5 성취기준 문구.
  * (1) 적용 교육과정이 확실한데 문장이 다른 교육과정(예: 2015 개정) 고시 문장과 같으면 빨강 — 이전 교육과정 문구가 남은 것.
@@ -636,7 +641,7 @@ function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         },
         actions: ['fix', 'memo'],
         fix: `${code} 문장을 ${curriculumLabel(here.curriculum)} 원문으로 바꾸고, 평가 요소가 새 성취기준과 맞는지 확인하세요.`,
-        replace: { from: old[0].text, to: here.text },
+        replace: { from: old[0].text, to: sameEnding(old[0].text, here.text) },
       });
       continue;
     }
@@ -674,7 +679,7 @@ function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         basis: { source: dbSource(pick.curriculum, pick.subject), text: `문서의 문장은 ${curriculumLabel(other.curriculum)} ${other.code}의 고시 문장과 같습니다. ${code}의 고시 문장과는 다릅니다.` },
         actions: ['fix', 'memo'],
         fix: oldCur ? `${code} 문장을 ${curriculumLabel(pick.curriculum)} 원문으로 바꾸고, 평가 요소가 새 성취기준과 맞는지 확인하세요.` : `코드와 문장 중 어느 쪽이 맞는지 확인하세요. 코드가 맞다면 문장을 ${code} 원문으로 바꾸세요.`,
-        replace: { from: variants[0].text, to: official },
+        replace: { from: variants[0].text, to: sameEnding(variants[0].text, official) },
       });
       continue;
     }
@@ -690,7 +695,7 @@ function j5(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
       basis: { source: dbSource(pick.curriculum, pick.subject), text: '같은 문서 안에서 같은 코드가 서로 다른 문장으로 적혀 있습니다. 다른 코드의 문장을 옮겨 적었거나 성취기준을 재구성했을 수 있습니다.' },
       actions: ['fix', 'memo'],
       fix: `${code} 문장을 고시 원문으로 맞추세요. 의도한 재구성이라면 메모하고 넘기세요.`,
-      replace: { from: variants[0].text, to: official },
+      replace: { from: variants[0].text, to: sameEnding(variants[0].text, official) },
     });
   }
   if (checked && !cards.some((c) => c.rule === 'J5')) passed.push({ rule: 'J5', label: '성취기준 문구', detail: `코드 ${checked}개 문구가 고시 원문과 일치` });
