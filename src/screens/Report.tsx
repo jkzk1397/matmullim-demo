@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { packFor, RULE_PACKS } from '../domain/rulepacks';
+import { calendarColumns, calendarsFor, SPREAD_BASIS, type SchoolCalendar } from '../domain/school';
+import { weekLabel } from '../domain/schedule';
 import { curriculumLabel, DB_SOURCES, STANDARD_COUNT } from '../domain/standards';
 import type { Severity } from '../domain/types';
 import { counts, resolvedCards, sectionLabel, type Review } from '../domain/workspace';
 import { SEVERITY } from '../ui/helpers';
 import { Button, Icon } from '../ui/primitives';
-import { isInsertCard, J14_PLACE, kindLabel } from './cardInfo';
+import { insertPlace, isInsertCard, kindLabel } from './cardInfo';
 import { locLabel } from './locLabel';
 import { STATUS_LABEL, statusOf } from './Overview';
 
@@ -50,6 +52,7 @@ export default function Report({ reviews, onBack, cover = false }: { reviews: Re
         </div>
       </div>
       {cover && <CoverPage reviews={sorted} now={now} />}
+      {cover && calendarsFor(reviews).map((sc) => <CalendarPage key={sc.id} sc={sc} />)}
       {detail.map((r, i) => (
         <ReportPage key={r.id} r={r} now={now} breakBefore={cover || i > 0} />
       ))}
@@ -171,6 +174,74 @@ function CoverPage({ reviews, now }: { reviews: Review[]; now: Date }) {
   );
 }
 
+/** 위원회 심의용: 같은 학년·학기 전 교과 수행평가 달력 (요약표 '평가 시기' 칸) */
+function CalendarPage({ sc }: { sc: SchoolCalendar }) {
+  const cols = calendarColumns(sc);
+  const MIN = 5;
+  const per = new Map(sc.cal.weeks.map((w) => [`${w.week.m}-${w.week.w}`, w]));
+  const busy = sc.cal.weeks.filter((w) => w.perf >= MIN);
+  const cell = 'border border-[#c5ced8] text-center';
+  return (
+    <Page breakBefore>
+      <header className="border-b-2 border-brand-navy pb-3">
+        <div className="text-[12px] font-bold text-brand-blue">맞물림 · 평가 계획 사전 점검</div>
+        <h1 className="mt-1 text-[22px] font-extrabold tracking-[-0.02em]">{sc.title} 수행평가 달력</h1>
+        <p className="mt-1 text-[12px] text-ink-3">교과별 계획서 요약표의 ‘평가 시기’ 칸으로 만들었어요. 위 숫자는 그 주에 수행평가가 있는 교과 수이고, 여러 주에 걸친 평가는 걸친 주마다 셉니다.</p>
+      </header>
+      <div className="narrow:overflow-x-auto">
+        <table className="mt-4 w-full table-fixed border-collapse text-[10.5px] narrow:min-w-[640px]">
+          <thead>
+            <tr className="bg-canvas">
+              <th className={`${cell} w-[78px] px-1 py-1 text-left font-bold`}>교과</th>
+              {cols.map((w) => (
+                <th key={`${w.m}-${w.w}`} className={`${cell} py-1 font-bold ${w.w === 1 ? 'text-ink' : 'text-ink-3'}`}>
+                  {w.w === 1 ? `${w.m}월` : ''}
+                  <div className="font-medium">{w.w}</div>
+                </th>
+              ))}
+            </tr>
+            <tr>
+              <th className={`${cell} px-1 py-1 text-left font-bold`}>교과 수</th>
+              {cols.map((w) => {
+                const n = per.get(`${w.m}-${w.w}`)?.perf ?? 0;
+                return (
+                  <th key={`${w.m}-${w.w}`} className={`${cell} py-1 font-extrabold ${n >= MIN ? 'bg-sev-red text-white' : n ? 'text-ink' : 'text-ink-3'}`}>
+                    {n || ''}
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {sc.subjects.map((s) => (
+              <tr key={s}>
+                <td className={`${cell} px-1 py-1 text-left font-bold`}>{s}</td>
+                {cols.map((w) => {
+                  const its = (per.get(`${w.m}-${w.w}`)?.items ?? []).filter((i) => i.subject === s);
+                  const p = its.filter((i) => !i.written).length;
+                  const x = its.some((i) => i.written);
+                  return (
+                    <td key={`${w.m}-${w.w}`} className={`${cell} py-1 font-extrabold`}>
+                      {p ? '●'.repeat(Math.min(p, 2)) : x ? '시험' : ''}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-[12px]">
+        <b>{busy.length ? `같은 주에 ${MIN}개 교과 이상 수행평가가 있는 주: ` : `같은 주에 ${MIN}개 교과 이상 수행평가가 있는 주는 없어요.`}</b>
+        {busy.map((w) => `${weekLabel(w.week)}(${w.perf}개 교과)`).join(', ')}
+      </p>
+      <div className="mt-3 border-l-4 border-brand-navy bg-brand-blue-50 px-3 py-2 text-[12px]">
+        <b>근거</b> · {SPREAD_BASIS.source} {SPREAD_BASIS.quotes[0].page} “{SPREAD_BASIS.quotes[0].text}” 몇 개부터 많은지 정한 수치는 지침에 없어요.
+      </div>
+    </Page>
+  );
+}
+
 function ReportPage({ r, now, breakBefore }: { r: Review; now: Date; breakBefore: boolean }) {
   const fixed = resolvedCards(r);
   const cards = [...r.result.cards].sort((a, b) => ORDER.indexOf(a.severity) - ORDER.indexOf(b.severity));
@@ -254,7 +325,7 @@ function ReportPage({ r, now, breakBefore }: { r: Review; now: Date; breakBefore
                     </td>
                     <td className="border border-[#c5ced8] px-2 py-1.5">
                       <div className="font-bold">{x.title}</div>
-                      {isInsertCard(x) ? <div className="text-ink-3">넣을 곳: {J14_PLACE}</div> : x.locations[0] && <div className="text-ink-3">{locLabel(r.doc, x.emphasis?.[0] ?? x.locations[0])}</div>}
+                      {isInsertCard(x) ? <div className="text-ink-3">넣을 곳: {insertPlace(x)}</div> : x.locations[0] && <div className="text-ink-3">{locLabel(r.doc, x.emphasis?.[0] ?? x.locations[0])}</div>}
                       {x.fix && <div className="mt-0.5 text-ink-2">→ {x.fix}</div>}
                     </td>
                     <td className="border border-[#c5ced8] px-2 py-1.5 text-ink-2">

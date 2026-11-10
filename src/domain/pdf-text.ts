@@ -32,11 +32,19 @@ export async function parsePdf(data: ArrayBuffer, fileName: string, doc: DocKind
   const pdfjs = await import('pdfjs-dist');
   const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
+  // 원본 버퍼가 작업자(worker)로 넘어가 비지 않게 복사본을 준다
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(data.slice(0)) }).promise;
   const pages: string[] = [];
-  for (let n = 1; n <= pdf.numPages; n++) {
-    const tc = await (await pdf.getPage(n)).getTextContent();
-    pages.push(tc.items.map((it) => ('str' in it ? it.str + (it.hasEOL ? '\n' : ' ') : '')).join(''));
+  try {
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const tc = await page.getTextContent();
+      pages.push(tc.items.map((it) => ('str' in it ? it.str + (it.hasEOL ? '\n' : ' ') : '')).join(''));
+      page.cleanup();
+    }
+  } finally {
+    // 여러 학교 파일을 한꺼번에 읽을 때 메모리가 쌓이지 않게 문서마다 정리한다
+    await pdf.destroy();
   }
   return pdfPagesToDoc(pages, fileName, doc);
 }

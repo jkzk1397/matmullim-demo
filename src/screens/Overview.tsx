@@ -5,6 +5,15 @@ import { counts, resolvedCards, sectionLabel, type Review } from '../domain/work
 import type { Severity } from '../domain/types';
 import { SEVERITY } from '../ui/helpers';
 import { Button, Dot, Icon } from '../ui/primitives';
+import CalendarView from './Calendar';
+import Summary from './Summary';
+
+export type OverviewView = 'list' | 'calendar' | 'items';
+const VIEWS: { id: OverviewView; label: string }[] = [
+  { id: 'list', label: '교과별 결과' },
+  { id: 'calendar', label: '수행평가 달력' },
+  { id: 'items', label: '항목별 현황' },
+];
 
 type Props = {
   reviews: Review[];
@@ -15,6 +24,9 @@ type Props = {
   onOpen: (id: string) => void;
   onReport: () => void;
   onAdd: () => void;
+  view: OverviewView;
+  onView: (v: OverviewView) => void;
+  onDownloadText: (name: string, data: string) => void;
 };
 
 const SEVS: Severity[] = ['red', 'orange', 'gray'];
@@ -51,7 +63,7 @@ export function StatusBadge({ r }: { r: Review }) {
 type FilterId = 'all' | StatusId;
 const FILTERS: FilterId[] = ['all', 'fix', 'guide', 'check', 'pass', 'noplan'];
 
-export default function Overview({ reviews, order, stats, notice, onDismissNotice, onOpen, onReport, onAdd }: Props) {
+export default function Overview({ reviews, order, stats, notice, onDismissNotice, onOpen, onReport, onAdd, view, onView, onDownloadText }: Props) {
   const [filter, setFilter] = useState<FilterId>('all');
   const [q, setQ] = useState('');
   const [closed, setClosed] = useState<Set<string>>(new Set());
@@ -165,6 +177,26 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
         <Stat label="오류 없는 교과" value={clean} unit="개" tone="green" />
       </div>
 
+      <div className="flex gap-1 border-b border-line" role="tablist" aria-label="보기">
+        {VIEWS.map((v) => (
+          <button
+            key={v.id}
+            type="button"
+            role="tab"
+            aria-selected={view === v.id}
+            onClick={() => onView(v.id)}
+            className={`-mb-px whitespace-nowrap border-b-[3px] px-4 pb-2.5 pt-1 text-body font-bold transition-colors narrow:px-2.5 ${view === v.id ? 'border-brand-navy text-brand-navy' : 'border-transparent text-ink-3 hover:text-ink'}`}
+          >
+            {v.label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'calendar' && <CalendarView reviews={ordered} />}
+      {view === 'items' && <Summary reviews={ordered} onDownload={onDownloadText} />}
+
+      {view === 'list' && (
+      <>
       <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => {
           const n = countFor(f);
@@ -307,6 +339,8 @@ export default function Overview({ reviews, order, stats, notice, onDismissNotic
           )}
         </table>
       </section>
+      </>
+      )}
     </div>
     </div>
   );

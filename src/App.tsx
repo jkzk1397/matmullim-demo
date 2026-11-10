@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { trySample } from './deeplink';
+import { trySample, tryView } from './deeplink';
 import { parseHwpx } from './domain/hwpx';
 import { isHwp5, parseHwp5 } from './domain/hwp5';
 import { isPdf, parsePdf } from './domain/pdf-text';
@@ -10,7 +10,7 @@ import { applyQuickFix, counts, KIND_LABEL, reviewsFor, setCellText, type Review
 import { Header, type Step } from './ui/layout';
 import AlignmentMap from './screens/AlignmentMap';
 import Home, { type SampleEntry } from './screens/Home';
-import Overview from './screens/Overview';
+import Overview, { type OverviewView } from './screens/Overview';
 import Report from './screens/Report';
 import ReviewScreen from './screens/Review';
 import { locLabel } from './screens/locLabel';
@@ -50,7 +50,8 @@ async function readSource(name: string, buf: ArrayBuffer): Promise<Source> {
     throw new ReadFail(kind === 'pdf' ? 'PDF를 열지 못했어요' : kind === 'hwp' ? 'HWP 파일을 열지 못했어요 (암호가 걸려 있는지 확인해 주세요)' : `${KIND_LABEL[kind]} 파일을 열지 못했어요`);
   }
   if (!doc.tables.length) throw new ReadFail(kind === 'pdf' ? '표를 찾지 못했어요 (스캔한 PDF는 글자를 읽을 수 없어요)' : '표를 찾지 못했어요');
-  return { id: `f${++seq}`, name, kind, bytes: buf, doc };
+  const keep = kind === 'hwpx' || kind === 'docx';
+  return { id: `f${++seq}`, name, kind, bytes: keep ? buf : new ArrayBuffer(0), doc, fp: fingerprint(buf) };
 }
 
 /** 같은 파일 판별: 크기 + 앞 4KB */
@@ -130,6 +131,7 @@ export default function App() {
   const review = useMemo(() => reviews.find((r) => r.id === current) ?? null, [reviews, current]);
   const [appendNext, setAppendNext] = useState(false);
   const [overviewSticky, setOverviewSticky] = useState(false);
+  const [view, setView] = useState<OverviewView>(() => tryView(window.location.search) ?? 'list');
   const multi = reviews.length > 1 || overviewSticky;
 
   const load = async (items: { name: string; buf: () => Promise<ArrayBuffer> }[], append = false) => {
@@ -141,7 +143,8 @@ export default function App() {
     const base = append ? reviews : [];
     const seen = new Set<string>();
     for (const r of base) {
-      seen.add(fingerprint(r.source.bytes));
+      if (r.source.fp) seen.add(r.source.fp);
+      else seen.add(fingerprint(r.source.bytes));
       seen.add(`${r.source.name}:${r.source.bytes.byteLength}`);
     }
     let readCount = 0;
@@ -195,12 +198,17 @@ export default function App() {
     setStep(toOverview ? 'overview' : 'review');
   };
 
-  const onFiles = (files: File[]) => load(files.map((f) => ({ name: f.name, buf: () => f.arrayBuffer() })), appendNext && reviews.length > 0);
+  const onFiles = (files: File[]) => {
+    setFromPoster(false);
+    return load(files.map((f) => ({ name: f.name, buf: () => f.arrayBuffer() })), appendNext && reviews.length > 0);
+  };
   const onSample = (s: SampleEntry) => load([sampleItem(s.file)], appendNext && reviews.length > 0);
 
   // 포스터 QR 바로가기 (?try=info · ?try=all): 예시 문서를 바로 연다. 모르는 값이면 올리기 화면 그대로
   const [opening, setOpening] = useState(() => trySample(window.location.search));
   const opened = useRef(false);
+  // 포스터 QR로 들어온 사람에게 지금 보는 문서가 예시라는 것을 알린다 (자기 파일을 올리면 사라짐)
+  const [fromPoster, setFromPoster] = useState(() => !!trySample(window.location.search));
   useEffect(() => {
     if (!opening || opened.current) return;
     opened.current = true;
@@ -276,6 +284,24 @@ export default function App() {
           }}
         />
       </div>
+      {fromPoster && step !== 'upload' && (
+        <div className="flex items-center justify-center gap-3 border-b border-line bg-brand-blue-50 px-4 py-2 text-help text-ink-2 print:hidden">
+          <span className="whitespace-nowrap">팀이 만든 예시 계획서예요</span>
+          <button
+            type="button"
+            className="whitespace-nowrap font-bold text-brand-blue hover:underline"
+            onClick={() => {
+              setAppendNext(false);
+              setStep('upload');
+            }}
+          >
+            내 파일 올리기
+          </button>
+          <button type="button" aria-label="예시 안내 닫기" className="px-1 text-ink-3 hover:text-ink" onClick={() => setFromPoster(false)}>
+            ✕
+          </button>
+        </div>
+      )}
       <main className="flex min-h-0 flex-1 flex-col print:block">
         {step === 'upload' &&
           (opening ? <Opening /> : <Home busy={busy} error={error} onFiles={onFiles} onSample={onSample} recent={recent} appending={appendNext && reviews.length > 0} />)}
@@ -298,6 +324,9 @@ export default function App() {
             stats={stats}
             notice={notice}
             onDismissNotice={() => setNotice(null)}
+            view={view}
+            onView={setView}
+            onDownloadText={(name, data) => download(name, data, 'text/csv;charset=utf-8')}
           />
         )}
         {step === 'review' && review && (

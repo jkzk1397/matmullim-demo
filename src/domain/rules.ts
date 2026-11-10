@@ -2,7 +2,8 @@
 import { normalizeName } from './extract';
 import { classifyCode, curriculumFor, curriculumLabel, dbSource, lookupStandard, standardsFor, typoOf, type CodeContext, type Curriculum } from './standards';
 import type { DocContext } from './context';
-import { GG_AUDIT, packFor } from './rulepacks';
+import { GG_AUDIT, GG_GUIDE_2026, packFor } from './rulepacks';
+import { LONG_WEEKS, parseWhen } from './schedule';
 import type {
   Assessment,
   Card,
@@ -506,6 +507,14 @@ export function findDiscouraged(text: string): { label: string; match: string }[
   return out;
 }
 
+/** 낱말 끝소리에 맞는 '로/으로' (받침 없음·ㄹ받침 → 로) */
+export function euro(word: string): string {
+  const c = word.trim().slice(-1).charCodeAt(0);
+  if (c < 0xac00 || c > 0xd7a3) return '(으)로';
+  const jong = (c - 0xac00) % 28;
+  return jong === 0 || jong === 8 ? '로' : '으로';
+}
+
 function j7(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
   let checked = 0;
   for (const a of input.rubric)
@@ -519,7 +528,7 @@ function j7(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
         rule: 'J7',
         severity: 'orange',
         strength: '권고',
-        title: `‘${e.name}’ 채점기준을 ${hits.map((h) => `${h.label}(‘${h.match}’)`).join(', ')}으로 제시했어요`,
+        title: `‘${e.name}’ 채점기준을 ${hits.map((h) => `${h.label}(‘${h.match}’)`).join(', ')}${euro(hits[hits.length - 1].label)} 제시했어요`,
         locations: e.refs?.rubricText ? [e.refs.rubricText] : [a.source],
         quote: e.rubricText,
         highlights: hits.map((h) => h.match),
@@ -777,7 +786,162 @@ function j14(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
     actions: ['memo'],
     note: SCHOOL_RULE_NOTE,
     fix: '수행평가 결시자 처리기준(인정점 등)을 평가 계획에 적으세요. 학교 규정을 따르는 경우 그 문장을 넣으세요.',
+    insert: { place: '평가의 종류와 반영비율 표 아래', example: '수행평가 결시자는 추후 평가 기회를 부여하되, 부득이하게 실시하지 못할 경우 학업성적관리규정에 따라 인정점을 부여한다.' },
   });
+}
+
+/** J15 평가 시기: 수행평가 시기를 주 단위로 적었는지 (이해하기 28쪽). 요약표에 '평가 시기' 행이 있을 때만 본다 */
+function j15(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  if (input.format !== 'public') return;
+  const perf = input.plan.filter((a) => a.when !== undefined && !isWritten(a) && !/^(합|합계|계|총계|총점)$/.test(a.name.replace(/\s+/g, '')));
+  if (!perf.length) return;
+  // 포트폴리오·일지·과정 평가처럼 학기 내내 쌓는 평가는 '상시'가 자연스럽다
+  const ongoing = (a: Assessment) => /포트\s*폴리오|일지|노트|과정|누적|상시|관찰|성찰|태도|참여|기록/.test(a.name);
+  const vague = perf.filter((a) => ['month', 'blank', 'other'].includes(parseWhen(a.when!).kind) && !(parseWhen(a.when!).kind === 'blank' && ongoing(a)));
+  const loose = perf.filter((a) => ['always', 'long'].includes(parseWhen(a.when!).kind) && !ongoing(a));
+  const at = (as: Assessment[]) => as.map((a) => a.refs?.when ?? a.source);
+  const show = (as: Assessment[]) => as.map((a) => `${a.name} — ${a.when?.replace(/\s+/g, ' ') || '(빈칸)'}`).join('\n');
+  if (vague.length)
+    cards.push({
+      key: `J15-week:${vague.map((a) => normalizeName(a.name)).join('|')}`,
+      rule: 'J15',
+      severity: 'orange',
+      strength: '권고',
+      title: `수행평가 ${vague.length}개의 평가 시기를 주 단위로 적지 않았어요`,
+      locations: at(vague),
+      quote: show(vague),
+      basis: { source: GG_GUIDE_2026.source, page: GG_GUIDE_2026.timing.page, text: GG_GUIDE_2026.timing.text, url: GG_GUIDE_2026.url, quoted: true },
+      actions: ['fix', 'memo'],
+      fix: '‘4월 2주’, ‘9월 4주~10월 1주’처럼 몇째 주인지 적으세요. 학생이 평가 시기를 미리 알고 준비할 수 있어야 합니다.',
+    });
+  if (loose.length)
+    cards.push({
+      key: `J15-long:${loose.map((a) => normalizeName(a.name)).join('|')}`,
+      rule: 'J15',
+      severity: 'gray',
+      strength: '권고',
+      title: `수행평가 ${loose.length}개의 시기를 ‘상시’나 ${LONG_WEEKS}주보다 긴 기간으로 적었어요`,
+      locations: at(loose),
+      quote: show(loose),
+      basis: { source: GG_GUIDE_2026.source, page: '66쪽 Ⅴ.6', text: '학생들이 평가 시기를 확인하고 학습할 수 있도록 구체적으로 제시하고 있는가?', url: GG_GUIDE_2026.url, quoted: true },
+      actions: ['memo', 'fix'],
+      fix: '과정 전체를 보는 평가라면 메모하고 넘기세요. 결과물을 내는 주가 정해져 있다면 그 주를 적으세요.',
+    });
+  if (!vague.length && !loose.length) passed.push({ rule: 'J15', label: '평가 시기', detail: `수행평가 ${perf.length}개 모두 주 단위로 적음` });
+}
+
+/** J16 AI 도구를 쓰는 수행평가: 이해하기 32쪽 'AI 활용 기본 원칙' 세 가지를 계획서에 넣었는지 (지침 12쪽 Ⅲ.3.라 5)) */
+function j16(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const ctx = ctxOf(input);
+  const pack = packFor(ctx.year);
+  const ai = input.ai;
+  if (!pack || input.format !== 'public' || !ai?.uses.length) return;
+  const P = GG_GUIDE_2026.aiPrinciples.items;
+  const missing = [
+    !ai.principles.assist && { short: '보조적 활용', text: P[0] },
+    !ai.principles.observe && { short: '직접 관찰·독자적 사고', text: P[1] },
+    !ai.principles.forbid && { short: '금지 행위 설정·사전 안내', text: P[2] },
+  ].filter((x): x is { short: string; text: string } => !!x);
+  if (!missing.length) {
+    passed.push({ rule: 'J16', label: 'AI 활용 수행평가', detail: 'AI 활용 기본 원칙 세 가지가 계획서에 있음' });
+    return;
+  }
+  cards.push({
+    key: 'J16-ai',
+    rule: 'J16',
+    severity: 'orange',
+    strength: '권고',
+    title: missing.length === 3 ? 'AI를 쓰는 수행평가가 있는데 AI 활용 기본 원칙을 찾지 못했어요' : `AI를 쓰는 수행평가가 있는데 AI 활용 기본 원칙 중 ${missing.length}가지를 찾지 못했어요`,
+    locations: ai.uses.slice(0, 3).map((u) => u.ref),
+    quote: `AI를 쓰는 평가: ${ai.uses.slice(0, 2).map((u) => u.text).join(' / ')}\n찾지 못한 원칙: ${missing.map((m) => m.short).join(', ')}`,
+    basis: { source: GG_GUIDE_2026.source, page: GG_GUIDE_2026.aiPrinciples.page, text: GG_GUIDE_2026.aiPrinciples.text, url: GG_GUIDE_2026.url, quoted: true },
+    actions: ['memo'],
+    note: `시행지침 ${pack.ai.page}: “${pack.ai.text}”`,
+    fix: '평가 유의사항(수행평가)에 AI 활용 기본 원칙을 넣으세요. 운영할 때는 사용 기록 표기와 채점 제외 기준도 학생에게 안내하세요(이해하기 32쪽·52쪽).',
+    insert: { place: '평가 유의사항 (수행평가)', example: missing.map((m) => `∙ ${m.text}`).join('\n') },
+  });
+}
+
+/** J17 평가 계획에 넣을 내용 (지침 6~7쪽 Ⅲ.3.나 2)). 파일 전체에서 낱말을 찾지 못한 항목만 회색으로 */
+function j17(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const ctx = ctxOf(input);
+  const pack = packFor(ctx.year);
+  if (!pack || input.format !== 'public' || !input.required || !input.plan.length) return;
+  // 수행평가 세부기준(채점기준) 표를 읽었으면 그 항목은 있는 것으로 본다
+  const miss = input.required.filter((r) => !r.found && !(r.key === 'detail' && input.rubric.length));
+  if (!miss.length) {
+    passed.push({ rule: 'J17', label: '평가 계획 포함 내용', detail: `지침이 정한 ${input.required.length}개 항목을 모두 찾음` });
+    return;
+  }
+  cards.push({
+    key: `J17-required:${miss.map((m) => m.key).join('|')}`,
+    rule: 'J17',
+    severity: 'gray',
+    strength: '의무',
+    title:
+      miss.length >= 5
+        ? `평가 계획에 넣을 내용 ${input.required.length}가지 중 ${miss.length}가지를 이 파일에서 찾지 못했어요`
+        : `평가 계획에 넣을 내용 중 ${miss.map((m) => `‘${m.label}’`).join(', ')}을(를) 찾지 못했어요`,
+    locations: [input.plan[0].source],
+    quote: `계획서에서 찾지 못한 항목: ${miss.map((m) => m.label).join(', ')}`,
+    basis: { source: pack.source, page: pack.required.page, text: pack.required.text, url: pack.url, quoted: true },
+    actions: ['memo'],
+    note: miss.length >= 5 ? '요약표만 공시한 파일일 수 있어요. 학교 공통 안내나 다른 파일에 있다면 메모하고 넘기세요.' : '다른 이름으로 적었거나 학교 공통 안내에 따로 있다면 메모하고 넘기세요.',
+    fix: `${miss.map((m) => m.label).join(', ')}을(를) 계획서에 넣으세요.`,
+    insert: { place: '평가 계획 끝 (평가 유의사항 다음)', example: miss.map((m) => `□ ${m.label}: (교과협의회에서 정한 내용)`).join('\n') },
+  });
+}
+
+/** J18 정기시험 횟수(학기당 2회 이내)와 1회만 볼 때 반영비율(50% 이하) (지침 4쪽, 7쪽) */
+function j18(input: CheckInput, cards: Card[], passed: PassedCheck[]) {
+  const ctx = ctxOf(input);
+  const pack = packFor(ctx.year);
+  if (!pack || input.format !== 'public') return;
+  const byTable = new Map<number, Assessment[]>();
+  for (const a of input.plan) byTable.set(a.source.table, [...(byTable.get(a.source.table) ?? []), a]);
+  let checked = 0;
+  for (const [t, as] of byTable) {
+    if (as.some((a) => a.incomplete)) continue;
+    const exams = as.filter(isWritten);
+    if (!exams.length) continue;
+    // 회차: '1차(선택형)'·'1차(논술형)'은 한 번의 시험이다
+    const round = (a: Assessment) => a.name.match(/([1-5])\s*(?:차|회)/)?.[1] ?? (/중간/.test(a.name) ? '1' : /기말/.test(a.name) ? '2' : undefined);
+    const rounds = new Set(exams.map(round));
+    if (rounds.has(undefined)) continue;
+    checked++;
+    if (rounds.size > pack.examMax.value)
+      cards.push({
+        key: `J18-count:${t}`,
+        rule: 'J18',
+        severity: 'orange',
+        strength: '의무',
+        title: `정기시험을 학기에 ${rounds.size}번 보도록 계획했어요 (${pack.examMax.value}회 이내)`,
+        locations: exams.map((a) => a.source),
+        quote: exams.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' · '),
+        basis: { source: pack.source, page: pack.examMax.page, text: pack.examMax.text, url: pack.url, quoted: true },
+        actions: ['fix', 'memo'],
+        fix: `정기시험을 학기당 ${pack.examMax.value}회 이내로 줄이세요.`,
+      });
+    // 반영비율이 학기 성적 기준으로 적힌 표(합계 100%)에서만: 정기시험 안의 문항 비율(80점(80%))로 적은 표는 빼고
+    const total = sum(as.map((a) => a.weightPercent));
+    if (rounds.size === 1 && as.every((a) => a.weightPercent !== undefined) && Math.abs(total - 100) < 0.6) {
+      const w = sum(exams.map((a) => a.weightPercent));
+      if (w > pack.examOne.value + 1e-9)
+        cards.push({
+          key: `J18-one:${t}`,
+          rule: 'J18',
+          severity: 'orange',
+          strength: '의무',
+          title: `정기시험을 1회 보는데 반영비율이 ${w}%예요 (${pack.examOne.value}% 이하)`,
+          locations: exams.map((a) => a.refs?.weightPercent ?? a.source),
+          quote: as.map((a) => `${a.name} ${fmt(a.weightPercent, '%')}`).join(' · '),
+          basis: { source: pack.source, page: pack.examOne.page, text: pack.examOne.text, url: pack.url, quoted: true },
+          actions: ['fix', 'memo'],
+          fix: `정기시험 반영비율을 ${pack.examOne.value}% 이하로 낮추고 수행평가 비율을 늘리세요.`,
+        });
+    }
+  }
+  if (checked && !cards.some((c) => c.rule === 'J18')) passed.push({ rule: 'J18', label: '정기시험 횟수·비율', detail: `학기당 ${pack.examMax.value}회 이내, 1회면 ${pack.examOne.value}% 이하` });
 }
 
 /** 괄호 한쪽이 빠진 성취기준 코드: 다른 프로그램(정보공시·나이스 등)에서 코드로 읽히지 않는다 */
@@ -824,7 +988,7 @@ function s5(input: CheckInput, cards: Card[]) {
 }
 
 const ORDER: Record<Severity, number> = { red: 0, orange: 1, gray: 2, yellow: 3 };
-const RULE_ORDER = ['J12', 'J13', 'J4', 'J5', 'J7', 'J14', 'J6', 'S5'];
+const RULE_ORDER = ['J12', 'J13', 'J18', 'J4', 'J5', 'J7', 'J16', 'J15', 'J14', 'J17', 'J6', 'S5'];
 
 export function runChecks(input: CheckInput): CheckResult {
   const cards: Card[] = [];
@@ -837,6 +1001,10 @@ export function runChecks(input: CheckInput): CheckResult {
   j5(input, cards, passed);
   j7(input, cards, passed);
   j14(input, cards, passed);
+  j15(input, cards, passed);
+  j16(input, cards, passed);
+  j17(input, cards, passed);
+  j18(input, cards, passed);
   j6(input, cards, passed);
   s5(input, cards);
   cards.sort((a, b) => ORDER[a.severity] - ORDER[b.severity] || RULE_ORDER.indexOf(a.rule) - RULE_ORDER.indexOf(b.rule));

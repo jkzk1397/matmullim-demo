@@ -8,7 +8,8 @@ export type SourceKind = 'hwpx' | 'hwp' | 'pdf' | 'docx' | 'xlsx' | 'odt';
 export const KIND_LABEL: Record<SourceKind, string> = { hwpx: 'HWPX', hwp: 'HWP', pdf: 'PDF', docx: 'Word', xlsx: 'Excel', odt: 'ODT' };
 /** 고친 칸을 원본 서식 그대로 다시 쓸 수 있는 형식 */
 export const PATCHABLE: SourceKind[] = ['hwpx', 'docx'];
-export type Source = { id: string; name: string; kind: SourceKind; bytes: ArrayBuffer; doc: ParsedDocument };
+/** bytes는 고친 파일을 다시 쓸 수 있는 형식(HWPX·Word)만 들고 있다. 나머지는 빈 버퍼 (여러 학교 파일을 한꺼번에 읽을 때 메모리 절약) */
+export type Source = { id: string; name: string; kind: SourceKind; bytes: ArrayBuffer; doc: ParsedDocument; fp?: string };
 
 export type CellEdit = { table: number; row: number; col: number; from: string; to: string; cardKey?: string; at: number };
 
@@ -42,6 +43,8 @@ export function analyze(doc: ParsedDocument, section: SubjectSection): { ex: Ext
     essay: ex.essay,
     absence: ex.absence,
     malformed: ex.malformed,
+    required: ex.required,
+    ai: ex.ai,
     cells: (r) => doc.tables[r.table]?.rows[r.row]?.[r.col] ?? '',
   };
   return { ex, input, result: runChecks(input) };

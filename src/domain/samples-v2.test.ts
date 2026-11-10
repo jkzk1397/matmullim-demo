@@ -4,37 +4,26 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseHwpx } from './hwpx';
 import { splitSections } from './context';
-import { extractPublic, suggestPublicPairs } from './extract-public';
-import { runChecks } from './rules';
+import { analyze } from './workspace';
 import type { Card } from './types';
 
 const DIR = 'public/samples/v2';
 
+// 앱과 같은 경로(analyze)로 점검한다: 칸 읽기·필수 항목·AI 활용까지 함께 넘긴다.
 async function check(file: string) {
   const doc = await parseHwpx(readFileSync(`${DIR}/${file}`), file, 'plan');
   const sections = splitSections(doc);
   return sections.map((section) => {
-    const ex = extractPublic(doc, section);
-    const { cards } = runChecks({
-      plan: ex.plan,
-      rubric: ex.rubric,
-      planStandards: ex.planStandards,
-      codeTexts: ex.codeTexts,
-      pairs: suggestPublicPairs(ex.plan, ex.rubric),
-      links: [],
-      format: 'public',
-      context: ex.context,
-      essay: ex.essay,
-      absence: ex.absence,
-    });
-    return { doc, section, context: ex.context, cards, serious: cards.filter((c) => c.severity === 'red' || c.severity === 'orange') };
+    const { ex, result } = analyze(doc, section);
+    const cards = result.cards;
+    return { doc, section, context: ex.context!, cards, serious: cards.filter((c) => c.severity === 'red' || c.severity === 'orange') };
   });
 }
 
 const keys = (cs: Card[]) => cs.map((c) => c.key).sort();
 
 describe('v2 예시: 정보 2학년 2학기 (점검 전)', () => {
-  it('심은 오류 6가지만 빨강·주황으로 잡는다', async () => {
+  it('심은 오류 7가지만 빨강·주황으로 잡는다', async () => {
     const [s, ...rest] = await check('정보_2학년_2학기_점검전.hwpx');
     expect(rest).toHaveLength(0);
     expect(s.context).toMatchObject({ subject: '정보', grades: [2], year: 2026, curriculum: '2022' });
@@ -44,8 +33,8 @@ describe('v2 예시: 정보 2학년 2학기 (점검 전)', () => {
     expect(has('J4-typo')).toEqual(['J4-typo:[9장03-03]']);
     // (b) 2015 개정 문장
     expect(has('J5-old')).toEqual(['J5-old:[9정02-01]']);
-    // (c) 30점(20%) → 합계 90%
-    expect(has('J12-weight-sum')).toHaveLength(1);
+    // (c) 30점(20%) → 합계 90%: 그 한 칸만 고치면 합계가 맞아 카드 하나로 합친다
+    expect(has('J12-weight-sum')).toEqual([]);
     expect(has('J12-public-ratio')).toEqual(['J12-public-ratio:데이터분석프로젝트']);
     // (d) 요약표 20점 ↔ 세부기준 25점
     expect(has('J12-public-max')).toEqual(['J12-public-max:인공지능윤리논술하기논술형']);
@@ -53,8 +42,11 @@ describe('v2 예시: 정보 2학년 2학기 (점검 전)', () => {
     expect(has('J7')).toHaveLength(2);
     // (f) 논술형 20%
     expect(has('J13-essay')).toHaveLength(1);
+    // (g) AI를 쓰는 수행평가에 AI 활용 기본 원칙 없음
+    expect(has('J16')).toEqual(['J16-ai']);
     expect(k).toHaveLength(8);
-    expect(s.serious.find((c) => c.key.startsWith('J12-weight-sum'))?.title).toContain('90%');
+    expect(s.serious.filter((c) => c.severity === 'red')).toHaveLength(4);
+    expect(s.serious.find((c) => c.key.startsWith('J12-public-ratio'))?.title).toContain('90%');
     expect(s.serious.find((c) => c.key.startsWith('J13-essay'))?.title).toContain('20%');
     const j7 = s.serious.filter((c) => c.rule === 'J7').map((c) => c.highlights?.join(' ')).join(' | ');
     expect(j7).toMatch(/80% 이상 작성/);

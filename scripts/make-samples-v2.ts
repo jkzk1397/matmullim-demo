@@ -13,8 +13,7 @@ import { pathToFileURL } from 'node:url';
 import { writeHwpx } from '../src/domain/hwpx-writer';
 import { parseHwpx } from '../src/domain/hwpx';
 import { splitSections } from '../src/domain/context';
-import { extractPublic, suggestPublicPairs } from '../src/domain/extract-public';
-import { runChecks } from '../src/domain/rules';
+import { analyze } from '../src/domain/workspace';
 import { lookupStandard, type Curriculum } from '../src/domain/standards';
 import type { ParsedDocument, ParsedTable, Span } from '../src/domain/types';
 
@@ -186,6 +185,20 @@ function rubricTable(title: string, r: Rubric): ParsedTable {
   return table(title, 6, rows);
 }
 
+/** 평가 운영 공통 안내 (지침 6~7쪽 '평가 계획에 포함되도록 한다' 항목). ai=true면 AI 활용 수행평가 관리 방안을 넣는다 */
+const COMMON_TEXT = (ai: boolean) =>
+  [
+    '가. 평가의 목적: 학생이 교과 성취기준에 도달했는지 확인하고, 그 결과를 수업 개선과 학생 성장 지원에 활용한다.',
+    '나. 평가의 방향과 방침: 성취기준과 성취수준에 근거하여 평가 요소를 정하고, 수업 중에 이루어지는 과정 중심 수행평가를 운영한다.',
+    '다. 평가 유의사항: 모든 수행평가는 수업 중에 실시하며, 평가 시기와 채점기준은 평가 전에 학생에게 안내한다.' +
+      (ai
+        ? ' AI를 활용하는 수행평가는 다음 원칙에 따른다. AI는 맞춤형 피드백 제공 등을 위해 수업‧평가에서 보조적으로 활용할 수 있으나, 평가의 공정성·신뢰성을 훼손하지 않도록 유의한다. 직접 학생의 활동을 관찰할 수 있는 평가를 통해 학생의 독자적 사고에 따른 결과물을 평가에 반영한다. 실제 평가 상황에서 AI 활용이 금지되는 행위를 명확히 설정하고, 관련 유의사항을 학생·학부모에게 사전 안내한다. AI가 만든 글·이미지를 자신의 결과물로 제출하는 행위는 금지되며 적발 시 부정행위로 간주한다. AI를 활용한 경우 사용한 AI 종류, 질문 내용, 출처를 표기해야 하며, 사용 기록 없이 그대로 제출하거나 결과물의 내용을 묻는 교사의 질의에 답하지 못하면 해당 내용은 채점에서 제외될 수 있다.'
+        : ''),
+    '라. 정의적 능력 평가 방안: 교과 성취기준의 가치·태도 요소를 수행평가 과정에서 관찰하여 세부능력 및 특기사항에 기록한다.',
+    '마. 학적변동자 처리 기준: 전입생의 수행평가 성적은 원적교 성적을 인정하고, 원적교에서 실시하지 않은 영역은 본교 학업성적관리규정에 따라 처리한다.',
+    '바. 성적처리 방법 및 결과의 활용: 정기시험과 수행평가 점수를 반영비율에 따라 합산하여 성취도를 산출하고, 평가 결과 분석을 바탕으로 개별 피드백과 보충 지도를 한다.',
+  ].join('\n');
+
 const ABSENCE_TEXT = [
   '가. 수행평가 결시자(미응시자)는 본교 학업성적관리규정에 따라 인정점을 부여한다.',
   '나. 질병 등 인정 결석으로 수행평가에 응시하지 못한 학생에게는 추후 응시 기회를 주고, 추후 응시가 어려운 경우 인정점을 부여한다.',
@@ -347,7 +360,7 @@ function infoRubrics(err: boolean, levels = true): Rubric[] {
     {
       name: '데이터 분석 프로젝트',
       max: 30,
-      task: '학교생활과 관련된 공공 데이터를 수집·관리하고, 데이터 간의 관계를 분석하여 모둠별로 문제 해결 방안을 제안하기',
+      task: '학교생활과 관련된 공공 데이터를 수집·관리하고, 생성형 AI를 활용하여 분석 아이디어를 탐색한 뒤, 데이터 간의 관계를 직접 분석하여 모둠별로 문제 해결 방안을 제안하기',
       codes: ['[9정02-04]', '[9정02-05]'],
       method: METHOD(['구술·발표', '프로젝트', '교사 관찰 평가 및 기록', '자기평가']),
       levels: lv,
@@ -535,6 +548,8 @@ function infoDoc(err: boolean): ParsedDocument {
       GRADE_TABLE('5. 성취도 평정'),
       ...rubrics.map((r, i) => rubricTable(`${i === 0 ? '6. 수행평가 세부 기준\n' : ''}${'가나다라'[i]}. ${r.name}`, r)),
       table('7. 수행평가 결시자 처리 및 기타', 1, [[ABSENCE_TEXT]]),
+      // (g) 점검 전: AI를 쓰는 수행평가가 있는데 AI 활용 기본 원칙(이해하기 32쪽)을 적지 않음
+      table('8. 평가 운영 안내', 1, [[COMMON_TEXT(!err)]]),
     ],
   };
 }
@@ -594,10 +609,12 @@ const SUBJECTS: SubjectSpec[] = [
       row(11, '1~3주', 'Ⅵ. 도형의 닮음', ['[9수03-13]'], '공학 도구 활용 수업', '정기시험', '· 닮음 조건을 이용해 두 삼각형이 닮음인지 판별하기'),
       row(12, '1~3주', 'Ⅶ. 확률', ['[9수04-05]', '[9수04-06]'], '프로젝트 학습', '★수행평가', '· 생활 속 확률 문제를 탐구 주제로 정하기'),
     ],
-    exam: EXAM(['[9수03-11]', '[9수03-13]', '[9수04-05]', '[9수04-06]'], ['사각형의 성질 이해하기', '삼각형의 닮음 조건 활용하기', '경우의 수와 확률 구하기'], [70, 42], [30, 18]),
+    // 정기시험을 1회만 보므로 반영비율은 50% 이하 (지침 7쪽 Ⅲ.3.나 6))
+    exam: EXAM(['[9수03-11]', '[9수03-13]', '[9수04-05]', '[9수04-06]'], ['사각형의 성질 이해하기', '삼각형의 닮음 조건 활용하기', '경우의 수와 확률 구하기'], [70, 35], [30, 15]),
     areas: [
       { name: '도형의 성질 정당화하기(논술형)', max: 20, w: 20, essay: 20, codes: ['[9수03-10]', '[9수03-11]'], els: ['외심과 내심의 성질 정당화하기', '사각형의 성질 정당화하기'], when: '10월 2주' },
       { name: '확률 탐구 보고서', max: 20, w: 20, codes: ['[9수04-05]', '[9수04-06]'], els: ['탐구 문제 설정하기', '확률을 구하고 해석하기'], when: '12월 1주' },
+      { name: '닮음 활용 문제 만들기', max: 10, w: 10, codes: ['[9수03-13]'], els: ['닮음을 활용한 문제 만들기'], when: '11월 3주' },
     ],
     rubric: {
       name: '도형의 성질 정당화하기(논술형)',
@@ -880,7 +897,7 @@ const SUBJECTS: SubjectSpec[] = [
 
 function allSubjectsDoc(): ParsedDocument {
   const title = `${YEAR}학년도 2학기 2학년 교과별 교수·학습 및 평가 운영 계획`;
-  const tables: ParsedTable[] = [table('', 1, [[title], [SCHOOL]])];
+  const tables: ParsedTable[] = [table('', 1, [[title], [SCHOOL]]), table('교과 공통 평가 운영 안내', 1, [[COMMON_TEXT(true)]]), GRADE_TABLE('교과 공통 성취도 평정')];
   SUBJECTS.forEach((s, i) => {
     const n = i + 1;
     tables.push(titleTable(s.subject));
@@ -897,30 +914,19 @@ function allSubjectsDoc(): ParsedDocument {
 
 export const SAMPLE_DOCS = () => [infoDoc(true), infoDoc(false), allSubjectsDoc()];
 
+/** 앱과 같은 경로(analyze)로 점검 */
 export async function checkDoc(bytes: Uint8Array, fileName: string) {
   const doc = await parseHwpx(bytes, fileName, 'plan');
   return splitSections(doc).map((section) => {
-    const ex = extractPublic(doc, section);
-    const res = runChecks({
-      plan: ex.plan,
-      rubric: ex.rubric,
-      planStandards: ex.planStandards,
-      codeTexts: ex.codeTexts,
-      pairs: suggestPublicPairs(ex.plan, ex.rubric),
-      links: [],
-      format: 'public',
-      context: ex.context,
-      essay: ex.essay,
-      absence: ex.absence,
-    });
+    const { ex, result: res } = analyze(doc, section);
     return { section, ex, res };
   });
 }
 
 const MANIFEST = [
-  { file: '정보_2학년_2학기_점검전.hwpx', title: '정보 2학년 2학기 계획서 (점검 전)', desc: '실제 공시 문서에서 나온 오류 6가지를 심은 가상 계획서: 코드 오타, 2015 개정 문장, 반영비율 90%, 만점 불일치, 수행률·분량 채점기준, 논술형 20%' },
-  { file: '정보_2학년_2학기_수정본.hwpx', title: '정보 2학년 2학기 계획서 (수정본)', desc: '같은 계획서에서 6가지를 모두 고친 것. 재점검하면 빨강·주황이 모두 사라져요' },
-  { file: '전과목_2학년_2학기.hwpx', title: '2학년 2학기 전 교과 계획서 (12개 교과)', desc: '한 파일에 12개 교과. 수학(2015 코드)·영어(반영비율 110%)·과학(코드 오타)·사회(제출 여부 채점)만 오류가 있어요' },
+  { file: '정보_2학년_2학기_점검전.hwpx', title: '정보 2학년 2학기 계획서 (점검 전)', desc: '실제 공시 문서에서 나온 오류 6가지와 AI 활용 기본 원칙 누락을 심은 가상 계획서: 코드 오타, 2015 개정 문장, 반영비율 90%, 만점 불일치, 수행률·분량 채점기준, 논술형 20%, AI 활용 기본 원칙 없음' },
+  { file: '정보_2학년_2학기_수정본.hwpx', title: '정보 2학년 2학기 계획서 (수정본)', desc: '같은 계획서에서 모두 고친 것. 재점검하면 빨강·주황이 모두 사라져요' },
+  { file: '전과목_2학년_2학기.hwpx', title: '2학년 2학기 전 교과 계획서 (12개 교과)', desc: '한 파일에 12개 교과. 수학(2015 코드)·영어(반영비율 110%)·과학(코드 오타)·사회(제출 여부 채점)만 오류가 있어요. 수행평가 달력에서 9월 4주·10월 4주에 수행평가가 몰려 있어요' },
 ];
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -933,7 +939,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     expected[doc.fileName] = checked.map(({ section, ex, res }) => ({
       subject: section.subject,
       grades: section.grades,
-      curriculum: ex.context.curriculum,
+      curriculum: ex.context?.curriculum,
       tables: [section.from, section.to],
       plan: ex.plan.map((a) => `${a.name} ${a.maxScore ?? '—'}점(${a.weightPercent ?? '—'}%)`),
       rubric: ex.rubric.map((a) => `${a.name} ${a.maxScore ?? '—'}점`),

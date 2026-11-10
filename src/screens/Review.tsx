@@ -6,7 +6,7 @@ import { counts, PATCHABLE, resolvedCards, sectionLabel, type Review as R } from
 import { SEVERITY } from '../ui/helpers';
 import { isNarrow } from '../ui/narrow';
 import { Button, Dot, Icon } from '../ui/primitives';
-import { cellsOf, isInsertCard, J14_EXAMPLE, J14_PLACE, kindLabel } from './cardInfo';
+import { cellsOf, insertExample, insertPlace, isInsertCard, kindLabel } from './cardInfo';
 import { locLabel } from './locLabel';
 
 export { locLabel };
@@ -495,13 +495,13 @@ function IssueItem({
   const [draft, setDraft] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const insert = isInsertCard(card);
-  const loc = insert ? `넣을 곳: ${J14_PLACE}` : card.locations[0] ? locLabel(doc, card.emphasis?.[0] ?? card.locations[0]) : '';
+  const loc = insert ? `넣을 곳: ${insertPlace(card)}` : card.locations[0] ? locLabel(doc, card.emphasis?.[0] ?? card.locations[0]) : '';
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(J14_EXAMPLE);
+      await navigator.clipboard.writeText(insertExample(card));
     } catch {
       const ta = document.createElement('textarea');
-      ta.value = J14_EXAMPLE;
+      ta.value = insertExample(card);
       document.body.appendChild(ta);
       ta.select();
       try {
@@ -557,7 +557,7 @@ function IssueItem({
           {insert && (
             <div className="rounded-lg bg-paper px-3 py-2.5 shadow-[inset_0_0_0_1px_#e3e7ed]">
               <div className="text-help font-bold text-ink-3">예시 문장 — 학교 규정에 맞게 고쳐 쓰세요</div>
-              <p className="mt-0.5 text-help text-ink">{J14_EXAMPLE}</p>
+              <p className="mt-0.5 whitespace-pre-line text-help text-ink">{insertExample(card)}</p>
               <div className="mt-2">
                 <Button onClick={copy}>{copied ? <>{Icon.check('h-4 w-4')} 복사했어요</> : '문장 복사'}</Button>
               </div>

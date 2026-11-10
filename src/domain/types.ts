@@ -38,8 +38,10 @@ export type Assessment = {
   incomplete?: boolean;
   /** (추가 필드) 평가 방법: "지필" | "수행" 등 원문 그대로 */
   method?: string;
+  /** (추가 필드) 요약표 '평가 시기' 칸 원문 (예: "4월 2주", "9월 4주~10월 1주") */
+  when?: string;
   /** (추가 필드) 각 값이 나온 원문 칸 */
-  refs?: Partial<Record<'weightPercent' | 'maxScore' | 'method', CellRef>>;
+  refs?: Partial<Record<'weightPercent' | 'maxScore' | 'method' | 'when', CellRef>>;
 };
 
 /** 평가계획에 적힌 학기 성취기준 한 줄 */
@@ -89,6 +91,20 @@ export type Extraction = {
   absence?: { found: boolean; ref?: CellRef };
   /** (추가 필드) 괄호 한쪽이 빠진 성취기준 코드 */
   malformed?: Malformed[];
+  /** (추가 필드) 평가 계획에 넣을 내용(지침 6~7쪽)이 파일 어딘가에 있는지 */
+  required?: RequiredPresence;
+  /** (추가 필드) AI 도구를 쓰는 수행평가와 관리 방안 문구 */
+  ai?: AiUse;
+};
+
+export type RequiredPresence = { key: string; label: string; found: boolean }[];
+export type AiUse = {
+  /** 수행평가 설명에서 AI 도구를 쓰는 문장 (없으면 빈 배열) */
+  uses: { text: string; ref: CellRef }[];
+  /** 이해하기 32쪽 'AI 활용 기본 원칙' 세 가지가 파일에 있는지: 보조적 활용(공정성·신뢰성) / 직접 관찰·독자적 사고 / 금지 행위 설정·사전 안내 */
+  principles: { assist: boolean; observe: boolean; forbid: boolean };
+  /** 운영 시 사전 안내 예시: 사용 기록·출처 표기 / 채점 제외 (권장, 판정에는 쓰지 않음) */
+  notices: { record: boolean; exclude: boolean };
 };
 
 export type Malformed = { raw: string; fixed: string; ref: CellRef };
@@ -100,7 +116,7 @@ export type EssayRow = { table: number; total: number; ref: CellRef; raw: string
 export type Severity = 'red' | 'orange' | 'gray' | 'yellow';
 export type Strength = '사실' | '의무' | '권고' | '제안';
 export type Action = 'fix' | 'memo' | 'link';
-export type RuleId = 'J4' | 'J5' | 'J7' | 'J12' | 'J6' | 'S5' | 'J13' | 'J14';
+export type RuleId = 'J4' | 'J5' | 'J7' | 'J12' | 'J6' | 'S5' | 'J13' | 'J14' | 'J15' | 'J16' | 'J17' | 'J18';
 
 export type Basis = {
   /** 규칙 출처 (문서명) */
@@ -143,6 +159,8 @@ export type Card = {
   compare?: CompareRow[];
   /** 바로 고치기: 문서에서 from을 to로 바꾼다 (결정적으로 알 수 있을 때만) */
   replace?: { from: string; to: string };
+  /** 고칠 칸이 없고 문장을 새로 넣어야 하는 카드: 넣을 곳과 예시 문장 */
+  insert?: { place: string; example: string };
 };
 
 /** 정렬 맵에서 교사가 지정한 연결 */
@@ -164,6 +182,8 @@ export type CheckInput = {
   essay?: EssayRow[];
   absence?: { found: boolean; ref?: CellRef };
   malformed?: Malformed[];
+  required?: RequiredPresence;
+  ai?: AiUse;
   /** (추가 필드) 원문 칸 글자 읽기 (바로 고치기 가능 여부 판단용) */
   cells?: (ref: CellRef) => string;
 };

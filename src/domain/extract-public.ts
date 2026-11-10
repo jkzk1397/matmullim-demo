@@ -5,7 +5,7 @@
 import { fillMerged, normalizeName } from './extract';
 import { extractCodes, lookupAll, subjectOfCode, typoOf } from './standards';
 import { detectContext, dominantSubject, splitSections, type DocContext, type SubjectSection } from './context';
-import type { Assessment, CellRef, CodeText, DocKind, Element, EssayRow, Extraction, ParsedDocument, ParsedTable, PlanStandard } from './types';
+import type { AiUse, Assessment, CellRef, CodeText, DocKind, Element, EssayRow, Extraction, ParsedDocument, ParsedTable, PlanStandard, RequiredPresence } from './types';
 
 const norm = (s: string) => (s ?? '').replace(/\s+/g, '').replace(/[()（）]/g, '');
 const ref = (doc: DocKind, table: number, row: number, col: number): CellRef => ({ doc, table, row, col });
@@ -71,6 +71,8 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
   for (let r = maxRow - 1; r >= 0; r--) if (/영역|평가명|횟수/.test(norm(g[r][0] ?? '')) && !isMaxRow(g[r][0]) && !isCont(t, r, 0)) { nameRow = r; break; }
   // 만점과 반영비율을 다른 줄에 적은 표: "만점(점) | 40" 다음 줄 "반영비율(%) | 40"
   const wRow = (() => { for (let r = maxRow + 1; r < Math.min(g.length, maxRow + 3); r++) if (/^반영비율(%)?$/.test(norm(g[r][0] ?? '').replace('%', '%'))) return r; return -1; })();
+  // 평가 시기 행 ("평가 시기 | 4월 2주 | 5월 3주 …"). '시기/영역'처럼 영역 이름 행을 겸한 머리 칸은 시기가 아니다
+  const whenRow = find(/^(평가)?(실시|시행)?(시기|일정)(주|월|월주|월·주)?$/);
   const stdRow = find(/성취기준|평가내용/, maxRow + 1);
   const elRow = find(/평가요소|평가내용|세부내용/, maxRow + 1);
   const out: Assessment[] = [];
@@ -129,6 +131,7 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
     }));
     // 머리 행이 '수행'이면 이름에 '논술형'이 있어도 수행평가다
     const written = !/수행/.test(head) && (/정기|지필|선택형/.test(head + name) || /^(논술형|서술형)(\s*\(\d+\))?$/.test(name.trim()) || /^\d+\s*[회차](\s*\((논술형|서술형|선택형)\))?$/.test(name.trim()));
+    const when = whenRow >= 0 ? (g[whenRow][c] ?? '').trim() : undefined;
     out.push({
       id: `plan-${ti}-${c}`,
       name,
@@ -136,8 +139,14 @@ function readSummary(t: ParsedTable, ti: number): Assessment[] {
       maxScore: max,
       weightPercent: weight,
       elements,
+      when,
       source: ref('plan', ti, nameRow >= 0 ? nameRow : maxRow, c),
-      refs: { maxScore: ref('plan', ti, maxRow, c), weightPercent: ref('plan', ti, wRow >= 0 ? wRow : maxRow, c), method: typeRow >= 0 ? ref('plan', ti, typeRow, c) : undefined },
+      refs: {
+        maxScore: ref('plan', ti, maxRow, c),
+        weightPercent: ref('plan', ti, wRow >= 0 ? wRow : maxRow, c),
+        method: typeRow >= 0 ? ref('plan', ti, typeRow, c) : undefined,
+        when: whenRow >= 0 ? ref('plan', ti, whenRow, c) : undefined,
+      },
     });
   }
   // 합계 칸(다른 칸 비율의 합과 같은 100%)이 맨 끝이 아닌 곳에 있어도 뺀다
@@ -276,7 +285,123 @@ export function extractPublic(raw: ParsedDocument, hint?: string | SubjectSectio
     seen.set(k, n);
     if (n > 1) a.name = `${a.name} (${n})`;
   }
-  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context, essay: readEssay(doc), absence: findAbsence(raw, ranges[0][0], ranges[0][1]), malformed: findMalformed(doc, isSubj) };
+  const text = fullText(raw);
+  const required = requiredPresence(text, context.grades);
+  const assessTables = new Set([...plan.map((a) => a.source.table), ...rubric.map((a) => a.source.table)]);
+  const ai = findAiUse(doc, ranges[0][0], ranges[0][1], assessTables, text);
+  return { plan, rubric, planStandards, codeTexts, warnings, subjectRanges: ranges, context, essay: readEssay(doc), absence: findAbsence(raw, ranges[0][0], ranges[0][1]), malformed: findMalformed(doc, isSubj), required, ai };
+}
+
+/** 파일 전체 글자 (제목·표·본문). 전 교과 합본은 공통 안내가 앞쪽에 한 번만 있어 구간이 아니라 파일 전체를 본다 */
+export function fullText(doc: ParsedDocument): string {
+  const parts: string[] = [doc.title ?? ''];
+  for (const t of doc.tables) {
+    parts.push(t.title ?? '');
+    for (const r of t.rows) parts.push(r.join(' | '));
+  }
+  for (const p of doc.paragraphs ?? []) parts.push(p.text);
+  return parts.join('\n');
+}
+
+/** 지침 6~7쪽 Ⅲ.3.나 2) '평가 계획에 포함되도록 한다'의 항목. 영역·요소·방법·시기·반영비율은 요약표, 결시자는 J14가 본다 */
+export const REQUIRED_ITEMS: { key: string; label: string; re: RegExp; only?: 'g12' | 'g3' }[] = [
+  { key: 'purpose', label: '평가의 목적', re: /목\s*적/ },
+  { key: 'policy', label: '평가의 방향과 방침', re: /방\s*향|방\s*침/ },
+  { key: 'caution', label: '평가 유의사항', re: /유\s*의\s*(사\s*항|점|할\s*점)|주\s*의\s*사\s*항|평가\s*시\s*유의/ },
+  { key: 'rate', label: '교과(목)별 성취율과 성취도', re: /성\s*취\s*율|성\s*취\s*도[^\n]{0,40}(평\s*정|산\s*출)|90\s*%\s*이\s*상/ },
+  { key: 'level', label: '성취기준별 성취수준, 학기 단위 성취수준', re: /성\s*취\s*수\s*준/, only: 'g12' },
+  { key: 'criteria', label: '성취기준에 따른 평가기준', re: /평\s*가\s*기\s*준|성\s*취\s*수\s*준/, only: 'g3' },
+  // 지침 6쪽 각주 6): 채점기준을 모두 공개하기 어려우면 채점기준에 든 평가 요소를 공개한다 → 평가 요소가 있으면 된 것으로 본다
+  { key: 'detail', label: '수행평가의 세부기준(영역별 배점과 채점기준)', re: /세\s*부\s*(평\s*가\s*)?기\s*준|채\s*점\s*(기\s*준|요\s*소)|수\s*행\s*수\s*준|배\s*점\s*기\s*준|평\s*가\s*요\s*소/ },
+  { key: 'affective', label: '정의적 능력 평가 방안', re: /정\s*의\s*적/ },
+  { key: 'transfer', label: '학적변동자 처리 기준', re: /학\s*적\s*변\s*동|전\s*입|전\s*출|편\s*입|재\s*취\s*학|전\s*학\s*(생|온|간)/ },
+  { key: 'use', label: '성적처리 방법 및 결과의 활용', re: /성\s*적\s*처\s*리|결\s*과\s*(의\s*)?(분\s*석|활\s*용)|평\s*가\s*결\s*과[^\n]{0,40}활\s*용/ },
+];
+
+/** 학년: 1·2학년은 2022 개정(성취수준), 3학년은 2015 개정(평가기준). 모르면 둘 중 하나만 있어도 된다 */
+function requiredPresence(text: string, grades: number[]): RequiredPresence {
+  const g12 = grades.some((g) => g === 1 || g === 2);
+  const g3 = grades.includes(3);
+  const level = REQUIRED_ITEMS.find((i) => i.key === 'level')!;
+  const criteria = REQUIRED_ITEMS.find((i) => i.key === 'criteria')!;
+  return REQUIRED_ITEMS.flatMap((it) => {
+    if (!it.only) return [{ key: it.key, label: it.label, found: it.re.test(text) }];
+    if (it.key === 'criteria') return [];
+    // 학년을 모르면 성취수준·평가기준 중 하나만 있어도 된다. 1·2학년과 3학년이 섞인 파일은 둘 다 본다
+    if (!grades.length) return [{ key: 'level', label: '성취수준 또는 평가기준', found: level.re.test(text) || criteria.re.test(text) }];
+    const out = [];
+    if (g12) out.push({ key: 'level', label: level.label, found: level.re.test(text) });
+    if (g3) out.push({ key: 'criteria', label: criteria.label, found: criteria.re.test(text) });
+    return out;
+  });
+}
+
+// ---------- AI 도구를 쓰는 수행평가 ----------
+// 학생이 AI로 결과물을 만들거나 다듬는 평가만 본다. 인공지능을 배우는 내용(정보과 '인공지능 모델', 성취수준 문장)과
+// 수업 방법(코스웨어·디지털 교과서), 관리 방안·원칙 문장은 빼다.
+const AI_TERM = String.raw`(?:생성형\s*(?:AI|인공\s*지능)|챗\s*GPT|ChatGPT|뤼튼|제미나이|Gemini|코파일럿|Copilot|클로바\s*X|AI|인공\s*지능)`;
+/** AI로 무엇을 만들거나 고치는 동작 */
+const AI_MAKE = new RegExp(
+  AI_TERM + String.raw`\s*(?:를|을|로|으로|의\s*도움을\s*받아|도구를|프로그램을|플랫폼을)?\s*(?:활용|이용|사용)?\s*(?:하여|해|한|해서)?[^.\n]{0,24}?(?:생성|제작|창작|작곡|만들|만든|작성|그리|그림|디자인|번역|교정|검사|피드백\s*받|아이디어)`,
+);
+/** 평가 칸에 붙은 표지: "(AI활용)", "AI 활용 음악 만들기", "생성형 AI 활용" */
+const AI_TAG = /\(\s*(?:생성형\s*)?AI\s*활용\s*\)|생성형\s*(?:AI|인공\s*지능)\s*(?:를|을)?\s*활용|AI\s*활용\s*[가-힣]{1,8}\s*(?:만들기|쓰기|제작|창작)|인공\s*지능\s*활용\s*[가-힣]{1,8}\s*(?:만들기|제작|창작)/;
+/** 관리 방안·원칙을 적은 문장 (그 자체가 AI를 쓰는 평가 설명은 아니다) */
+const AI_GUARD_LINE = /보조적|맞춤형\s*피드백|공정성|신뢰성|부정\s*행위|사용\s*기록|채점\s*(에서\s*)?제외|금지|유의|원칙|독자적|출처|개인\s*정보|올바르게\s*활용|올바른\s*(?:AI|인공\s*지능)\s*활용/;
+/** 수업 방법(코스웨어·디지털 교과서 등)은 평가가 아니다 */
+const AI_TEACHING = /하이러닝|코스웨어|AIDT|디지털\s*교과서|에듀테크\s*(수업|도구)|디지털\s*기반\s*수업|맞춤형\s*학습|학교\s*자율\s*과제/;
+/** 인공지능을 배우는 내용·성취수준 문장 */
+const AI_CONTENT = /수\s*있다|태도를|인식하|이해하고|원리|윤리|학습\s*데이터|학습용\s*데이터|모델|시스템|로봇|기술의|사회의|분류|알고리즘|활용하기\s*위(?:해|한)|필요한\s*데이터|감정|저작권/;
+const ASSESS_WORD = /평가|수행|과제|산출물|보고서|발표|제작|만들|글쓰기|쓰기|창작|작곡|디자인/;
+
+/** 이해하기 32쪽 기본 원칙 세 가지 (문장을 그대로 옮기지 않고 다듬어 쓴 계획서도 잡도록 핵심 낱말로) */
+export const AI_PRINCIPLES = {
+  assist: new RegExp(String.raw`(?:AI|인공\s*지능)[^\n]{0,80}(?:보조적|공정성\s*[·‧ㆍ,]?\s*신뢰성)|(?:보조적|공정성\s*[·‧ㆍ,]?\s*신뢰성)[^\n]{0,80}(?:AI|인공\s*지능)`),
+  observe: /독자적\s*(?:인\s*)?사고|직접\s*(?:학생의\s*)?(?:활동|수행)[^\n]{0,10}관찰|교사가\s*직접[^\n]{0,30}관찰/,
+  forbid: new RegExp(String.raw`(?:AI|인공\s*지능)[^\n]{0,80}(?:금지|부정\s*행위)|(?:금지|부정\s*행위)[^\n]{0,80}(?:AI|인공\s*지능)`),
+};
+
+export const AI_GUARDS = {
+  forbid: AI_PRINCIPLES.forbid,
+  record: new RegExp(
+    String.raw`사용\s*기록|활용\s*(?:과정|내역|기록|사실|범위와\s*내용)[^\n]{0,40}(?:표기|기록|기재|작성|밝)|(?:AI|인공\s*지능)[^\n]{0,60}출처|출처[^\n]{0,40}(?:AI|인공\s*지능)|프롬프트[^\n]{0,30}(?:기록|기재|표기|작성)`,
+  ),
+  exclude: /채점\s*(?:에서|대상에서)?\s*제외|평가\s*(?:에서|대상에서)\s*제외|점수를?\s*(?:부여|인정)하지|인정하지\s*않|(?:질의|질문)[^\n]{0,40}(?:답변|답하|설명)[^\n]{0,12}(?:못|않)/,
+};
+
+/** 교수·학습 운영 계획(머리글에 월·주·차시)인 표 */
+const isScheduleTable = (t: ParsedTable) => (t.rows[0] ?? []).some((h) => /^(월|주|시기|차시|주차)$/.test(norm(h)));
+
+function findAiUse(doc: ParsedDocument, from: number, to: number, assessTables: Set<number>, text: string): AiUse {
+  const uses: AiUse['uses'] = [];
+  for (let ti = from; ti < to; ti++) {
+    const t = doc.tables[ti];
+    if (!t) continue;
+    const sched = isScheduleTable(t);
+    t.rows.forEach((row, r) =>
+      row.forEach((cell, c) => {
+        if (!cell || isCont(t, r, c)) return;
+        for (const line of cell.split(/\n|(?<=다\.)\s+|(?<=함\.)\s+|\s*[·•∙▸]\s*/)) {
+          const s = line.replace(/\s+/g, ' ').trim();
+          if (s.length < 6) continue;
+          const tagged = AI_TAG.test(s);
+          if (!tagged && !AI_MAKE.test(s)) continue;
+          if (AI_GUARD_LINE.test(s) || AI_TEACHING.test(s)) continue;
+          if (!/생성형|GPT|뤼튼|Gemini|제미나이|코파일럿|Copilot/.test(s) && AI_CONTENT.test(s)) continue;
+          // 성취기준 문장 자체는 평가 방법 설명이 아니다
+          if (/^\[?\s*\d{1,2}\s*[가-힣]{1,4}\s*\d{2}\s*-\s*\d{2}\s*\]/.test(s)) continue;
+          // 수업 계획 표에서는 '평가'라고 적은 줄만
+          if (sched ? !/평가/.test(s) : !assessTables.has(ti) && !ASSESS_WORD.test(s)) continue;
+          if (!uses.some((u) => u.text === s)) uses.push({ text: s.slice(0, 160), ref: ref('plan', ti, r, c) });
+        }
+      }),
+    );
+  }
+  return {
+    uses,
+    principles: { assist: AI_PRINCIPLES.assist.test(text), observe: AI_PRINCIPLES.observe.test(text), forbid: AI_PRINCIPLES.forbid.test(text) },
+    notices: { record: AI_GUARDS.record.test(text), exclude: AI_GUARDS.exclude.test(text) },
+  };
 }
 
 /** 여는 괄호가 빠진 성취기준 코드: "9정03-04] 사례를…" (괄호를 채우면 이 교과의 실제 코드가 될 때만). 닫는 괄호 쪽은 [9정01-01-01]·[9정02-03, 04] 같은 표기가 많아 보지 않는다 */
